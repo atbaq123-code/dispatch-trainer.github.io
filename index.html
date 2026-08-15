@@ -263,6 +263,11 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
           <div class="f"><span class="tag">Female callers</span><select class="in" id="voiceF"></select></div>
           <button class="btn ghost" id="testF">Test female voice</button>
           <div class="note" id="voiceMsg" style="margin-top:12px"></div>
+          <div style="border-top:1px solid var(--line2);margin-top:16px;padding-top:14px">
+            <button class="btn" id="testNat">Play a random caller voice</button>
+            <div class="note" id="natResult" style="margin-top:10px">Plays through the tts function,
+              exactly as a real call does, and tells you which voice it used.</div>
+          </div>
         </div>
       </div>
     </section>
@@ -1839,6 +1844,32 @@ function init(){
   };
   $("#natTgl").onclick=()=>{naturalOn=!naturalOn;localStorage.setItem("oc_natural",naturalOn?"1":"0");ttsDead=false;paintNat();};
   paintNat();
+  $("#testNat").onclick=async()=>{
+    const g=Math.random()<.5?"m":"f", v=Math.floor(Math.random()*3);
+    const out=$("#natResult");
+    out.textContent="Requesting "+(g==="f"?"female":"male")+" voice, variant "+(v+1)+"…";
+    try{
+      const { data:{ session } } = await sb.auth.getSession();
+      if(!session) throw new Error("you are not signed in");
+      const r=await fetch(SUPABASE_URL+"/functions/v1/tts",{method:"POST",
+        headers:{"content-type":"application/json",apikey:SUPABASE_ANON,
+                 Authorization:"Bearer "+session.access_token},
+        body:JSON.stringify({text:"Yeah, hi. My key stopped working and I'm stuck out here.",
+                             gender:g, variant:v})});
+      if(!r.ok){
+        const t=await r.text();
+        out.textContent="Failed ("+r.status+"): "+t.slice(0,140)+
+          (r.status===404?" — the tts function isn't deployed under that name."
+          :r.status===401?" — turn OFF Verify JWT on the tts function."
+          :r.status===501?" — no ELEVENLABS_API_KEY or OPENAI_API_KEY saved in Secrets.":"");
+        return;
+      }
+      const url=URL.createObjectURL(await r.blob());
+      hush(); curAudio=new Audio(url); curAudio.play();
+      out.textContent="Playing "+(g==="f"?"female":"male")+" voice, variant "+(v+1)+
+        ". Press it a few times — if every variant sounds identical, the extra voice IDs aren't set.";
+    }catch(e){ out.textContent="Failed: "+(e.message||e); }
+  };
   $("#testM").onclick=()=>testVoice("m");
   $("#testF").onclick=()=>testVoice("f");
   fillVoicePickers();
