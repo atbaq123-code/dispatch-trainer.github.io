@@ -1016,6 +1016,7 @@ async function serverSpeak(t){
   const url=URL.createObjectURL(await r.blob());
   if(curAudio){ try{curAudio.pause();}catch(e){} }
   curAudio=new Audio(url);
+  routeIntoRecording(curAudio);
   curAudio.playbackRate=Math.min(1.4,Math.max(.7,job.rate));
   curAudio.onplay =()=>{speaking=true;drawCapt();};
   curAudio.onended=curAudio.onerror=()=>{speaking=false;drawCapt();URL.revokeObjectURL(url);micOn();};
@@ -1129,6 +1130,7 @@ async function micTap(){
   if(!(await askMic())) return;
   callLive=true; muted=false;
   warmUp();
+  startRecording();
   drawMic(); drawCapt(); micOn();
 }
 function toggleMute(){
@@ -1245,6 +1247,60 @@ function start(j){
   drawChips(); drawSteps(); drawLog(); drawCapt(); drawMic(); drawCount(); hideErr();
   go("call");
 }
+/* ---------- call recording: trainee mic + caller voice mixed into one file ---------- */
+let recCtx=null, recDest=null, recorder=null, recChunks=[], micStream=null, recBlob=null;
+
+async function startRecording(){
+  try{
+    if(!window.MediaRecorder) return;
+    micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    recCtx  = new (window.AudioContext||window.webkitAudioContext)();
+    recDest = recCtx.createMediaStreamDestination();
+    recCtx.createMediaStreamSource(micStream).connect(recDest);
+    recChunks=[]; recBlob=null;
+    recorder = new MediaRecorder(recDest.stream, {mimeType:"audio/webm"});
+    recorder.ondataavailable = e => { if(e.data && e.data.size) recChunks.push(e.data); };
+    recorder.start(1000);
+  }catch(e){ console.warn("recording unavailable:", e.message); recorder=null; }
+}
+
+/* send the caller's voice into the recording as well as the speakers */
+function routeIntoRecording(audioEl){
+  if(!recCtx || !recDest) return;
+  try{
+    const src = recCtx.createMediaElementSource(audioEl);
+    src.connect(recDest);
+    src.connect(recCtx.destination);
+  }catch(e){ /* already routed */ }
+}
+
+function stopRecording(){
+  return new Promise(res=>{
+    if(!recorder || recorder.state==="inactive"){ cleanupRec(); return res(null); }
+    recorder.onstop = () => {
+      recBlob = new Blob(recChunks, {type:"audio/webm"});
+      cleanupRec();
+      res(recBlob);
+    };
+    try{ recorder.stop(); }catch(e){ cleanupRec(); res(null); }
+  });
+}
+function cleanupRec(){
+  try{ micStream && micStream.getTracks().forEach(t=>t.stop()); }catch(e){}
+  try{ recCtx && recCtx.close(); }catch(e){}
+  recorder=null; recCtx=null; recDest=null; micStream=null;
+}
+
+async function uploadRecording(blob){
+  if(!blob || !blob.size || !me || isGuest) return null;
+  const path = me.id+"/"+Date.now()+"-"+(job?job.id:"call")+".webm";
+  const { error } = await sb.storage.from("recordings").upload(path, blob, {
+    contentType:"audio/webm", upsert:false
+  });
+  if(error){ console.warn("upload failed:", error.message); return null; }
+  return path;
+}
+
 async function warmUp(){
   try{
     const { data:{ session } } = await sb.auth.getSession();
@@ -1318,6 +1374,7 @@ async function createJob(){
   hush(); if(listening){try{rec.stop();}catch(e){}listening=false;drawMic();}
   if(log.length<2){ showErr("Work the call further before creating the job."); return; }
   busy=true; drawMic();
+  const blob = await stopRecording();
   const f=formData();
   const transcript=log.filter(m=>m.w!=="sys").map(m=>(m.w==="you"?"DISPATCHER: ":"CALLER: ")+m.t).join("\n");
   const entered=Object.entries(f).map(([k,v])=>k+": "+(v||"(blank)")).join("; ");
@@ -1767,6 +1824,10 @@ async function saveResult(){
       user_id: me.id,
       scenario: job.title,
       scenario_id: job.id,
+      transcript: log.filter(m=>m.w!=="sys").map(m=>({w:m.w,t:m.t})),
+      recording_path: await uploadRecording(blob),
+      job_form: f,
+      caller_name: curName,
       total: report.total,
       verdict: report.verdict,
       scores: report.scores||[],
@@ -1775,6 +1836,62 @@ async function saveResult(){
       duration_secs: secs
     });
   }catch(e){ console.warn("save failed",e); }
+}
+function openRow(ix){
+  const r=(window.__rows||[])[ix], box=document.getElementById("det"+ix);
+  if(!r||!box) return;
+  if(!box.classList.contains("hide")){ box.classList.add("hide"); return; }
+  const tr=r.transcript||[];
+  const form=r.job_form||{};
+  const filled=Object.entries(form).filter(([,v])=>v);
+  box.innerHTML=`
+    <div class="panel" style="margin:0">
+      ${r.caller_name?`<div class="lbl">Caller was ${r.caller_name}</div>`:""}
+      <div class="lbl">Transcript</div>
+      ${tr.length?tr.map(m=>`<div class="msg ${m.w}" style="margin-bottom:9px">
+          <div class="who">${m.w==="you"?"Dispatcher":"Caller"}</div>
+          <div class="bub">${(m.t||"").replace(/</g,"&lt;")}</div></div>`).join("")
+        :'<div class="note">No transcript saved for this call — it predates transcript recording.</div>'}
+
+      <div class="lbl" style="margin-top:16px">What they typed into the job file</div>
+      ${filled.length?filled.map(([k,v])=>`<div class="diff"><span class="note">${k.replace(/_/g," ")}</span>
+          <b style="color:var(--navy);font-weight:600">${String(v).replace(/</g,"&lt;")}</b></div>`).join("")
+        :'<div class="note">Nothing was entered.</div>'}
+
+      ${(r.data_errors&&r.data_errors.length)?`<div class="lbl" style="margin-top:16px">Wrong or missing</div>
+        ${r.data_errors.map(d=>`<div class="diff"><span class="note">${d.f}</span>
+          <span style="text-align:right"><b style="color:var(--red)">${d.got||"(blank)"}</b>
+          <span class="note"> should be ${d.should}</span></span></div>`).join("")}`:""}
+
+      ${(r.scores&&r.scores.length)?`<div class="lbl" style="margin-top:16px">Scores</div>
+        ${r.scores.map(x=>`<div class="diff"><span>${x.c}</span>
+          <b style="color:var(--navy)">${x.s}${r.scenario_id==="typing"?"":"/5"}</b></div>`).join("")}`:""}
+
+      ${(r.fixes&&r.fixes.length)?`<div class="lbl" style="margin-top:16px">Told to fix</div>
+        <ul>${r.fixes.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
+
+      ${r.recording_path?`<div class="lbl" style="margin-top:16px">Recording</div>
+        <div id="aud${ix}"><button class="btn ghost" onclick="loadAudio(${ix})">Load recording</button></div>`:""}
+      <button class="btn ghost" style="margin-top:14px" onclick="copyCall(${ix})">Copy transcript</button>
+    </div>`;
+  box.classList.remove("hide");
+}
+async function loadAudio(ix){
+  const r=(window.__rows||[])[ix], box=document.getElementById("aud"+ix);
+  if(!r||!box||!r.recording_path) return;
+  box.innerHTML='<span class="note">Loading…</span>';
+  const { data, error } = await sb.storage.from("recordings").createSignedUrl(r.recording_path, 3600);
+  if(error||!data){ box.innerHTML='<span class="note">Could not load: '+((error&&error.message)||"unknown")+'</span>'; return; }
+  box.innerHTML='<audio controls preload="none" style="width:100%" src="'+data.signedUrl+'"></audio>'+
+    '<a class="note" href="'+data.signedUrl+'" download style="display:inline-block;margin-top:6px">Download</a>';
+}
+function copyCall(ix){
+  const r=(window.__rows||[])[ix]; if(!r) return;
+  const head=`${r.scenario} — ${new Date(r.created_at).toLocaleString()}\n`+
+    (r.profiles&&r.profiles.full_name?`Dispatcher: ${r.profiles.full_name}\n`:"")+
+    `Score: ${r.total}${r.scenario_id==="typing"?"%":"/35"} ${r.verdict||""}\n\n`;
+  const body=(r.transcript||[]).map(m=>(m.w==="you"?"DISPATCHER: ":"CALLER: ")+m.t).join("\n");
+  navigator.clipboard.writeText(head+body).catch(()=>{});
 }
 async function drawResults(){
   const wrap=$("#resWrap");
@@ -1795,14 +1912,15 @@ async function drawResults(){
   const typings=data.length-calls.length;
   $("#resSub").textContent=calls.length+" calls · average "+avg+"/35 · "+pass+" passed"+
     (typings?" · "+typings+" typing tests":"");
-  wrap.innerHTML=data.map(r=>{
+  window.__rows=data;
+  wrap.innerHTML=data.map((r,ix)=>{
     const d=new Date(r.created_at);
     const who=isAdmin&&r.profiles&&r.profiles.full_name?r.profiles.full_name+" — ":"";
     const isTyping=r.scenario_id==="typing";
     const wpm=isTyping?((r.scores||[])[0]||{}).s:null;
     const errs=isTyping?(wpm+" wpm · "+r.total+"% captured")
       :((r.data_errors&&r.data_errors.length)?r.data_errors.length+" field error"+(r.data_errors.length>1?"s":""):"clean ticket");
-    return `<div class="diff" style="align-items:flex-start">
+    return `<div class="diff" style="align-items:flex-start;cursor:pointer" data-row="${ix}">
       <span style="flex:1">
         <b style="color:var(--navy);font-weight:600">${who}${r.scenario||""}</b><br>
         <span class="note">${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} · ${errs}</span>
@@ -1810,8 +1928,10 @@ async function drawResults(){
       <span style="text-align:right;white-space:nowrap">
         <b style="color:var(--navy);font-size:16px;font-weight:700">${r.total}</b><span class="note">${isTyping?"%":"/35"}</span><br>
         <span class="vd ${r.verdict==="PASS"?"ok":""}" style="font-size:10px;padding:2px 8px">${r.verdict||""}</span>
-      </span></div>`;
+      </span></div>
+      <div class="hide" id="det${ix}" style="padding:4px 0 16px"></div>`;
   }).join("");
+  wrap.querySelectorAll("[data-row]").forEach(el=>el.onclick=()=>openRow(+el.dataset.row));
 }
 
 /* ============================ init ============================ */
