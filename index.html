@@ -792,8 +792,25 @@ const FACTS={
  child:{caller_name:"Mark Delgado",phone:"(813) 555-0198",address:"3358 Noble Creek Place",city:"Lutz",state:"FL",zip:"33558",
    job_type:"Car lockout",detail:"2021 Ford Explorer, 2-year-old locked inside in direct sun. EMERGENCY — must be told to call 911 too"}
 };
+/* Each caller can be a man or a woman — rolled fresh every call so nobody
+   memorises "the Volvo one is Megan". */
+const ALT_NAMES={
+ volvo:{m:"Marcus Cole",f:"Megan Cole"},
+ gmc:{m:"Jared Hicks",f:"Janelle Hicks"},
+ mailbox:{m:"Ray Tanner",f:"Rae Tanner"},
+ newtenant:{m:"Dale Fenton",f:"Dana Fenton"},
+ panic:{m:"Victor Hale",f:"Vera Hale"},
+ altima:{m:"Andre Marrero",f:"Adriana Marrero"},
+ knob:{m:"Stanley Burke",f:"Stella Burke"},
+ biz:{m:"Colin Mercer",f:"Carla Mercer"},
+ truck:{m:"Devin Yates",f:"Delia Yates"},
+ child:{m:"Mark Delgado",f:"Maria Delgado"}
+};
+let curVoice="m", curName="", curVariant=0;
+
 function factSheet(id){
-  const f=FACTS[id]||{};
+  const f={...(FACTS[id]||{})};
+  if(curName) f.caller_name=curName;
   return Object.entries(f).map(([k,v])=>k+": "+v).join("\n");
 }
 
@@ -879,15 +896,15 @@ function browserSpeak(t){
   if(!canSpeak||!voiceOn||!job) return;
   speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(sayable(t));
-  const pick=pickVoice(job.voice);
-  const want=job.voice==="f"?FEM:MAL;
+  const pick=pickVoice(curVoice);
+  const want=curVoice==="f"?FEM:MAL;
   if(pick){u.voice=pick;u.lang=pick.lang;}
   const natural=pick&&/natural|neural|online|google/i.test(pick.name);
   const jr=(Math.random()-.5)*.08, jp=(Math.random()-.5)*.06;
   u.rate=job.rate+jr;
   u.pitch=natural||(pick&&want.test(pick.name))
     ? job.pitch+jp
-    : (job.voice==="f"?job.pitch+.25:job.pitch-.15)+jp;
+    : (curVoice==="f"?job.pitch+.25:job.pitch-.15)+jp;
   u.onstart=()=>{speaking=true;drawCapt();};
   u.onend=u.onerror=()=>{speaking=false;drawCapt();micOn();};
   speechSynthesis.speak(u);
@@ -972,7 +989,7 @@ async function serverSpeak(t){
     method:"POST",
     headers:{ "content-type":"application/json", apikey:SUPABASE_ANON,
               Authorization:"Bearer "+session.access_token },
-    body: JSON.stringify({ text: sayable(t), gender: job.voice })
+    body: JSON.stringify({ text: sayable(t), gender: curVoice, variant: curVariant })
   });
   if(!r.ok) throw new Error(String(r.status));
   const url=URL.createObjectURL(await r.blob());
@@ -1196,7 +1213,11 @@ function tick(){ secs++; const m=String(Math.floor(secs/60)).padStart(2,"0"), s=
 
 /* ============================ flow ============================ */
 function start(j){
-  callLive=false; muted=false; micOff(); job=j; log=[]; chips={}; secs=0; report=null; heard=""; finalTx=""; busy=false;
+  callLive=false; muted=false; micOff();
+  curVoice = Math.random()<0.5 ? "m" : "f";
+  curName  = ((ALT_NAMES[j.id]||{})[curVoice]) || "";
+  curVariant = Math.floor(Math.random()*3);
+  job=j; log=[]; chips={}; secs=0; report=null; heard=""; finalTx=""; busy=false;
   setForm({phone:j.cid});
   $("#navCall").classList.remove("hide");
   clearInterval(timer); timer=setInterval(tick,1000); $("#clock").textContent="00:00";
@@ -1226,6 +1247,8 @@ async function send(spoken){
 
 CHARACTER: ${job.persona}
 CALL: ${job.src}
+
+YOU ARE ${curName || "the caller"}, a ${curVoice==="f"?"woman":"man"}. Where the description above uses a different name or the wrong pronouns, use yours instead — everything else about the character stays exactly as written.
 
 THESE FACTS ARE FIXED. Never invent, change or contradict any of them:
 ${factSheet(job.id)}
