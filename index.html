@@ -240,6 +240,14 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
             mid-sentence without the caller jumping in.</div>
         </div>
 
+        <h1 style="margin-top:34px">Speech recognition</h1>
+        <div class="panel">
+          <div class="chips" id="langRow" style="margin-bottom:0"></div>
+          <div class="note" style="margin-top:10px">If the app mishears you often, try another
+            English variant — recognition accuracy changes a lot between them. Takes effect on
+            the next call.</div>
+        </div>
+
         <h1 style="margin-top:34px">Media slots</h1>
         <p class="sub">Every service has a numbered slot. Send Claude a link as
           “12: https://youtu.be/…” and it lands in the right place.</p>
@@ -862,6 +870,15 @@ function testVoice(gender){
   const p=pickVoice(gender); if(p){u.voice=p;u.lang=p.lang;}
   u.rate=1; speechSynthesis.speak(u);
 }
+function drawLang(){
+  const el=document.getElementById("langRow"); if(!el) return;
+  const cur=localStorage.getItem("oc_lang")||"en-US";
+  const opts=[["US English","en-US"],["UK English","en-GB"],["Indian English","en-IN"],["Australian","en-AU"]];
+  el.innerHTML=opts.map(([l,v])=>`<button class="chip ${cur==v?"on":""}" data-lg="${v}">${l}</button>`).join("");
+  el.querySelectorAll("[data-lg]").forEach(b=>b.onclick=()=>{
+    localStorage.setItem("oc_lang",b.dataset.lg); drawLang();
+  });
+}
 function drawPause(){
   const el=document.getElementById("pauseRow"); if(!el) return;
   const opts=[["Quick",450],["Normal",800],["Patient",1400]];
@@ -994,7 +1011,7 @@ function armSilence(){
 function commit(){
   clearTimeout(silenceT);
   const said=(finalTx||heard).trim();
-  if(!said || busy || !callLive) return;
+  if(said.length<2 || busy || !callLive) return;
   finalTx=""; heard=""; micOff(); send(said);
 }
 function micOff(){ clearTimeout(silenceT); if(rec){ try{rec.stop();}catch(e){} } listening=false; drawMic(); }
@@ -1007,7 +1024,7 @@ function startMic(keep){
   if(!SR||busy) return;
   hush();
   if(!keep){ finalTx=""; heard=""; }
-  rec=new SR(); rec.lang="en-US"; rec.continuous=false; rec.interimResults=true;
+  rec=new SR(); rec.lang=(localStorage.getItem("oc_lang")||"en-US"); rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
   rec.onresult=ev=>{
     let it="";
     for(let i=ev.resultIndex;i<ev.results.length;i++){
@@ -1015,7 +1032,7 @@ function startMic(keep){
       if(ev.results[i].isFinal) finalTx+=c+" "; else it+=c;
     }
     heard=(finalTx+it).trim(); drawCapt();
-    if(callLive && finalTx.trim()) armSilence();   // a final chunk means they stopped talking
+    if(callLive && heard) armSilence();
   };
   rec.onerror=ev=>{
     listening=false; drawMic();
@@ -1071,7 +1088,7 @@ function go(v){
   document.body.style.paddingBottom = (v==="call"&&job)?"110px":"24px";
   if(v==="results"){ if(!isAdmin){ go("board"); return; } drawResults(); }
   if(v==="learn") drawLearn();
-  if(v==="setup"){ drawSlots(); drawPause(); }
+  if(v==="setup"){ drawSlots(); drawPause(); drawLang(); }
   window.scrollTo(0,0);
 }
 function showErr(m){ const e=$("#callErr"); e.textContent=m; e.classList.remove("hide"); }
