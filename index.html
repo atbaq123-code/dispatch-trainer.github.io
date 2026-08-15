@@ -864,7 +864,7 @@ function testVoice(gender){
 }
 function drawPause(){
   const el=document.getElementById("pauseRow"); if(!el) return;
-  const opts=[["Instant",0],["Normal",250],["Patient",700]];
+  const opts=[["Quick",450],["Normal",800],["Patient",1400]];
   el.innerHTML=opts.map(([l,v])=>`<button class="chip ${pauseMs==v?"on":""}" data-pz="${v}">${l}</button>`).join("");
   el.querySelectorAll("[data-pz]").forEach(b=>b.onclick=()=>{
     pauseMs=+b.dataset.pz; localStorage.setItem("oc_pause",pauseMs); drawPause();
@@ -914,7 +914,7 @@ function sayable(t){
 
 let curAudio=null, ttsDead=false, ttsWarned=false;
 let callLive=false, silenceT=null, muted=false;
-let pauseMs = +(localStorage.getItem("oc_pause")||250);
+let pauseMs = +(localStorage.getItem("oc_pause")||800);
 let naturalOn = localStorage.getItem("oc_natural")!=="0";
 
 async function serverSpeak(t){
@@ -976,10 +976,20 @@ async function askMic(){
     return false;
   }
 }
+/* words people trail off on — if the line ends here they are still talking */
+const TRAILING=/\b(and|or|so|but|um|uh|the|a|an|to|for|with|is|it'?s|that|this|my|your|his|her|we|i|you|at|in|on|of|about|like|because|if|when|what|how|do|does|did|can|could|would|will|okay|ok|yeah|well|just)$/i;
+
+function graceFor(t){
+  const x=(t||"").trim();
+  if(!x) return pauseMs;
+  if(TRAILING.test(x)) return pauseMs+900;      // clearly mid-sentence
+  if(x.split(/\s+/).length<=2) return pauseMs+500;  // one or two words, probably not done
+  return pauseMs;
+}
 function armSilence(){
   clearTimeout(silenceT);
   if(!callLive) return;
-  silenceT=setTimeout(commit, pauseMs);
+  silenceT=setTimeout(commit, graceFor(finalTx||heard));
 }
 function commit(){
   clearTimeout(silenceT);
@@ -1015,8 +1025,10 @@ function startMic(keep){
   rec.onend=()=>{
     listening=false; drawMic();
     if(!callLive) return;
-    if((finalTx||heard).trim() && !busy){ commit(); return; }   // recogniser closed = they stopped
-    if(!muted && !busy && !speaking) setTimeout(()=>micOn(),80);
+    if(!muted && !busy && !speaking){
+      setTimeout(()=>micOn(),80);          // reopen — a gap may just be a breath
+      if((finalTx||heard).trim()) armSilence();
+    }
   };
   try{ rec.start(); listening=true; hideErr(); drawMic(); drawCapt(); }
   catch(e){ showErr("Voice input could not start. Type your line instead."); }
