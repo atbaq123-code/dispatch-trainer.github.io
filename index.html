@@ -229,7 +229,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
     <button class="nav on" data-go="board">Calls</button>
     <button class="nav hide" id="navCall" data-go="call">New job</button>
     <button class="nav hide" id="navRev" data-go="review">Review</button>
-    <button class="nav hide" id="navResults" data-go="results">Results</button>
+    <button class="nav" id="navResults" data-go="results">Results</button>
     <button class="nav" data-go="setup">Settings</button>
     <button class="nav" id="outBtn" style="border:1px solid rgba(255,255,255,.25)">Sign out</button>
     <span class="nav" id="whoTop" style="color:#8FA0B2;cursor:default"></span>
@@ -1190,7 +1190,7 @@ function go(v){
   if(sec){ sec.classList.remove("enter"); void sec.offsetWidth; sec.classList.add("enter"); }
   $("#clockWrap").classList.toggle("hide",v!=="call");
   document.body.style.paddingBottom = (v==="call"&&job)?"110px":"24px";
-  if(v==="results"){ if(!isAdmin){ go("board"); return; } drawResults(); }
+  if(v==="results") drawResults();
   if(v==="learn") drawLearn();
   if(v==="home") drawHome();
   if(v==="setup"){ drawSlots(); drawPause(); drawLang(); }
@@ -1865,7 +1865,7 @@ async function loadMe(session){
   $("#resTitle").textContent=isAdmin?"Team results":"My results";
   $("#outBtn").textContent=isGuest?"Exit guest":"Sign out";
   $("#whoTop").textContent = isGuest ? "Guest" : ((data&&data.full_name)||me.email||"");
-  $("#navResults").classList.toggle("hide", !isAdmin);
+  $("#navResults").classList.remove("hide");
   gate(false);
   go(localStorage.getItem("oc_trained") ? "home" : "learn");
 }
@@ -1924,9 +1924,36 @@ function openRow(ix){
 
       ${r.recording_path?`<div class="lbl" style="margin-top:16px">Recording</div>
         <div id="aud${ix}"><button class="btn ghost" onclick="loadAudio(${ix})">Load recording</button></div>`:""}
-      <button class="btn ghost" style="margin-top:14px" onclick="copyCall(${ix})">Copy transcript</button>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost" onclick="copyCall(${ix})">Copy transcript</button>
+        ${isAdmin?`<button class="btn ghost" onclick="voidCall(${ix})">Zero this score</button>
+          <button class="btn ghost" style="border-color:var(--red);color:var(--red)"
+            onclick="deleteCall(${ix})">Delete</button>`:""}
+      </div>
+      <div class="note" id="act${ix}" style="margin-top:8px"></div>
     </div>`;
   box.classList.remove("hide");
+}
+async function voidCall(ix){
+  const r=(window.__rows||[])[ix]; if(!r||!isAdmin) return;
+  const out=document.getElementById("act"+ix);
+  if(!confirm("Set this score to zero? The transcript and recording are kept.")) return;
+  const { error } = await sb.from("results")
+    .update({ total:0, verdict:"VOIDED", scores:[] }).eq("id", r.id);
+  if(error){ out.textContent="Could not update: "+error.message; return; }
+  out.textContent="Score zeroed."; drawResults();
+}
+async function deleteCall(ix){
+  const r=(window.__rows||[])[ix]; if(!r||!isAdmin) return;
+  const out=document.getElementById("act"+ix);
+  if(!confirm("Delete this call permanently, including its recording? This cannot be undone.")) return;
+  if(r.recording_path){
+    const { error:se } = await sb.storage.from("recordings").remove([r.recording_path]);
+    if(se) console.warn("recording not removed:", se.message);
+  }
+  const { error } = await sb.from("results").delete().eq("id", r.id);
+  if(error){ out.textContent="Could not delete: "+error.message; return; }
+  drawResults();
 }
 async function loadAudio(ix){
   const r=(window.__rows||[])[ix], box=document.getElementById("aud"+ix);
@@ -1960,8 +1987,11 @@ async function drawHome(){
     {go:"board", ic:"📞", bg:"#E8F7F9", h:"Take a call", p:"Ten live scenarios with a real caller. You answer, you fill the job file, you get scored."},
     {go:"setup", ic:"⚙️", bg:"#EEF1F4", h:"Settings", p:"Caller voices, how long the caller waits before replying, speech recognition."}
   ];
-  if(isAdmin) tiles.splice(2,0,{go:"results", ic:"📊", bg:"#EAF9F1", h:"Team results",
-    p:"Every call your dispatchers have taken, with transcripts and recordings."});
+  tiles.splice(2,0, isAdmin
+    ? {go:"results", ic:"📊", bg:"#EAF9F1", h:"Team results",
+       p:"Every call your dispatchers have taken, with transcripts and recordings."}
+    : {go:"results", ic:"📊", bg:"#EAF9F1", h:"My results",
+       p:"Every call you have taken — your scores, what you missed, and the recordings."});
 
   $("#homeTiles").innerHTML = tiles.map(t=>`
     <button class="tile" data-tile="${t.go}">
@@ -2020,7 +2050,7 @@ async function drawResults(){
       </span>
       <span style="text-align:right;white-space:nowrap">
         <b style="color:var(--navy);font-size:16px;font-weight:700">${r.total}</b><span class="note">${isTyping?"%":"/35"}</span><br>
-        <span class="vd ${r.verdict==="PASS"?"ok":""}" style="font-size:10px;padding:2px 8px">${r.verdict||""}</span>
+        <span class="vd ${r.verdict==="PASS"?"ok":""}" style="font-size:10px;padding:2px 8px;${r.verdict==="VOIDED"?"background:#EEF1F4;color:#8493A2":""}">${r.verdict||""}</span>
       </span></div>
       <div class="hide" id="det${ix}" style="padding:4px 0 16px"></div>`;
   }).join("");
