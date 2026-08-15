@@ -458,13 +458,29 @@ const STEPS=[
   say:"Thank you for calling OnCall Locksmith, this is ______. How may I help you today?",
   note:"The approved greeting, every time. Company, your name, offer to help. Calm and confident — your tone sets theirs."},
  {t:"Identify the service",key:"job_type",
-  say:"Of course. What's the year, make and model? — Is it a push-to-start or a regular metal key? — And what happened to the original key?",
-  note:"Confirm the service, never assume it. Duplication, all-keys-lost and programming are three different jobs."},
+  say:{def:"Of course. Let me make sure I understand — what exactly is happening with the lock?",
+   auto:"Of course. What's the year, make and model? — Is it a push-to-start or a regular metal key? — And what happened to the original key?",
+   mailbox:"Of course. Are you locked out of it, or is the lock itself damaged? — Is it a mailbox at the house or a cluster box?",
+   residential:"Of course. Are you locked out right now? — Is it a knob, a deadbolt, or both? — Do you have a working key for it?",
+   commercial:"Of course. What kind of door and hardware is it? — Can the door still lock and secure at all? — How many doors are we talking about?",
+   safe:"Of course. What's the brand and model? — Is the keypad lighting up or responding at all? — Is there a key override on it?"},
+  note:{def:"Confirm the service, never assume it. Summarise it back before you move on.",
+   auto:"Duplication, all-keys-lost and programming are three different jobs. Ask all three questions.",
+   mailbox:"Locked out and lock damaged are different jobs. A cluster box may involve the post office.",
+   residential:"Lockout, rekey and replacement are different jobs — and whether they hold a working key decides which.",
+   commercial:"Whether the premises can still be secured decides the urgency. Count the doors before pricing.",
+   safe:"Brand and lock type decide everything. A dead battery is a very different job from a forgotten combination."}},
  {t:"Gather information",key:"address",
-  say:"What's the exact address? … And the color of the vehicle, so he can spot it? … Confirming the zip is 33617?",
-  note:"Address, callback, vehicle colour, cross-streets. Read the street number and zip back out loud."},
+  say:{def:"What's the service address? … And the zip code there? … Any gate code or unit number he'll need?",
+   auto:"What's the address where the vehicle is right now? … And the colour, so he can spot it? … Confirming the zip is 33617?",
+   commercial:"What's the address of the business? … And the business name? … Who will be on site to let him in?"},
+  note:{def:"Address, zip, unit or gate code. Read the street number and zip back out loud.",
+   auto:"Address, callback, vehicle colour, cross-streets. Read the street number and zip back out loud.",
+   commercial:"Business name and an on-site contact matter as much as the address."}},
  {t:"Educate",key:"chip:educate",
-  say:"Different vehicles and locks vary significantly in complexity — the technician identifies your exact security system, generates the key data, cuts to specification and programs it to your immobilizer.",
+  say:{def:"The price depends on the type and condition of the lock — the technician inspects it, explains what's needed, and gives you the exact price before doing any work. The onsite estimate is free and there's no obligation.",
+   auto:"Different vehicles vary significantly in complexity — the technician identifies your exact security system, generates the key data, cuts to specification and programs it to your immobilizer.",
+   safe:"Safe locks vary a lot by brand and grade — sometimes it's an external battery terminal, sometimes it's manipulation, and that's what decides the time and the price."},
   note:"THE GOLDEN RULE: educate before pricing. Build understanding of the work first, or any number sounds too high."},
  {t:"Price",key:"chip:price",
   say:"Once he's on site he'll confirm the exact price before he does anything — and we don't charge a service call.",
@@ -820,34 +836,34 @@ function factSheet(id){
 }
 
 const JOBS=[
- {id:"volvo",title:"Volvo XC40 — lost key",src:"Google Ads · 3:10 PM",lv:"Routine",cid:"(727) 555-3568",
+ {id:"volvo",kind:"auto",title:"Volvo XC40 — lost key",src:"Google Ads · 3:10 PM",lv:"Routine",cid:"(727) 555-3568",
   blurb:"Wants an estimate before anything else.",voice:"f",rate:1.0,pitch:1.05,
   persona:"Megan Cole. Opens by asking what an estimate would be for new keys for her Volvo XC40. It is a 2019, push-to-start, and she lost the original — but she only says each of those if asked directly. Car is at 7194 Keen Haven Road, Seminole, Florida, zip 33777. Polite and easy. Near the end she asks the dispatcher to have the tech call with the price before he comes."},
- {id:"gmc",title:"GMC Sierra won't start",src:"Google · 1:40 PM",lv:"Difficult",cid:"(813) 555-2210",
+ {id:"gmc",kind:"auto",title:"GMC Sierra won't start",src:"Google · 1:40 PM",lv:"Difficult",cid:"(813) 555-2210",
   blurb:"Key turns, engine won't fire. Anti-theft.",voice:"m",rate:1.0,pitch:.92,
   persona:"Jared Hicks. His 2015 GMC Sierra key stopped working. It is a regular metal key and it still turns in the ignition, but the engine will not start — AutoZone told him the anti-theft system is not engaging. He is at 7215 Jackson Springs Road and says the zip is 33615, though the correct zip for that street is 33634; if the dispatcher questions it he shrugs and says it's the same area, so the dispatcher has to decide what to enter. He asks how much a new key costs after being quoted programming. Calm, a bit vague on details."},
- {id:"mailbox",title:"Mailbox was shot",src:"Inbound · 10:05 AM",lv:"Routine",cid:"(727) 555-4367",
+ {id:"mailbox",kind:"mailbox",title:"Mailbox was shot",src:"Inbound · 10:05 AM",lv:"Routine",cid:"(727) 555-4367",
   blurb:"Wants it replaced. Asks if you even do mailboxes.",voice:"m",rate:1.0,pitch:.95,
   persona:"Ray Tanner. Someone shot at his mailbox and the lock no longer works; he wants it replaced. Address is 11250 122nd Avenue in Largo. He asks what you usually charge for that, and separately whether a locksmith is even allowed to work on a mailbox or whether he should call USPS. Friendly, slightly bemused by the whole thing."},
- {id:"newtenant",title:"Mailbox, no key, just moved in",src:"Google · 4:20 PM",lv:"Difficult",cid:"(727) 555-7788",
+ {id:"newtenant",kind:"mailbox",title:"Mailbox, no key, just moved in",src:"Google · 4:20 PM",lv:"Difficult",cid:"(727) 555-7788",
   blurb:"Refuses to book without a number first.",voice:"m",rate:1.05,pitch:.9,
   persona:"Dale Fenton. Just moved in, has no mailbox key and is locked out. Address is 4201 Gulf Boulevard, St. Pete Beach, 33706 — say it clearly, but if the dispatcher reads it back slightly wrong, for example 4021 instead of 4201, just say yes without noticing, the way a distracted person does. He opens with 'how much do you charge for a mailbox lock' and will not accept 'the tech will price it on site' — he pushes twice and needs a real number before he books."},
- {id:"panic",title:"Restaurant panic bar dragging",src:"Referral · 6:15 PM",lv:"Difficult",cid:"(813) 555-9042",
+ {id:"panic",kind:"commercial",title:"Restaurant panic bar dragging",src:"Referral · 6:15 PM",lv:"Difficult",cid:"(813) 555-9042",
   blurb:"Owner isn't on site. Wants the place secured tonight.",voice:"m",rate:1.08,pitch:.95,
   persona:"Victor Hale, owner of the Ironwood Grill restaurant. The panic bar on the back door keeps dragging and staff are struggling with it. Address 27227 State Road 56 in Wesley Chapel, zip 33544 — he gives the zip only if asked. He is not at the restaurant himself, his guys are, and his real worry is whether the premises will be secured tonight and whether it can be replaced the same evening. Needs reassurance more than a price."},
- {id:"altima",title:"Nissan Altima fob buttons dead",src:"Google Ads · 12:30 PM",lv:"Difficult",cid:"(813) 555-6119",
+ {id:"altima",kind:"auto",title:"Nissan Altima fob buttons dead",src:"Google Ads · 12:30 PM",lv:"Difficult",cid:"(813) 555-6119",
   blurb:"Borrowing the money. Needs a real number.",voice:"m",rate:1.0,pitch:1.0,
   persona:"Andre Marrero. 2008 Nissan Altima, push-to-start. He still has his fob and can start the car with it, but the lock and unlock buttons do nothing — if the dispatcher assumes he needs a spare programmed, correct them. He is at 8741 North 56th Street, Temple Terrace, zip 33617. He asks the price twice and explains he is borrowing the money from his mother, so he needs at least a rough estimate before he agrees. If the dispatcher puts him on hold and comes back with a range, he books immediately."},
- {id:"knob",title:"Apartment knob is sticking",src:"Inbound · 8:45 PM",lv:"Difficult",cid:"(727) 555-2054",
+ {id:"knob",kind:"residential",title:"Apartment knob is sticking",src:"Inbound · 8:45 PM",lv:"Difficult",cid:"(727) 555-2054",
   blurb:"No budget in mind. Pure price negotiation.",voice:"m",rate:1.0,pitch:.9,
   persona:"Stanley Burke. His apartment door knob is locked and sticking — he has the key in his hand but it will not turn the lock. He wants to know the price to unlock it AND the price to replace the knob, and he keeps circling back to price instead of giving details. When asked what budget he is working with he says he does not have one, it is his first time, he just wants a good price. He gives his address, 401 Shore Drive East in Oldsmar, 34677, only once he is satisfied on price. Books if offered one clear total."},
- {id:"biz",title:"Three locks, wants an estimate",src:"Website · 9:30 AM",lv:"Routine",cid:"(813) 555-3553",
+ {id:"biz",kind:"commercial",title:"Three locks, wants an estimate",src:"Website · 9:30 AM",lv:"Routine",cid:"(813) 555-3553",
   blurb:"Not today. Needs a number for his boss.",voice:"m",rate:1.02,pitch:.95,
   persona:"Colin Mercer of Martin Repair Shop, 9245 4th Street North, St. Pete, 33704. Wants to know the cost to change the locks on the front doors of the business — three doors, one lock each, though he only counts them up if asked. He states plainly that he does not want anyone sent today; he needs an estimate to pass to his boss for approval. He asks whether there is a charge for the trip, and later asks whether he could just text photos of the locks to get a price over the phone."},
- {id:"truck",title:"Freightliner spare key",src:"Inbound · 5:50 PM",lv:"Routine",cid:"(813) 555-1481",
+ {id:"truck",kind:"auto",title:"Freightliner spare key",src:"Inbound · 5:50 PM",lv:"Routine",cid:"(813) 555-1481",
   blurb:"Not on site. Needs it scheduled for tomorrow.",voice:"m",rate:1.05,pitch:.9,
   persona:"Devin Yates. Calling to ask whether you can make keys for commercial vehicles — a 2025 Freightliner Cascadia. He is not at the truck and is leaving in about an hour and a half, so the job has to be scheduled; he would take 9:00 AM. The truck is at 11555 East Sligh Avenue in Seffner, zip 33584, and he has to look the zip up. He says 'spare keys' at the start, but if the dispatcher confirms whether he still has a working key he admits he lost it completely. Asks for a rough estimate at the end."},
- {id:"child",title:"Child locked in vehicle",src:"Inbound · 2:05 PM",lv:"Critical",cid:"(813) 555-0198",
+ {id:"child",kind:"auto",title:"Child locked in vehicle",src:"Inbound · 2:05 PM",lv:"Critical",cid:"(813) 555-0198",
   blurb:"97 degrees out. Triage before anything else.",voice:"m",rate:1.22,pitch:1.1,
   persona:"Mark Delgado, 40. His 2-year-old daughter is locked inside his 2021 Ford Explorer in direct afternoon sun at 3358 Noble Creek Place, Lutz FL 33558. Panicking, talking fast, repeating himself, wants someone NOW. If the dispatcher does not tell him to call 911 first and stay with the child, he keeps escalating."}
 ];
@@ -1173,7 +1189,7 @@ function drawSteps(){
     return `<div class="step ${n?"now":""} ${d?"done":""}">
       <span class="tick ${d?"":"no"}">${d?"✓":"○"}</span>
       <div style="flex:1"><div class="st">${s.t}</div>
-      ${n?`<div class="note">${s.note}</div><div class="say">${s.say}</div>`:""}</div></div>`;
+      ${n?`<div class="note">${forKind(s.note)}</div><div class="say">${forKind(s.say)}</div>`:""}</div></div>`;
   }).join("");
   $("#tabScript").textContent="Script "+STEPS.filter(s=>stepDone(s,f)).length+"/7";
 }
@@ -1435,6 +1451,11 @@ function media(n){
   return h;
 }
 
+function forKind(v){
+  if(typeof v!=="object"||v===null) return v;
+  const k=(job&&job.kind)||"def";
+  return v[k]||v.def||Object.values(v)[0];
+}
 function drawLearn(){
   const b=$("#learnBody");
   b.innerHTML=`<div class="seg" style="margin-bottom:16px;flex-wrap:wrap">
@@ -1461,8 +1482,8 @@ function drawLearn(){
 
       <div class="panel"><div class="lbl">Universal call flow</div>
         ${STEPS.map((x,i)=>`<div class="step"><span style="color:var(--gold);font-weight:700;min-width:20px">${i+1}</span>
-          <div><div class="st">${x.t}</div><div class="note">${x.note}</div>
-          <div class="say">${x.say}</div></div></div>`).join("")}</div>
+          <div><div class="st">${x.t}</div><div class="note">${forKind(x.note)}</div>
+          <div class="say">${forKind(x.say)}</div></div></div>`).join("")}</div>
 
       <div class="panel"><div class="lbl">Five emotional states — tap to reveal the response</div>
         ${STATES_EMO.map((e,i)=>`<button class="opt" data-emo="${i}">
@@ -1800,7 +1821,7 @@ function init(){
   $("#jobSource").innerHTML=SOURCES.map(t=>`<option value="${t}">${t||"Job source"}</option>`).join("");
   $("#guideSteps").innerHTML=STEPS.map((s,i)=>`<div class="step">
     <span style="color:var(--gold);font-weight:700;min-width:20px">${String(i+1).padStart(2,"0")}</span>
-    <div><div class="st">${s.t}</div><div class="note">${s.note}</div><div class="say">${s.say}</div></div></div>`).join("");
+    <div><div class="st">${s.t}</div><div class="note">${forKind(s.note)}</div><div class="say">${forKind(s.say)}</div></div></div>`).join("");
   $("#guideCards").innerHTML=GUIDE_CARDS.map(([q,a])=>`<div class="panel">
     <div style="font-weight:600;color:var(--navy);margin-bottom:5px">${q}</div>
     <div style="font-size:13.5px;color:#5D6C7B">${a}</div></div>`).join("");
