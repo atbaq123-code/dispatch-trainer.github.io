@@ -912,9 +912,16 @@ async function ask(messages, system, mode){
 }
 
 function toJSON(raw){
-  const c=raw.replace(/```json|```/g,"").trim();
-  const s=c.indexOf("{"), e=c.lastIndexOf("}");
-  return JSON.parse(s>=0?c.slice(s,e+1):c);
+  let c=raw.replace(/```json|```/g,"").trim();
+  const a=c.indexOf("{"), b=c.lastIndexOf("}");
+  if(a>=0) c=c.slice(a,b+1);
+  try{ return JSON.parse(c); }catch(e){}
+  let f=c.replace(/[\u0000-\u001F]+/g," ")
+         .replace(/[\u201C\u201D]/g,"'")
+         .replace(/[\u2018\u2019]/g,"'")
+         .replace(/,\s*([}\]])/g,"$1");
+  try{ return JSON.parse(f); }catch(e){}
+  throw new Error("unparseable");
 }
 
 /* ============================ voice ============================ */
@@ -1428,17 +1435,35 @@ HANDBOOK STANDARDS — judge against these, not generic call-centre theory:
 
 Also flag any checklist item ticked without actually doing it.
 
-Score each category 0-5. Reply with ONLY this JSON, no markdown:
+Score each category 0-5. Reply with ONLY valid JSON, no markdown. Inside string values use single quotes, never double quotes, and never a line break.
 {"scores":[{"c":"Greeting & Tone (10%)","s":0,"n":"max 12 words"}, ... one object for each of the 7 categories in this exact order: ${CATS.join(", ")}],"data":[{"f":"field","got":"what they typed","should":"what is actually correct"}],"strengths":["2 items, max 15 words"],"fixes":["3 items, max 18 words"],"rewrite":{"said":"one weak line they actually said","better":"a stronger version using approved wording"},"verdict":"PASS or NEEDS WORK"}
 Leave "data" empty if every field matches.`;
 
   try{
-    const raw=await ask([{role:"user",content:transcript}],system);
-    report=toJSON(raw);
+    let raw=await ask([{role:"user",content:transcript}],system,"review");
+    try{ report=toJSON(raw); }
+    catch(e1){
+      const fixed=await ask(
+        [{role:"user",content:"Return this as valid JSON and nothing else. Use single quotes inside string values and keep every string on one line:\n\n"+raw}],
+        "You repair malformed JSON. Output only the corrected JSON.","review");
+      report=toJSON(fixed);
+    }
     report.total=(report.scores||[]).reduce((a,b)=>a+(Number(b.s)||0),0);
-    drawReview(); clearInterval(timer); saveResult();
+    drawReview(); clearInterval(timer); await saveResult(blob, f);
     $("#navRev").classList.remove("hide"); go("review");
-  }catch(e){ showErr("The review did not come back: "+e.message); }
+  }catch(e){
+    try{
+      await sb.from("results").insert({
+        user_id: me.id, scenario: job.title, scenario_id: job.id,
+        transcript: log.filter(m=>m.w!=="sys").map(m=>({w:m.w,t:m.t})),
+        job_form: f, caller_name: curName,
+        recording_path: await uploadRecording(blob),
+        total: 0, verdict: "NOT SCORED", scores: [], data_errors: [], fixes: [],
+        duration_secs: secs
+      });
+    }catch(e2){ console.warn(e2); }
+    showErr("Scoring failed ("+e.message+") but the call was saved — the transcript and recording are in Results.");
+  }
   busy=false; drawMic();
 }
 
@@ -1844,7 +1869,7 @@ async function loadMe(session){
   gate(false);
   go(localStorage.getItem("oc_trained") ? "home" : "learn");
 }
-async function saveResult(){
+async function saveResult(blob, f){
   if(!me||!report||isGuest) return;
   try{
     await sb.from("results").insert({
