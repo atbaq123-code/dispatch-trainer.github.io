@@ -718,6 +718,37 @@ const GLOSSARY=[
  ["Fail-safe / fail-secure","Electronic lock unlocks / stays locked on power loss, respectively."]
 ];
 
+/* ---- typing test: a caller talking for about two minutes ---- */
+const DICTATION=[
+ {v:"m",t:"Yeah, hi, how you doing. So I've got kind of a situation here. I'm out at the Publix off Bruce B Downs, and I locked my keys inside my truck. It's a 2019 Ford F-150, dark blue, and it's parked around the back near the loading area. The address here is 2740 Bruce B Downs Boulevard, Wesley Chapel, and I think the zip is 33544. My name is Gregory Alvarez, that's A-L-V-A-R-E-Z. Best number to reach me is 813-555-0173. Now here's the thing, my wife has the spare key but she's at work until about six o'clock, and I've got my dog in the truck with me, well, in the truck, and it's pretty warm out today so I'd rather not wait that long. The doors are all locked, I checked every one of them, and the windows are up. I don't have any kind of roadside assistance, I cancelled that last year. I do have my license and the registration is in the glovebox, so if your guy needs to see something I can show him my ID at least. How soon do you think somebody could get out here? And I guess the other question is what am I looking at price-wise, roughly, because I've got maybe eighty dollars cash on me and I'd have to run to an ATM otherwise."},
+ {v:"f",t:"Hi there, I hope you can help me. I'm a property manager and I've got a unit turning over tomorrow morning, so this is a little bit urgent. The property is at 4218 Woodmont Drive, that's in Land O' Lakes, 34638. It's building C, unit 212, and there's a gate code to get in, it's 4-9-3-1. What I need is the locks changed on the front door and the back sliding door, and I'd like them both keyed alike if that's possible, so the new tenant only carries one key. The current locks are those bronze Kwikset deadbolts, I think they're maybe ten years old, and honestly the back one sticks pretty badly so it might need replacing rather than just rekeying. My name is Patricia Nunez, and you can reach me on 727-555-0244. I'm not going to be on site, but my maintenance guy Danny will be there from eight in the morning, and his number is 727-555-0290. I'd need an invoice made out to Coastline Property Group for the accounting side. Can you tell me roughly what three locks would run, and whether your technician can be out first thing? The new tenant is picking up keys at noon so we're a little tight on time."},
+ {v:"m",t:"Hey, so my key broke off. I was turning it in the front door of my shop this morning and it just snapped, and about half of it is still down inside the lock. The shop is Riverside Auto Detailing, we're at 9245 Fourth Street North in Saint Petersburg, zip 33704. My name's Colin Marsh, M-A-R-S-H, and my cell is 813-555-0318. Right now I've got two employees standing outside in the parking lot waiting on me and we open at nine, so I'm kind of stuck. The lock itself is one of those older mortise ones, it came with the building, and it's been getting harder to turn for probably a month now. I still have the other half of the key here in my hand if that helps. There's a back door but I don't have a key for that one at all, the previous owner never gave me one. What I'm wondering is whether your guy can get the broken piece out and save the lock, or whether I'm looking at replacing the whole thing. And if we're replacing it, I'd want something better than what's on there now. Can somebody get out here this morning? I can meet him out front."}
+];
+function lev(a,b){
+  const m=a.length,n=b.length; if(!m)return n; if(!n)return m;
+  let prev=Array.from({length:n+1},(_,j)=>j),cur=new Array(n+1);
+  for(let i=1;i<=m;i++){cur[0]=i;
+    for(let j=1;j<=n;j++) cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    [prev,cur]=[cur,prev];}
+  return prev[n];
+}
+const normW=t=>t.toLowerCase().replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(Boolean);
+function coverage(src,typed){
+  const S=normW(src), T=normW(typed), set=new Set(T);
+  let hit=0;
+  for(const w of S){
+    if(set.has(w)){hit++;continue;}
+    if(w.length>3 && T.some(t=>Math.abs(t.length-w.length)<=2 && lev(t,w)<=Math.max(1,Math.floor(w.length/4)))) hit++;
+  }
+  return {pct:Math.round(hit/S.length*100), src:S.length, typed:T.length};
+}
+const digitsOf=t=>(t.match(/\d[\d-]{2,}/g)||[]).map(d=>d.replace(/\D/g,"")).filter(d=>d.length>=4);
+function detailScore(src,typed){
+  const want=[...new Set(digitsOf(src))], got=typed.replace(/\D/g,"");
+  const hit=want.filter(d=>got.includes(d));
+  return {want,hit,pct:want.length?Math.round(hit.length/want.length*100):100};
+}
+
 const EXAM=[
  {q:"What is the Golden Rule of the handbook?",
   o:["Answer within three rings","Educate before pricing","Always give a range","Never transfer a call"],a:1},
@@ -1196,8 +1227,16 @@ async function send(spoken){
 CHARACTER: ${job.persona}
 CALL: ${job.src}
 
-THESE FACTS ARE FIXED. Never invent, change or contradict them, and never reveal one that has not been asked for:
+THESE FACTS ARE FIXED. Never invent, change or contradict any of them:
 ${factSheet(job.id)}
+
+WITHHOLD EVERY ONE OF THOSE FACTS UNTIL IT IS DIRECTLY ASKED FOR. This is the whole point of the exercise — the dispatcher is being tested on whether they ask.
+- Never volunteer your name, phone number, address, city or zip. Not in your opening line, not while explaining the problem, not while complaining about the price, not ever.
+- Give a fact only when the dispatcher asks for that specific fact. If they ask for the address, give the street — the city and zip only if they ask for those too.
+- If they ask for several things in one breath, answer only what they asked.
+- If they try to close the call or promise a technician without having asked where you are, do NOT help them. Say something like "don't you need to know where I am?" or "you didn't take my address" — sounding doubtful, not instructive.
+- If they never ask for your number, never offer it, even at the end of the call.
+Opening lines describe the PROBLEM only: what broke, what you need, or what it costs.
 
 Speak natural American English on the phone, 1-3 short sentences per turn, with the small hesitations real callers have. Your reply is read aloud, so no asterisks, no stage directions, no emoji. React honestly: warm up if the dispatcher is calm, competent and specific; get impatient if they are vague, robotic or slow. Give information only when actually asked — your number already showed on their screen from caller ID.
 
@@ -1300,6 +1339,55 @@ function drawReview(){
 
 /* ============================ academy ============================ */
 let aTab="found", aSvc=null, exI=0, exScore=0, exPicked=null;
+let typeRun=false, typeDone=null, typeItem=null, typeLeft=180, typeTimer=null, typeT0=0;
+
+async function speakDictation(item){
+  hush();
+  if(naturalOn && !ttsDead){
+    try{
+      const { data:{ session } } = await sb.auth.getSession();
+      const r=await fetch(SUPABASE_URL+"/functions/v1/tts",{method:"POST",
+        headers:{"content-type":"application/json",apikey:SUPABASE_ANON,
+                 Authorization:"Bearer "+session.access_token},
+        body:JSON.stringify({text:item.t,gender:item.v})});
+      if(r.ok){
+        const url=URL.createObjectURL(await r.blob());
+        curAudio=new Audio(url); curAudio.play(); return;
+      }
+    }catch(e){}
+  }
+  if(!canSpeak) return;
+  const u=new SpeechSynthesisUtterance(item.t);
+  const p=pickVoice(item.v); if(p){u.voice=p;u.lang=p.lang;}
+  u.rate=.95; speechSynthesis.speak(u);
+}
+
+function finishTyping(){
+  clearInterval(typeTimer); hush();
+  const box=document.getElementById("tBox");
+  const typed=box?box.value:"";
+  const secs=Math.max(15,Math.round((Date.now()-typeT0)/1000));
+  const words=normW(typed).length;
+  const wpm=Math.round(words/(secs/60));
+  const c=coverage(typeItem.t,typed);
+  const d=detailScore(typeItem.t,typed);
+  typeDone={ wpm, words, mins:(secs/60).toFixed(1), cover:c.pct, detail:d.pct,
+             missed:d.want.filter(x=>!d.hit.includes(x)),
+             pass: wpm>=25 && c.pct>=55 && d.pct>=80 };
+  saveTyping(typeDone);
+  drawLearn(); window.scrollTo(0,0);
+}
+async function saveTyping(r){
+  if(!me||isGuest) return;
+  try{
+    await sb.from("results").insert({
+      user_id: me.id, scenario:"Typing test", scenario_id:"typing",
+      total:r.cover, verdict:r.pass?"PASS":"NEEDS WORK",
+      scores:[{c:"Words per minute",s:r.wpm},{c:"Captured",s:r.cover},{c:"Numbers",s:r.detail}],
+      data_errors:[], fixes:[], duration_secs:Math.round(r.mins*60)
+    });
+  }catch(e){ console.warn(e); }
+}
 
 function media(n){
   const o = MEDIA[n] || {};
@@ -1322,7 +1410,7 @@ function media(n){
 function drawLearn(){
   const b=$("#learnBody");
   b.innerHTML=`<div class="seg" style="margin-bottom:16px;flex-wrap:wrap">
-    ${[["found","Foundations"],["svc","25 Services"],["kit","Equipment"],["gloss","Glossary"],["exam","Exam"]]
+    ${[["found","Foundations"],["svc","25 Services"],["kit","Equipment"],["gloss","Glossary"],["type","Typing test"],["exam","Exam"]]
       .map(([k,l])=>`<button data-at="${k}" class="${aTab===k?"on":""}"
        style="border:1px solid var(--line);padding:8px 12px;border-radius:4px">${l}</button>`).join("")}
     </div><div id="aBody"></div>`;
@@ -1449,6 +1537,76 @@ function drawLearn(){
         || '<div class="note">Nothing matches that.</div>';
     };
     $("#gq").oninput=paint; paint();
+    return;
+  }
+
+  if(aTab==="type"){
+    if(!typeRun){
+      a.innerHTML=`<h1>Typing test</h1>
+        <p class="sub">A customer talks for about two minutes. Type what they tell you while
+        they speak — you are being scored on how much of the information you capture and how
+        fast, not on spelling.</p>
+        <div class="panel">
+          <div class="lbl">How it works</div>
+          <ul>
+            <li>Press start and the caller begins talking straight away.</li>
+            <li>Type as they go. You get three minutes in total.</li>
+            <li>Spelling and punctuation are ignored — near-misses still count.</li>
+            <li>Names, numbers and addresses are scored separately, because those are the ones that matter.</li>
+          </ul>
+        </div>
+        <button class="btn" id="tStart">Start the test</button>`;
+      $("#tStart").onclick=()=>{
+        typeItem=DICTATION[Math.floor(Math.random()*DICTATION.length)];
+        typeRun=true; typeLeft=180; typeT0=Date.now(); drawLearn();
+        setTimeout(()=>{ if(canSpeak||naturalOn) speakDictation(typeItem); },300);
+        clearInterval(typeTimer);
+        typeTimer=setInterval(()=>{
+          typeLeft--; const el=document.getElementById("tClock");
+          if(el) el.textContent=Math.floor(typeLeft/60)+":"+String(typeLeft%60).padStart(2,"0");
+          if(typeLeft<=0) finishTyping();
+        },1000);
+      };
+      return;
+    }
+    if(typeDone){
+      const r=typeDone;
+      a.innerHTML=`<h1>Typing test result</h1>
+        <div class="panel" style="text-align:center">
+          <div class="tot">${r.wpm}<span style="font-size:20px;color:var(--muted)"> wpm</span></div>
+          <div class="vd ${r.pass?"ok":""}" style="display:inline-block;margin-top:10px">${r.pass?"PASSED":"NEEDS PRACTICE"}</div>
+        </div>
+        <div class="cols">
+          <div class="panel"><div class="lbl">What you captured</div>
+            <div class="diff"><span>Of everything the caller said</span><b style="color:var(--navy)">${r.cover}%</b></div>
+            <div class="diff"><span>Numbers and addresses</span><b style="color:${r.detail>=80?"var(--green)":"var(--red)"}">${r.detail}%</b></div>
+            <div class="diff"><span>Words typed</span><b style="color:var(--navy)">${r.words}</b></div>
+            <div class="diff"><span>Time used</span><b style="color:var(--navy)">${r.mins} min</b></div>
+            ${r.missed.length?`<div class="lbl" style="margin-top:14px">Numbers you missed</div>
+              <div class="note">${r.missed.join(" · ")}</div>`:`<div class="note" style="margin-top:14px;color:var(--green)">
+              Every number captured.</div>`}
+          </div>
+          <div class="panel"><div class="lbl">What the caller actually said</div>
+            <div class="note" style="font-size:13px;line-height:1.6">${typeItem.t}</div></div>
+        </div>
+        <button class="btn" id="tAgain">Try another one</button>`;
+      $("#tAgain").onclick=()=>{typeRun=false;typeDone=null;drawLearn();};
+      return;
+    }
+    a.innerHTML=`<h1>Listening…</h1>
+      <div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="lbl" style="margin:0">Time left</span>
+        <b id="tClock" style="font-size:26px;color:var(--navy)">3:00</b>
+      </div>
+      <textarea class="in" id="tBox" placeholder="Type what the caller is telling you…"
+        style="min-height:240px;font-family:Inter,sans-serif"></textarea>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="tDone">I'm finished</button>
+        <button class="btn ghost" id="tReplay">Play again</button>
+      </div>`;
+    setTimeout(()=>{const b=document.getElementById("tBox"); if(b) b.focus();},80);
+    $("#tDone").onclick=finishTyping;
+    $("#tReplay").onclick=()=>speakDictation(typeItem);
     return;
   }
 
@@ -1582,20 +1740,26 @@ async function drawResults(){
   const {data,error}=await q;
   if(error){ wrap.innerHTML='<div class="note">Could not load results: '+error.message+'</div>'; return; }
   if(!data||!data.length){ wrap.innerHTML='<div class="note">No calls scored yet.</div>'; return; }
-  const avg=Math.round(data.reduce((a,b)=>a+(b.total||0),0)/data.length*10)/10;
+  const calls=data.filter(r=>r.scenario_id!=="typing");
+  const avg=calls.length?Math.round(calls.reduce((a,b)=>a+(b.total||0),0)/calls.length*10)/10:0;
   const pass=data.filter(r=>r.verdict==="PASS").length;
-  $("#resSub").textContent=data.length+" calls · average "+avg+"/35 · "+pass+" passed";
+  const typings=data.length-calls.length;
+  $("#resSub").textContent=calls.length+" calls · average "+avg+"/35 · "+pass+" passed"+
+    (typings?" · "+typings+" typing tests":"");
   wrap.innerHTML=data.map(r=>{
     const d=new Date(r.created_at);
     const who=isAdmin&&r.profiles&&r.profiles.full_name?r.profiles.full_name+" — ":"";
-    const errs=(r.data_errors&&r.data_errors.length)?r.data_errors.length+" field error"+(r.data_errors.length>1?"s":""):"clean ticket";
+    const isTyping=r.scenario_id==="typing";
+    const wpm=isTyping?((r.scores||[])[0]||{}).s:null;
+    const errs=isTyping?(wpm+" wpm · "+r.total+"% captured")
+      :((r.data_errors&&r.data_errors.length)?r.data_errors.length+" field error"+(r.data_errors.length>1?"s":""):"clean ticket");
     return `<div class="diff" style="align-items:flex-start">
       <span style="flex:1">
         <b style="color:var(--navy);font-weight:600">${who}${r.scenario||""}</b><br>
         <span class="note">${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} · ${errs}</span>
       </span>
       <span style="text-align:right;white-space:nowrap">
-        <b style="color:var(--navy);font-size:16px;font-weight:700">${r.total}</b><span class="note">/35</span><br>
+        <b style="color:var(--navy);font-size:16px;font-weight:700">${r.total}</b><span class="note">${isTyping?"%":"/35"}</span><br>
         <span class="vd ${r.verdict==="PASS"?"ok":""}" style="font-size:10px;padding:2px 8px">${r.verdict||""}</span>
       </span></div>`;
   }).join("");
