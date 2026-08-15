@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>OnCall Locksmith — Dispatcher Training</title>
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Dispatch" />
+<meta name="theme-color" content="#212B3B" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#212B3B; --bg:#EDF1F4; --card:#FFF; --line:#CFD9E2; --line2:#E3EAF0;
+  --teal:#2BAFBD; --capt:#5FD8E4; --gold:#F5C63D; --text:#354352; --muted:#8493A2;
+  --green:#3CC47C; --red:#DD5240;
+}
+*{box-sizing:border-box;}
+body{margin:0; background:var(--bg); color:var(--text); font-family:'Poppins',system-ui,sans-serif;
+  font-size:14px; line-height:1.45; padding-bottom:100px;}
+button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit;}
+:focus-visible{outline:2px solid var(--teal); outline-offset:1px;}
+.hide{display:none !important;}
+
+.top{background:var(--navy); color:#fff; padding:9px 14px; display:flex; align-items:center;
+  justify-content:space-between; gap:10px; position:sticky; top:0; z-index:30; flex-wrap:wrap;}
+.logo{background:var(--gold); color:var(--navy); font-weight:700; letter-spacing:.06em;
+  padding:4px 10px; border-radius:16px; font-size:12px; text-transform:uppercase;}
+.co{font-weight:600;}
+.navs{display:flex; gap:3px; flex-wrap:wrap;}
+.nav{font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em;
+  padding:6px 10px; border-radius:4px; color:#A6B3C2;}
+.nav.on{background:rgba(255,255,255,.13); color:#fff;}
+.clock{font-family:Inter,monospace; font-size:13px; display:flex; align-items:center; gap:7px;}
+.rec{width:8px;height:8px;border-radius:50%;background:var(--red);animation:p 1.4s infinite;}
+@keyframes p{50%{opacity:.25;}}
+
+.shell{display:grid; grid-template-columns:172px 1fr; max-width:1400px; margin:0 auto;}
+@media(max-width:980px){.shell{grid-template-columns:1fr;} .side{display:none;}}
+.side{background:#fff; border-right:1px solid var(--line2); padding:14px 0; min-height:70vh;}
+.side-i{padding:9px 16px; font-size:13px; color:#5D6C7B;}
+.side-new{margin:0 12px 10px; background:var(--gold); color:var(--navy); font-weight:600;
+  border-radius:5px; padding:9px; width:calc(100% - 24px); font-size:13px;}
+.main{padding:16px 14px 20px; min-width:0;}
+.crumb{font-size:10px; letter-spacing:.06em; color:var(--muted); text-transform:uppercase; margin-bottom:10px;}
+h1{font-size:24px; font-weight:600; color:var(--navy); margin:0 0 3px;}
+.sub{color:var(--muted); font-size:13px; margin:0 0 18px; max-width:62ch;}
+
+.cols{display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;}
+@media(max-width:900px){.cols{grid-template-columns:1fr;}}
+.panel{background:var(--card); border:1px solid var(--line2); border-radius:6px; padding:16px; margin-bottom:14px;}
+.sect{font-size:16px; font-weight:600; color:var(--navy); margin:0 0 13px;}
+.f{position:relative; margin-bottom:11px;}
+.in{width:100%; border:1px solid var(--line); border-radius:4px; padding:12px 11px;
+  font-family:Inter,sans-serif; font-size:14px; color:var(--text); background:#fff;}
+.in::placeholder{color:#9BA9B7;}
+.in:focus{border-color:var(--teal); outline:none;}
+.in.ok{background:#F4FBF7; border-color:#B6E3CB;}
+.tag{position:absolute; top:-7px; left:9px; background:#fff; padding:0 5px; font-size:10px; color:var(--muted);}
+.g2{display:grid; grid-template-columns:2fr 1fr; gap:9px;}
+.gh{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
+textarea.in{min-height:78px; resize:vertical;}
+
+.chips{display:flex; gap:7px; flex-wrap:wrap; margin-bottom:14px;}
+.chip{border:1px solid var(--line); background:#fff; border-radius:20px; padding:7px 13px;
+  font-size:12px; font-weight:500; color:#6B7A89;}
+.chip.on{background:#EAF9F1; border-color:var(--green); color:#1F7A4C;}
+
+.rail{background:var(--card); border:1px solid var(--line2); border-radius:6px; overflow:hidden;}
+.rail-hd{background:#F7F9FB; border-bottom:1px solid var(--line2); padding:9px 12px;
+  display:flex; justify-content:space-between; align-items:center; gap:8px;}
+.seg{display:flex; gap:2px;}
+.seg button{font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em;
+  padding:6px 10px; border-radius:4px; color:var(--muted);}
+.seg button.on{background:var(--navy); color:#fff;}
+.log{padding:12px; max-height:44vh; overflow-y:auto;}
+.msg{margin-bottom:11px; font-family:Inter,sans-serif;}
+.who{font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:2px;}
+.msg.caller .who{color:var(--red);} .msg.you .who{color:var(--teal);}
+.bub{font-size:14px; line-height:1.5; background:#F2F5F8; padding:8px 10px; border-radius:5px;}
+.msg.you .bub{background:#E8F7F9;}
+.sys{text-align:center; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; padding:8px 0;}
+.step{display:flex; gap:9px; padding:9px 12px; border-bottom:1px solid var(--line2); align-items:flex-start;}
+.step.now{background:#FFFBEE; box-shadow:inset 3px 0 0 var(--gold);}
+.step.done .st{color:var(--muted); text-decoration:line-through;}
+.tick{font-size:13px; color:var(--green); min-width:16px;} .tick.no{color:#C3CDD7;}
+.st{font-weight:600; font-size:13px; color:var(--navy);}
+.note{color:var(--muted); font-size:12px; margin-top:2px;}
+.say{border-left:3px solid var(--teal); background:#F4FBFC; padding:7px 9px; margin-top:6px;
+  font-family:Inter,sans-serif; font-size:12.5px; color:#2A5E66; border-radius:0 4px 4px 0;}
+
+.bar{position:fixed; left:0; right:0; bottom:0; z-index:40; background:rgba(24,32,45,.97);
+  color:#fff; padding:10px 14px calc(10px + env(safe-area-inset-bottom)); display:flex;
+  align-items:center; gap:12px; flex-wrap:wrap; box-shadow:0 -2px 14px rgba(0,0,0,.2);}
+.capt{flex:1; min-width:170px; text-align:center; color:var(--capt); font-size:19px; font-weight:500;}
+.capt.me{color:#fff; opacity:.75; font-size:16px;}
+.capt small{display:block; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:#7C8B9B;}
+.mic{width:62px;height:62px;border-radius:50%;background:var(--teal);color:#fff;font-size:11px;
+  font-weight:600;text-transform:uppercase;flex-shrink:0;}
+.mic.live{background:var(--red); animation:ring 1.5s ease-out infinite;}
+.mic:disabled{opacity:.4;cursor:not-allowed;animation:none;}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(221,82,64,.55);}100%{box-shadow:0 0 0 18px rgba(221,82,64,0);}}
+.barbtn{border:1px solid rgba(255,255,255,.3);border-radius:4px;padding:8px 11px;font-size:11px;
+  font-weight:600;text-transform:uppercase;color:#fff;}
+.barbtn.end{background:var(--red);border-color:var(--red);}
+.type{background:#2C3949;border:1px solid #3E4C5D;color:#fff;border-radius:4px;padding:9px 10px;
+  font-family:Inter,sans-serif;font-size:14px;min-width:140px;flex:1;}
+
+.btn{background:var(--gold);color:var(--navy);font-weight:600;border-radius:22px;padding:11px 30px;font-size:14px;}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--text);border-radius:5px;padding:10px 18px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.err{background:#FDECE9;color:#A63523;border:1px solid #F3C6BE;border-radius:5px;padding:9px 11px;
+  font-size:12.5px;margin-bottom:12px;}
+
+.jobs{display:grid; grid-template-columns:repeat(auto-fill,minmax(268px,1fr)); gap:12px;}
+.jc{background:#fff;border:1px solid var(--line2);border-radius:6px;text-align:left;overflow:hidden;
+  transition:box-shadow .13s,transform .13s;}
+.jc:hover{box-shadow:0 4px 14px rgba(33,43,59,.13);transform:translateY(-2px);}
+.jc-h{padding:9px 12px;border-bottom:1px solid var(--line2);display:flex;justify-content:space-between;
+  align-items:center;background:#F7F9FB;}
+.src{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+.pri{font-size:10px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:11px;
+  background:#EEF1F4;color:#6B7A89;}
+.pri.Critical{background:#FDECE9;color:#B33F2C;} .pri.Difficult{background:#FFF6E2;color:#9A7317;}
+.jc-b{padding:12px;} .jt{font-size:16px;font-weight:600;color:var(--navy);}
+.jd{font-size:12.5px;color:var(--muted);margin-top:5px;}
+
+.score{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;
+  border-bottom:1px solid var(--line2);}
+.pips{display:flex;gap:3px;} .pip{width:10px;height:10px;border-radius:2px;background:#DEE5EB;}
+.pip.on{background:var(--teal);}
+.tot{font-size:44px;font-weight:700;color:var(--navy);line-height:1;}
+.vd{padding:7px 16px;border-radius:20px;font-weight:700;font-size:14px;text-transform:uppercase;
+  background:#FDECE9;color:#B33F2C;} .vd.ok{background:#EAF9F1;color:#1F7A4C;}
+ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
+.lbl{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.diff{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line2);font-size:13px;}
+.diff b{color:var(--red);font-weight:600;}
+.setup{max-width:520px;margin:40px auto;padding:0 16px;}
+.prog{height:5px;background:#DDE4EA;border-radius:3px;overflow:hidden;margin-bottom:18px;}
+.prog i{display:block;height:100%;background:var(--gold);transition:width .3s;}
+.opt{display:block;width:100%;text-align:left;border:1px solid var(--line);background:#fff;
+  border-radius:6px;padding:13px 14px;margin-bottom:9px;font-size:14px;line-height:1.4;}
+.opt:hover{border-color:var(--teal);}
+.opt.right{border-color:var(--green);background:#EAF9F1;}
+.opt.wrong{border-color:var(--red);background:#FDECE9;}
+.opt.dim{opacity:.55;}
+.why{font-size:13px;color:#5D6C7B;margin-top:8px;padding-left:2px;}
+.ord{display:block;width:100%;text-align:left;border:1px solid var(--line);background:#fff;
+  border-radius:6px;padding:11px 13px;margin-bottom:8px;font-size:14px;}
+.ord.picked{background:#F7F9FB;color:var(--muted);border-style:dashed;}
+.slot{display:flex;gap:9px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--line2);}
+.slot b{color:var(--gold);min-width:20px;}
+.slot.bad{background:#FDECE9;}
+.big-say{font-size:17px;line-height:1.5;color:var(--navy);background:#F4FBFC;
+  border-left:3px solid var(--teal);padding:13px 15px;border-radius:0 5px 5px 0;margin:12px 0;}
+@media(prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important;}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div id="gate">
+  <div class="setup" style="margin-top:60px">
+    <div style="text-align:center;margin-bottom:22px">
+      <span class="logo" style="font-size:14px;padding:6px 14px">OnCall</span>
+      <div style="font-weight:600;color:var(--navy);margin-top:10px;font-size:18px">Dispatcher Training</div>
+    </div>
+    <div class="panel">
+      <div class="seg" style="margin-bottom:16px">
+        <button id="tabIn" class="on" style="flex:1;border:1px solid var(--line);padding:9px;border-radius:4px">Sign in</button>
+        <button id="tabUp" style="flex:1;border:1px solid var(--line);padding:9px;border-radius:4px">Register</button>
+      </div>
+      <div class="f hide" id="nameWrap"><input class="in" id="auName" placeholder="Full name" autocomplete="name"></div>
+      <div class="f"><input class="in" id="auEmail" type="email" placeholder="Work email" autocomplete="email"></div>
+      <div class="f"><input class="in" id="auPass" type="password" placeholder="Password" autocomplete="current-password"></div>
+      <button class="btn" id="auGo" style="width:100%">Sign in</button>
+      <div class="note" id="auMsg" style="margin-top:12px"></div>
+      <div style="border-top:1px solid var(--line2);margin:16px 0 0;padding-top:14px">
+        <button class="btn ghost" id="guestGo" style="width:100%">Continue as a guest</button>
+        <div class="note" style="margin-top:8px">Try it without an account. Your scores won't be
+          saved under your name, so your supervisor can't review them.</div>
+      </div>
+    </div>
+    <p class="note" style="text-align:center">Your scores are saved to your account so your supervisor can review them.</p>
+  </div>
+</div>
+
+<div class="top hide" id="topBar">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span class="logo">OnCall</span><span class="co">Locksmith · Dispatch</span>
+  </div>
+  <div class="navs">
+    <button class="nav" data-go="guide">Script</button>
+    <button class="nav" data-go="learn">Training</button>
+    <button class="nav on" data-go="board">Calls</button>
+    <button class="nav hide" id="navCall" data-go="call">New job</button>
+    <button class="nav hide" id="navRev" data-go="review">Review</button>
+    <button class="nav hide" id="navResults" data-go="results">Results</button>
+    <button class="nav" data-go="setup">Settings</button>
+    <button class="nav" id="outBtn" style="border:1px solid rgba(255,255,255,.25)">Sign out</button>
+    <span class="nav" id="whoTop" style="color:#8FA0B2;cursor:default"></span>
+  </div>
+  <div class="clock hide" id="clockWrap"><span class="rec"></span><span id="clock">00:00</span></div>
+</div>
+
+<div class="shell hide" id="shell">
+  <div class="side">
+    <button class="side-new">+ Create new</button>
+    <div class="side-i">OnCall Phone</div><div class="side-i">Schedule</div>
+    <div class="side-i">Map</div><div class="side-i">Jobs</div><div class="side-i">Clients</div>
+    <div class="side-i">Estimates</div><div class="side-i">Price book</div><div class="side-i">Reports</div>
+  </div>
+
+  <div class="main">
+    <!-- SETUP -->
+    <section id="v-setup" class="hide">
+      <div class="setup">
+        <h1>Account</h1>
+        <div class="panel">
+          <div class="lbl">Signed in as</div>
+          <div id="whoami" style="font-weight:600;color:var(--navy)"></div>
+          <div class="note" id="roleNote" style="margin-top:6px"></div>
+        </div>
+
+        <h1 style="margin-top:34px">Voice quality</h1>
+        <div class="panel">
+          <button class="chip" id="natTgl" style="font-size:13px;padding:10px 16px"></button>
+          <div class="note" id="natNote" style="margin-top:10px"></div>
+        </div>
+
+        <h1 style="margin-top:34px">How long the caller waits</h1>
+        <div class="panel">
+          <div class="chips" id="pauseRow" style="margin-bottom:0"></div>
+          <div class="note" style="margin-top:10px">How long a silence means you've finished
+            speaking. Shorter feels snappier; longer lets a trainee think mid-sentence.</div>
+        </div>
+
+        <h1 style="margin-top:34px">Media slots</h1>
+        <p class="sub">Every service has a numbered slot. Send Claude a link as
+          “12: https://youtu.be/…” and it lands in the right place.</p>
+        <div class="panel" id="slotList"></div>
+
+        <h1 style="margin-top:34px">Caller voices</h1>
+        <p class="sub">Pick the most human-sounding voices your browser has. On Windows, Microsoft
+          Edge offers "Natural" voices that sound far better than anything in Chrome — if the caller
+          sounds robotic, open the app in Edge and choose one below.</p>
+        <div class="panel">
+          <div class="f"><span class="tag">Male callers</span><select class="in" id="voiceM"></select></div>
+          <button class="btn ghost" id="testM" style="margin-bottom:14px">Test male voice</button>
+          <div class="f"><span class="tag">Female callers</span><select class="in" id="voiceF"></select></div>
+          <button class="btn ghost" id="testF">Test female voice</button>
+          <div class="note" id="voiceMsg" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULTS -->
+    <section id="v-results" class="hide">
+      <div class="crumb">Training # Scorecard</div>
+      <h1 id="resTitle">My results</h1>
+      <p class="sub" id="resSub"></p>
+      <div class="panel" id="resWrap"><div class="note">Loading…</div></div>
+    </section>
+
+    <!-- LEARN -->
+    <section id="v-learn" class="hide">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <div class="crumb">Dispatcher Academy # Training &amp; Operations Handbook v2.0</div>
+        <button class="nav" id="skipBtn" style="color:var(--muted)">Skip to calls →</button>
+      </div>
+      <div id="learnBody"></div>
+    </section>
+
+    <!-- BOARD -->
+    <section id="v-board">
+      <div class="crumb">Jobs # Incoming calls</div>
+      <h1>Take a call</h1>
+      <p class="sub">Answer with the mic, keep the caller talking, and fill the job form as you go.
+        When you hit Create, your entries get checked against what the caller actually said.</p>
+      <div class="err hide" id="boardErr"></div>
+      <div class="jobs" id="jobList"></div>
+    </section>
+
+    <!-- CALL -->
+    <section id="v-call" class="hide">
+      <div class="crumb">Jobs # Messages # New job</div>
+      <h1>New Job</h1>
+      <div class="err hide" id="callErr"></div>
+      <div class="chips" id="chipRow"></div>
+      <div class="cols">
+        <div>
+          <div class="panel">
+            <h2 class="sect">Client Details</h2>
+            <div class="f"><input class="in" data-k="client_name" placeholder="Client name"></div>
+            <div class="f"><input class="in" data-k="company_name" placeholder="Company name"></div>
+            <div class="g2">
+              <div class="f"><input class="in" data-k="phone" placeholder="Phone" inputmode="tel"></div>
+              <div class="f"><input class="in" data-k="ext" placeholder="Ext"></div>
+            </div>
+            <div class="f"><input class="in" data-k="email" placeholder="Email" inputmode="email"></div>
+          </div>
+          <div class="panel">
+            <h2 class="sect">Job Details</h2>
+            <div class="f"><input class="in" data-k="job_name" placeholder="Job name"></div>
+            <div class="f"><select class="in" data-k="job_type" id="jobType"></select></div>
+            <div class="f"><select class="in" data-k="job_source" id="jobSource"></select></div>
+            <div class="f"><textarea class="in" data-k="job_description"
+              placeholder="Job description — year, make, model, color, push-to-start or metal key, gate code"></textarea></div>
+          </div>
+        </div>
+        <div>
+          <div class="panel">
+            <h2 class="sect">Service Location</h2>
+            <div class="g2">
+              <div class="f"><input class="in" data-k="address" placeholder="Address"></div>
+              <div class="f"><input class="in" data-k="unit" placeholder="Unit"></div>
+            </div>
+            <div class="gh">
+              <div class="f"><input class="in" data-k="city" placeholder="City"></div>
+              <div class="f"><select class="in" data-k="state" id="stateSel"></select></div>
+            </div>
+            <div class="gh">
+              <div class="f"><input class="in" data-k="zip" placeholder="Zip" inputmode="numeric"></div>
+              <div class="f"><span class="tag">Country</span><input class="in" value="United States" readonly></div>
+            </div>
+            <div class="f"><input class="in" data-k="service_area" placeholder="Service area"></div>
+          </div>
+          <div class="panel">
+            <h2 class="sect">Scheduled</h2>
+            <div class="gh">
+              <div class="f"><span class="tag">Starts at</span><input class="in" data-k="starts_at" placeholder="e.g. 3:30 PM"></div>
+              <div class="f"><span class="tag">Ends at</span><input class="in" data-k="ends_at" placeholder="e.g. 4:30 PM"></div>
+            </div>
+            <div class="f"><input class="in" data-k="tech" placeholder="Assign team member"></div>
+          </div>
+          <div class="rail">
+            <div class="rail-hd">
+              <div class="seg">
+                <button id="tabScript" class="on">Script</button>
+                <button id="tabLog">Transcript</button>
+              </div>
+              <button class="seg" id="audioTgl" style="font-size:11px;color:var(--muted);font-weight:600">Audio on</button>
+            </div>
+            <div id="steps"></div>
+            <div id="log" class="log hide"></div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:18px">
+        <button class="btn" id="createBtn">Create</button>
+        <div class="note" id="fillCount" style="margin-top:8px"></div>
+      </div>
+    </section>
+
+    <!-- REVIEW -->
+    <section id="v-review" class="hide">
+      <div class="crumb">Jobs # Review</div>
+      <h1>Call review</h1>
+      <p class="sub" id="revSub"></p>
+      <div class="cols">
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+            <div><div class="lbl" style="margin-bottom:2px">Total</div>
+              <div class="tot"><span id="revTot">0</span><span style="font-size:20px;color:var(--muted)">/35</span></div></div>
+            <span class="vd" id="revVd">—</span>
+          </div>
+          <div id="revScores"></div>
+        </div>
+        <div>
+          <div class="panel"><div class="lbl">What the tech would have been sent</div><div id="revData"></div></div>
+          <div class="panel"><div class="lbl">Did well</div><ul id="revGood"></ul>
+            <div class="lbl" style="margin-top:14px">Fix next call</div><ul id="revFix"></ul></div>
+          <div class="panel hide" id="revRwWrap"><div class="lbl">Say it like this instead</div>
+            <div class="note" id="revSaid"></div><div class="say" id="revBetter"></div>
+            <button class="btn ghost" id="hearBtn" style="margin-top:10px">Hear it</button></div>
+        </div>
+      </div>
+      <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" id="againBtn">Run this call again</button>
+        <button class="btn ghost" data-go="board">Back to calls</button>
+      </div>
+    </section>
+
+    <!-- GUIDE -->
+    <section id="v-guide" class="hide">
+      <div class="crumb">Dispatcher Academy # Quick reference</div>
+      <h1>On-call cheat sheet</h1>
+      <p class="sub">The handbook lives under Training. This is what you keep open while the phone
+        is ringing.</p>
+      <div class="panel" style="padding:0" id="guideSteps"></div>
+      <div class="cols" id="guideCards"></div>
+      <div class="panel" style="margin-top:14px">
+        <div class="lbl">Before you close the job file</div>
+        <ul>
+          <li>Read the street number and zip back out loud. If it doesn't match the map, ask again — the caller may confirm your mistake without noticing.</li>
+          <li>Year, make, model, colour and push-to-start or metal key, or the tech brings the wrong gear.</li>
+          <li>Educate before you price. Never a number in the first ten seconds.</li>
+          <li>Gate codes, unit numbers, business name, which entrance — anything that costs the tech ten minutes on arrival.</li>
+          <li>The job file has to match the call. That is 5% of your score on its own.</li>
+        </ul>
+      </div>
+      <div style="margin-top:16px"><button class="btn" id="toTraining">Continue to training →</button></div>
+    </section>
+
+    
+  </div>
+</div>
+
+<!-- call bar -->
+<div class="bar hide" id="callBar">
+  <button class="mic" id="micBtn">Talk</button>
+  <div class="capt" id="capt"><small>Line 1</small>Ringing — tap Talk and answer</div>
+  <input class="type" id="typeIn" placeholder="or type your line">
+  <span id="timing" style="font-size:10px;color:#7C8B9B;letter-spacing:.06em"></span>
+  <button class="barbtn hide" id="muteBtn">Mute</button>
+  <button class="barbtn" id="repeatBtn">Repeat</button>
+  <button class="barbtn end" id="endBtn">End &amp; score</button>
+</div>
+
+<script>
+/* ============================ config ============================ */
+/* ---- fill these two in from your Supabase project (Settings > API) ---- */
+const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
+/* ----------------------------------------------------------------------- */
+/* Auth lives in sessionStorage, not localStorage: the session ends when the browser
+   closes, so a shared training PC never leaves one trainee signed in for the next. */
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true }
+});
+
+const STATES=["FL","AL","GA","SC","NC","TN","TX","NY","NJ","CA"];
+const JOB_TYPES=["","Car lockout","House lockout","Business lockout","Car key replacement","Key programming","Broken key extraction","Rekey","Safe lockout","Lock repair"];
+const SOURCES=["","Google","Google Ads","Repeat client","Referral","Yelp","Website","Other"];
+
+const CHIPS=[["emergency","Emergency check"],["educate","Educated first"],["price","Price handled"],["close","Booked & confirmed"]];
+
+/* Universal Call Flow — Dispatcher Academy Handbook v2.0 */
+const STEPS=[
+ {t:"Greeting",key:"greet",
+  say:"Thank you for calling OnCall Locksmith, this is ______. How may I help you today?",
+  note:"The approved greeting, every time. Company, your name, offer to help. Calm and confident — your tone sets theirs."},
+ {t:"Identify the service",key:"job_type",
+  say:"Of course. What's the year, make and model? — Is it a push-to-start or a regular metal key? — And what happened to the original key?",
+  note:"Confirm the service, never assume it. Duplication, all-keys-lost and programming are three different jobs."},
+ {t:"Gather information",key:"address",
+  say:"What's the exact address? … And the color of the vehicle, so he can spot it? … Confirming the zip is 33617?",
+  note:"Address, callback, vehicle colour, cross-streets. Read the street number and zip back out loud."},
+ {t:"Educate",key:"chip:educate",
+  say:"Different vehicles and locks vary significantly in complexity — the technician identifies your exact security system, generates the key data, cuts to specification and programs it to your immobilizer.",
+  note:"THE GOLDEN RULE: educate before pricing. Build understanding of the work first, or any number sounds too high."},
+ {t:"Price",key:"chip:price",
+  say:"Once he's on site he'll confirm the exact price before he does anything — and we don't charge a service call.",
+  note:"Only after educating. Never quote in the first ten seconds, and never sound uncertain."},
+ {t:"Close",key:"chip:close",
+  say:"I'm going to have him give you a call to let you know how far he is — just keep an eye on your phone.",
+  note:"Clear next step and timing. Then make the job file match the call."}
+];
+
+/* QA scoring — handbook weights */
+const CATS=["Greeting & Tone (10%)","Info Gathering (20%)","Customer Education (20%)","Objection Handling (15%)","Emergency Recognition (15%)","Closing & Booking (15%)","Documentation (5%)"];
+
+/* Five emotional states */
+const STATES_EMO=[
+ {s:"Stressed",eg:"Locked out, lost keys",r:"Calm, efficient, reassuring tone"},
+ {s:"Angry",eg:"Past bad experience, long wait",r:"Acknowledge briefly, pivot to solution"},
+ {s:"Price shopping",eg:"“How much?” in the first ten seconds",r:"Educate before quoting — the Golden Rule"},
+ {s:"Confused",eg:"Doesn't know rekey vs replace vs program",r:"Explain plainly in one sentence"},
+ {s:"Panicked",eg:"Child in car, business breach, emergency",r:"Follow the emergency protocol immediately"}
+];
+
+const MISTAKES=["Interrupting the customer","Assuming the service instead of confirming it","Failing to explain before quoting","Sounding uncertain","Quoting too early (skipping education)","Treating every vehicle or every lock as the same"];
+
+const EMERGENCIES=[
+ ["Child or pet locked in a vehicle","Top priority. Advise the customer to also call 911 if there's any sign of distress."],
+ ["Life-safety hardware failure","A panic bar that won't allow free egress is urgent and code-related."],
+ ["Active or recent break-in","Prioritise dispatch; advise contacting police if it's ongoing."],
+ ["Any welfare concern","Dispatchers are not emergency responders — always direct the customer to 911 in parallel."]
+];
+
+const GUIDE_CARDS=[
+ ["“That's expensive.”","“I completely understand — different vehicles and locks vary significantly in complexity.” Then explain what the work actually involves."],
+ ["“Another company quoted cheaper.”","“Every company operates differently. Our goal is professional service with accurate expectations.” Don't argue and don't match blind."],
+ ["“That's expensive for unlocking a door.”","“What you're paying for is a licensed, insured technician who can access your vehicle without causing any damage, along with the equipment and travel to reach you quickly.”"],
+ ["“That seems really expensive for a key.”","“This isn't just cutting a key — it's identifying your exact security system, generating key data, cutting to precise specification, and programming it to communicate with your immobilizer.”"],
+ ["“It's just a remote, why so much?”","“The fob is actually your vehicle's security key — it communicates encrypted data with your immobilizer, which requires specialised equipment to program.”"],
+ ["“Why do I need to prove this is my house?”","“This is a standard safety step we apply to every residential call, to protect both our customers and our technicians.”"],
+ ["Never say these","“What's your budget?” · “It's simple.” · “The technician will just inspect it.” Use “Have you received another quote?” instead."],
+ ["Child or pet in a hot vehicle","Top priority. Tell them to call 911 as well if there's any sign of distress, then dispatch. Never end that call with only a tech on the way."]
+];
+
+/* ============================================================
+   MEDIA SLOTS — paste your links here by number.
+   img: any direct image URL.   vid: a YouTube link (it embeds).
+   Send Claude e.g.  "7: https://youtu.be/xxxx"  and it goes in slot 7.
+   ============================================================ */
+const MEDIA = {
+   1: { img:"", vid:"" },               // Car Lockout
+   2: { img:"", vid:"" },             // Trunk Lockout
+   3: { img:"", vid:"" }, // Car Key Replacement (all keys lost)
+   4: { img:"", vid:"" },           // Key Duplication
+   5: { img:"", vid:"" },           // Key Programming
+   6: { img:"", vid:"" }, // Push-to-Start / Smart Fobs
+   7: { img:"", vid:"" },             // House Lockout
+   8: { img:"", vid:"" },          // Lock Replacement
+   9: { img:"", vid:"" },                     // Rekey
+  10: { img:"", vid:"" },               // Smart Locks
+  11: { img:"", vid:"" },           // Tenant Turnover
+  12: { img:"", vid:"" },       // Property Management
+  13: { img:"", vid:"" },         // Commercial Rekeys
+  14: { img:"", vid:"" },        // Master Key Systems
+  15: { img:"", vid:"" }, // Panic Bars (Exit Devices)
+  16: { img:"", vid:"" },             // Mortise Locks
+  17: { img:"", vid:"" },              // Door Closers
+  18: { img:"", vid:"" },                 // Mag Locks
+  19: { img:"", vid:"" },          // Electric Strikes
+  20: { img:"", vid:"" },    // Access Control Systems
+  21: { img:"", vid:"" },          // Electronic Safes
+  22: { img:"", vid:"" },  // Dial (Combination) Safes
+  23: { img:"", vid:"" },          // Commercial Safes
+  24: { img:"", vid:"" },                // Fire Safes
+  25: { img:"", vid:"" },                 // Gun Safes
+};
+
+/* ---- the 25 services ---- */
+const SERVICES=[
+ {c:"Automotive",n:"Car Lockout",  w:"Customer can't get into the vehicle. Common, time-sensitive, and often emotional — they may be late, in bad weather, or worried about a child or pet inside.",
+  q:["Year, make and model","Colour of the vehicle (helps him find it in a big lot)","Exact address or cross-streets","Best callback number","Is the vehicle currently running?"],
+  t:"5–20 min standard. Luxury and European with reinforced doors 20–40 min.",
+  p:["Time of day (standard vs after-hours)","Vehicle type and lock complexity","Distance and access","Child or pet inside triggers emergency priority"],
+  e:"Never call it “just unlocking a door.” Different manufacturers use different latches, sensors and linkages; the tech uses non-destructive tools so the weatherstripping, window and panels aren't damaged.",
+  tools:["Air wedge","Long reach tool","Slim jim (legacy only)","Wedge and rod kits"]},
+ {c:"Automotive",n:"Trunk Lockout",  w:"Can't access the trunk — keys, a fob or valuables locked inside, or the release mechanism has failed.",
+  q:["Is there an interior (cabin) trunk release?","Separate trunk, or hatchback/liftgate?","Year, make and model","Is the battery working? (matters for power trunks)"],
+  t:"10–30 min depending on access route.",
+  p:["Whether a cabin route exists","Make and trunk mechanism type"],
+  e:"Trunk mechanisms are often more complex than door locks — they're built with anti-theft features, especially on newer power trunks.",
+  tools:["Trunk manipulation tools","Long reach tool","Air wedge"]},
+ {c:"Automotive",n:"Car Key Replacement (all keys lost)",  w:"Every working key is gone. One of the most advanced and highest-value jobs: identification, ownership verification, key generation, cutting and programming.",
+  q:["Year, make, model — trim level if known","Do they have the title or registration for ownership verification?","Traditional key, transponder, flip key or smart fob?","Is the vehicle accessible right now?"],
+  t:"30–90 min typical. European with advanced security modules 60–180 min.",
+  p:["Security system generation — a 2012 car can cost more than a 2023","Key/fob part cost, varies hugely by manufacturer","Whether on-site programming is possible"],
+  e:"Vehicle age does NOT predict price. Security system generation drives cost — some early-2010s Hyundai/Kia immobilizers are more labour-intensive than newer economy models.",
+  tools:["Autel IM608","XHorse Dolphin XP005","XHorse Key Tool Plus","Key cutting machine"]},
+ {c:"Automotive",n:"Key Duplication",  w:"They already have one working key and want a copy cut and, if needed, programmed.",
+  q:["Do you have your working key with you?","Year, make and model","Basic key, transponder or smart fob?"],
+  t:"15–45 min depending on key type.",
+  p:["Key/fob type and part cost","Whether programming is needed as well as cutting"],
+  e:"Even a duplicate smart key needs programming equipment to sync with the vehicle — it's more involved than traditional cutting.",
+  tools:["Key cutting machine","XHorse Key Tool Plus","Autel IM608"]},
+ {c:"Automotive",n:"Key Programming",  w:"They have a key or fob, often bought online, that needs programming to their vehicle.",
+  q:["Where was the key purchased?","Is the blank already cut to match?","Year, make and model"],
+  t:"20–60 min.",
+  p:["Whether cutting is also required","Security system complexity"],
+  e:"An uncut or incompatible key cannot be programmed no matter the tools — compatibility has to be verified first.",
+  tools:["XHorse Key Tool Plus","Autel IM608"]},
+ {c:"Automotive",n:"Push-to-Start / Smart Fobs",  w:"Proximity-based wireless systems instead of a physical ignition key. Customers badly underestimate the complexity.",
+  q:["Does the fob need to be inside the vehicle to start it?","Has the fob battery been replaced recently?"],
+  t:"20–60 min.",
+  p:["Fob part cost","Diagnostic time"],
+  e:"They'll say “it's only a remote.” The fob holds security data, talks to the immobilizer, and has specific programming requirements.",
+  tools:["XHorse Dolphin XP005","Autel IM608"]},
+ {c:"Residential",n:"House Lockout",  w:"Can't get into their home. Balance speed with identity verification — the tech is granting access to a private residence.",
+  q:["Full address","Customer's name","Best callback number","Can they show proof of residency — ID with matching address, mail, lease?"],
+  t:"5–30 min for standard residential locks.",
+  p:["Lock type and security grade","Time of day","Non-destructive entry vs drilling"],
+  e:"Proof of residency is applied to every customer, not a special demand — it protects them as much as us.",
+  tools:["Pick set","Bypass tools","Drill (last resort)"]},
+ {c:"Residential",n:"Lock Replacement",  w:"The whole lock — cylinder, housing, sometimes the strike plate — is replaced rather than rekeyed.",
+  q:["What style of lock do they have now?","Do they want to upgrade to smart or high-security?","How many doors?"],
+  t:"20–45 min per lock.",
+  p:["Hardware grade chosen","Number of doors","Whether keyed-alike is requested"],
+  e:"Recommend Grade 1 or Grade 2 ANSI hardware and explain the difference in plain terms.",
+  tools:["Standard install toolkit","Lock hardware Grade 1–3"]},
+ {c:"Residential",n:"Rekey",  w:"Hardware stays; only the internal pin combination changes so old keys stop working.",
+  q:["How many locks?","Would you like them all keyed alike?","Is the current hardware in good condition?"],
+  t:"10–20 min per lock.",
+  p:["Number of locks","Keyed-alike service"],
+  e:"Rekeying reuses existing hardware, so it's faster and cheaper than replacement when the hardware is sound.",
+  tools:["Rekey pin kits","Cylinder tools","Key cutting machine"]},
+ {c:"Residential",n:"Smart Locks",  w:"Keypad, app or biometric locks used instead of or alongside a traditional key.",
+  q:["Brand and model","Install, lockout or repair?","Do they have a physical key backup?"],
+  t:"20–60 min.",
+  p:["Install vs repair vs lockout","Brand and hardware cost"],
+  e:"Always advise keeping a physical key backup — batteries die and connectivity fails.",
+  tools:["Manufacturer bypass tools","Standard install toolkit"]},
+ {c:"Residential",n:"Tenant Turnover",  w:"Rekey or replacement between tenants for property managers, landlords and HOAs.",
+  q:["How many units?","Is there a master key system to preserve?","Turnaround before the next tenant moves in?"],
+  t:"15–30 min per unit, scales for multi-unit.",
+  p:["Volume/bulk agreements","Master key complexity"],
+  e:"Recommend rekeying between every tenancy for liability protection.",
+  tools:["Rekey pin kits","Master key system tools"]},
+ {c:"Residential",n:"Property Management",  w:"Ongoing support arrangements for managers, HOAs and landlords across multiple units.",
+  q:["Established account or new relationship?","What's the authorization process for this property?"],
+  t:"Varies; response times per account agreement.",
+  p:["Service agreement terms","Volume-based pricing"],
+  e:"A standing service agreement streamlines authorization and response time.",
+  tools:["Standard service vehicle toolkit"]},
+ {c:"Commercial",n:"Commercial Rekeys",  w:"Rekeying commercial hardware across doors, suites or a whole facility — usually employee turnover or policy.",
+  q:["How many doors or suites?","Existing master key system to preserve or restructure?","Who is authorized to approve this?"],
+  t:"15–30 min per door; large sites are multi-tech jobs.",
+  p:["Number of doors","Master key complexity","After-hours scheduling"],
+  e:"Recommend a documented master key hierarchy for anything beyond a few doors.",
+  tools:["Rekey pin kits","Master key system tools"]},
+ {c:"Commercial",n:"Master Key Systems",  w:"Tiered access — a master opening everything, sub-masters per department, individual keys per office.",
+  q:["How many access tiers?","How many doors in total?","Is there an existing system to integrate with?"],
+  t:"Varies by facility; large systems run multi-day.",
+  p:["Doors and access tiers","Hierarchy design complexity"],
+  e:"A documented system prevents future confusion and security gaps — advise keeping a securely stored key record.",
+  tools:["Master key system tools","Key cutting machine"]},
+ {c:"Commercial",n:"Panic Bars (Exit Devices)",  w:"Push-bar exit devices required by fire and building code on many commercial doors for rapid egress.",
+  q:["Brand if known — Von Duprin, Adams Rite, Detex, Falcon","Can the door be secured at all right now?","Is this affecting fire/life-safety compliance?"],
+  t:"20–60 min.",
+  p:["Brand and part availability","Repair vs full replacement"],
+  e:"Life-safety hardware regulated by fire code. Repairs must never compromise free egress, even temporarily.",
+  tools:["Von Duprin / Adams Rite / Detex / Falcon parts"]},
+ {c:"Commercial",n:"Mortise Locks",  w:"Lock body set into a pocket cut in the door edge — storefronts, apartment buildings, offices. Latch, deadbolt and lever in one unit.",
+  q:["Storefront, apartment or office door?","Can it lock/unlock at all?","Is the lever working?"],
+  t:"30–60 min.",
+  p:["Function type and part availability","Repair vs replacement"],
+  e:"Several functions in one mechanism, which is why repairs take longer than a standard cylindrical lock.",
+  tools:["Mortise lock bodies","Cylinder tools","Install toolkit"]},
+ {c:"Commercial",n:"Door Closers",  w:"Hydraulic or spring devices controlling closing speed so the door latches securely.",
+  q:["Can the door latch and secure at all?","Is this a fire-rated door? (code requires self-closing and self-latching)"],
+  t:"20–45 min.",
+  p:["Adjustment vs replacement","Fire-rated hardware requirements"],
+  e:"On a fire-rated door a working self-closing device is a code requirement, not a convenience.",
+  tools:["Door closer units","Install toolkit"]},
+ {c:"Commercial",n:"Mag Locks",  w:"Electromagnet and armature plate holding a door shut, common on access-controlled entries.",
+  q:["Tied to a larger access control system?","Is the door secure at all?","Is there battery/backup power?"],
+  t:"30–90 min depending on wiring.",
+  p:["Repair vs new install","Integration with access control and fire systems"],
+  e:"Mag locks on egress paths must release automatically on a fire alarm — code, not optional wiring.",
+  tools:["Mag lock units","Power supplies","Access control wiring tools"]},
+ {c:"Commercial",n:"Electric Strikes",  w:"Electrically released strike plate allowing remote entry while the existing lock hardware stays in place.",
+  q:["Integrated with an intercom, buzzer or access control?","Is the mechanical lock still working independently?"],
+  t:"30–60 min.",
+  p:["Repair vs new install","Integration complexity"],
+  e:"It works alongside the mechanical lock rather than replacing it, so the door can usually still be secured manually.",
+  tools:["Electric strike units","Wiring tools","Power supplies"]},
+ {c:"Commercial",n:"Access Control Systems",  w:"Card readers, keypads, mag locks or strikes and controllers managing and logging entry to a facility.",
+  q:["New install or service on an existing system?","How many doors and readers?","Who is the authorized account administrator?"],
+  t:"Single door 30–90 min; full installs are projects.",
+  p:["Doors and readers","New install vs repair","Brand and component cost"],
+  e:"Controller, reader, keypad, lock hardware, power supply and exit button all have to work together — plus software setup for credentials.",
+  tools:["Controllers","Card readers","Keypads","Mag locks / strikes","Power supplies","Exit buttons"]},
+ {c:"Safes",n:"Electronic Safes",  w:"Digital keypad safes, often battery-powered — dead batteries, forgotten codes or electronic failure.",
+  q:["Brand if known","Has the battery been replaced recently?","Is the keypad lighting up or responding at all?"],
+  t:"20 min to a few hours by brand and failure type.",
+  p:["Brand and lock mechanism","Whether external battery terminals offer a simpler fix"],
+  e:"Advise replacing safe batteries on a schedule — annually — to avoid lockouts entirely.",
+  tools:["9V external battery leads","Safe manipulation tools","Manufacturer reset tools"]},
+ {c:"Safes",n:"Dial (Combination) Safes",  w:"Mechanical dial combination safes, often higher-security or legacy.",
+  q:["Brand and model if known","Any record of the combination — paperwork, previous owner?","Residential or commercial grade?"],
+  t:"30 min to several hours by lock grade.",
+  p:["Lock grade and manipulation time","Whether drilling and parts become necessary"],
+  e:"High-security dial locks resist manipulation by design — set time expectations honestly up front.",
+  tools:["Safe manipulation tools","Scopes","Drill rigs (last resort)"]},
+ {c:"Safes",n:"Commercial Safes",  w:"Heavy-duty business safes for cash, records or valuables — often time-delay or multiple lock types.",
+  q:["Time-delay or dual-control safe?","Is this urgent to business operations?","Who is the authorized business contact?"],
+  t:"30 min to several hours.",
+  p:["Safe grade and mechanism","Account/service agreement terms"],
+  e:"Time-delay is a robbery deterrent working as designed — it can't be bypassed, and saying so early avoids a fight later.",
+  tools:["Safe manipulation tools","Manufacturer reset tools"]},
+ {c:"Safes",n:"Fire Safes",  w:"Fire-resistant insulated safes; heat exposure and insulation wear can affect the lock mechanism.",
+  q:["Was the safe ever exposed to fire or extreme heat?","Standard lockout or suspected mechanism damage?"],
+  t:"20 min to a few hours.",
+  p:["Standard access vs heat-damage complexity","Possible hardware replacement after fire"],
+  e:"After any fire exposure the lock mechanism and insulation should be inspected even if the contents survived.",
+  tools:["Safe manipulation tools","Drill rigs (post-fire)"]},
+ {c:"Safes",n:"Gun Safes",  w:"Firearm storage safes — biometric, keypad or dial — with heightened ownership verification given the contents.",
+  q:["Can they verify ownership of the safe and contents?","Brand and access type?","Is there a keyed backup override?"],
+  t:"20 min to a few hours.",
+  p:["Lock type and complexity","Standard vs after-hours"],
+  e:"Ownership verification is handled with extra diligence here — it protects the customer as much as the company.",
+  tools:["Safe manipulation tools","Manufacturer reset tools"]}
+];
+
+const EQUIP=[
+ ["Autel IM608","Professional diagnostic and key programming tool — reads vehicle security data, generates key codes, programs transponders and smart fobs across most makes."],
+ ["XHorse Dolphin XP005","Portable automatic key cutting machine, handles high-security and laser-cut blanks on site."],
+ ["XHorse Condor","Commercial-grade automated cutting machine for higher-volume or shop-based work."],
+ ["XHorse Key Tool Plus","Programming device to generate, clone and program keys and remotes, used alongside cutting machines."],
+ ["EEPROM equipment","Reads and writes directly to a vehicle's memory chips when OBD-based programming can't generate new key data."],
+ ["Lishi tools","Precision pick-and-decode tools that open and read a lock's cut non-destructively — car doors and ignition cylinders."],
+ ["Air wedges","Inflatable wedge creating a small controlled gap between door and frame for a long reach tool, without damage."],
+ ["Long reach tools","Slim flexible tool reaching inside the door cavity to work the interior lock control."],
+ ["Key cutting machines","Cut blanks to code or by tracing an existing key — manual bench up to fully automated portable units."],
+ ["Service vans","Fully equipped mobile workstations for automotive, residential and commercial work at the customer's location."]
+];
+
+const GLOSSARY=[
+ ["Deadbolt","Bolt moved by key or knob, not spring action — stronger than a spring latch."],
+ ["Cylinder","The core lock component that accepts the key."],
+ ["Mortise","Pocket cut into a door edge to house a mortise lock body."],
+ ["Strike plate","Frame-mounted plate that receives the bolt or latch."],
+ ["Panic bar","Push-bar exit device required by code for rapid egress."],
+ ["Mag lock","Electromagnetic lock; must release on fire alarm for egress doors."],
+ ["Electric strike","Electrically released strike plate; works with the existing mechanical lock."],
+ ["Transponder / immobilizer","Key chip and vehicle system that must communicate for the engine to start."],
+ ["EEPROM","Memory chip sometimes read or written directly during advanced key programming."],
+ ["Fob","Wireless remote holding security and immobilizer data — not “just a remote”."],
+ ["Master key system","Tiered keying allowing different access levels across doors."],
+ ["Rekey","Change the key combination; the hardware stays the same."],
+ ["ANSI grade","Lock durability rating — 1 is highest, 3 lowest."],
+ ["Fail-safe / fail-secure","Electronic lock unlocks / stays locked on power loss, respectively."]
+];
+
+const EXAM=[
+ {q:"What is the Golden Rule of the handbook?",
+  o:["Answer within three rings","Educate before pricing","Always give a range","Never transfer a call"],a:1},
+ {q:"The Universal Call Flow, in order:",
+  o:["Greeting → Price → Gather info → Close","Greeting → Identify service → Gather info → Educate → Price → Close","Identify service → Price → Educate → Close","Greeting → Gather info → Price → Educate → Close"],a:1},
+ {q:"What must always be verified before an all-keys-lost automotive job begins?",
+  o:["The customer's budget","Ownership — title or registration","That the car is under ten years old","A card on file"],a:1},
+ {q:"Difference between a rekey and a full lock replacement?",
+  o:["Rekey changes the pin combination and keeps the hardware","Rekey replaces the whole lock body","They are the same thing","Rekey only works on deadbolts"],a:0},
+ {q:"Why must mag locks on egress doors release automatically during a fire alarm?",
+  o:["To save battery","So occupants can always exit safely — it's a code requirement","To reset the access control log","To protect the magnet"],a:1},
+ {q:"Approved response to “That's expensive”:",
+  o:["“What's your budget?”","“I completely understand — different vehicles and locks vary significantly in complexity.”","“That's just our price.”","“The technician will just inspect it.”"],a:1},
+ {q:"A child is reported locked in a hot vehicle. First thing you do?",
+  o:["Take payment details","Advise them to call 911 as well, then dispatch as top priority","Ask year, make and model","Put them on hold to check the price"],a:1},
+ {q:"A caller is confused about rekey versus replace. Correct response?",
+  o:["Quote both immediately","Explain plainly in one sentence","Transfer to a technician","Ask which they'd prefer"],a:1}
+];
+
+/* ---- Locked fact sheets. The caller may never contradict these; the review
+       checks the job file against them field by field. ---- */
+const FACTS={
+ volvo:{caller_name:"Megan Cole",phone:"(727) 555-3568",address:"7194 Keen Haven Road",city:"Seminole",state:"FL",zip:"33777",
+   job_type:"Car key replacement",detail:"2019 Volvo XC40, push-to-start, original key lost"},
+ gmc:{caller_name:"Jared Hicks",phone:"(813) 555-2210",address:"7215 Jackson Springs Road",city:"Tampa",state:"FL",zip:"33634",
+   job_type:"Key programming",detail:"2015 GMC Sierra, metal key, turns but won't start, anti-theft not engaging. CALLER SAYS 33615 — the correct zip is 33634."},
+ mailbox:{caller_name:"Ray Tanner",phone:"(727) 555-4367",address:"11250 122nd Avenue",city:"Largo",state:"FL",zip:"33778",
+   job_type:"Lock replacement",detail:"Mailbox lock shot, needs unlock and replacement with new keys"},
+ newtenant:{caller_name:"Dale Fenton",phone:"(727) 555-7788",address:"4201 Gulf Boulevard",city:"St. Pete Beach",state:"FL",zip:"33706",
+   job_type:"Lock replacement",detail:"Mailbox lockout, just moved in, no key. Street number is 4201 — he will absent-mindedly confirm a wrong readback."},
+ panic:{caller_name:"Victor Hale",company_name:"Ironwood Grill",phone:"(813) 555-9042",address:"27227 State Road 56",city:"Wesley Chapel",state:"FL",zip:"33544",
+   job_type:"Lock repair",detail:"Panic bar on the back door dragging, owner off site, wants premises secured tonight"},
+ altima:{caller_name:"Andre Marrero",phone:"(813) 555-6119",address:"8741 North 56th Street",city:"Temple Terrace",state:"FL",zip:"33617",
+   job_type:"Key programming",detail:"2008 Nissan Altima, push-to-start, HAS a working fob that starts the car but the buttons don't work"},
+ knob:{caller_name:"Stanley Burke",phone:"(727) 555-2054",address:"401 Shore Drive East",city:"Oldsmar",state:"FL",zip:"34677",
+   job_type:"Lock repair",detail:"Apartment door knob sticking, has the key, door won't unlock"},
+ biz:{caller_name:"Colin Mercer",company_name:"Martin Repair Shop",phone:"(813) 555-3553",address:"9245 4th Street North",city:"St. Pete",state:"FL",zip:"33704",
+   job_type:"Lock replacement",detail:"Three doors, one lock each. Estimate only, not today — needs a number for his boss"},
+ truck:{caller_name:"Devin Yates",phone:"(813) 555-1481",address:"11555 East Sligh Avenue",city:"Seffner",state:"FL",zip:"33584",
+   job_type:"Car key replacement",detail:"2025 Freightliner Cascadia. Says 'spare' but has LOST the only key. Not on site — schedule 9:00 AM"},
+ child:{caller_name:"Mark Delgado",phone:"(813) 555-0198",address:"3358 Noble Creek Place",city:"Lutz",state:"FL",zip:"33558",
+   job_type:"Car lockout",detail:"2021 Ford Explorer, 2-year-old locked inside in direct sun. EMERGENCY — must be told to call 911 too"}
+};
+function factSheet(id){
+  const f=FACTS[id]||{};
+  return Object.entries(f).map(([k,v])=>k+": "+v).join("\n");
+}
+
+const JOBS=[
+ {id:"volvo",title:"Volvo XC40 — lost key",src:"Google Ads · 3:10 PM",lv:"Routine",cid:"(727) 555-3568",
+  blurb:"Wants an estimate before anything else.",voice:"f",rate:1.0,pitch:1.05,
+  persona:"Megan Cole. Opens by asking what an estimate would be for new keys for her Volvo XC40. It is a 2019, push-to-start, and she lost the original — but she only says each of those if asked directly. Car is at 7194 Keen Haven Road, Seminole, Florida, zip 33777. Polite and easy. Near the end she asks the dispatcher to have the tech call with the price before he comes."},
+ {id:"gmc",title:"GMC Sierra won't start",src:"Google · 1:40 PM",lv:"Difficult",cid:"(813) 555-2210",
+  blurb:"Key turns, engine won't fire. Anti-theft.",voice:"m",rate:1.0,pitch:.92,
+  persona:"Jared Hicks. His 2015 GMC Sierra key stopped working. It is a regular metal key and it still turns in the ignition, but the engine will not start — AutoZone told him the anti-theft system is not engaging. He is at 7215 Jackson Springs Road and says the zip is 33615, though the correct zip for that street is 33634; if the dispatcher questions it he shrugs and says it's the same area, so the dispatcher has to decide what to enter. He asks how much a new key costs after being quoted programming. Calm, a bit vague on details."},
+ {id:"mailbox",title:"Mailbox was shot",src:"Inbound · 10:05 AM",lv:"Routine",cid:"(727) 555-4367",
+  blurb:"Wants it replaced. Asks if you even do mailboxes.",voice:"m",rate:1.0,pitch:.95,
+  persona:"Ray Tanner. Someone shot at his mailbox and the lock no longer works; he wants it replaced. Address is 11250 122nd Avenue in Largo. He asks what you usually charge for that, and separately whether a locksmith is even allowed to work on a mailbox or whether he should call USPS. Friendly, slightly bemused by the whole thing."},
+ {id:"newtenant",title:"Mailbox, no key, just moved in",src:"Google · 4:20 PM",lv:"Difficult",cid:"(727) 555-7788",
+  blurb:"Refuses to book without a number first.",voice:"m",rate:1.05,pitch:.9,
+  persona:"Dale Fenton. Just moved in, has no mailbox key and is locked out. Address is 4201 Gulf Boulevard, St. Pete Beach, 33706 — say it clearly, but if the dispatcher reads it back slightly wrong, for example 4021 instead of 4201, just say yes without noticing, the way a distracted person does. He opens with 'how much do you charge for a mailbox lock' and will not accept 'the tech will price it on site' — he pushes twice and needs a real number before he books."},
+ {id:"panic",title:"Restaurant panic bar dragging",src:"Referral · 6:15 PM",lv:"Difficult",cid:"(813) 555-9042",
+  blurb:"Owner isn't on site. Wants the place secured tonight.",voice:"m",rate:1.08,pitch:.95,
+  persona:"Victor Hale, owner of the Ironwood Grill restaurant. The panic bar on the back door keeps dragging and staff are struggling with it. Address 27227 State Road 56 in Wesley Chapel, zip 33544 — he gives the zip only if asked. He is not at the restaurant himself, his guys are, and his real worry is whether the premises will be secured tonight and whether it can be replaced the same evening. Needs reassurance more than a price."},
+ {id:"altima",title:"Nissan Altima fob buttons dead",src:"Google Ads · 12:30 PM",lv:"Difficult",cid:"(813) 555-6119",
+  blurb:"Borrowing the money. Needs a real number.",voice:"m",rate:1.0,pitch:1.0,
+  persona:"Andre Marrero. 2008 Nissan Altima, push-to-start. He still has his fob and can start the car with it, but the lock and unlock buttons do nothing — if the dispatcher assumes he needs a spare programmed, correct them. He is at 8741 North 56th Street, Temple Terrace, zip 33617. He asks the price twice and explains he is borrowing the money from his mother, so he needs at least a rough estimate before he agrees. If the dispatcher puts him on hold and comes back with a range, he books immediately."},
+ {id:"knob",title:"Apartment knob is sticking",src:"Inbound · 8:45 PM",lv:"Difficult",cid:"(727) 555-2054",
+  blurb:"No budget in mind. Pure price negotiation.",voice:"m",rate:1.0,pitch:.9,
+  persona:"Stanley Burke. His apartment door knob is locked and sticking — he has the key in his hand but it will not turn the lock. He wants to know the price to unlock it AND the price to replace the knob, and he keeps circling back to price instead of giving details. When asked what budget he is working with he says he does not have one, it is his first time, he just wants a good price. He gives his address, 401 Shore Drive East in Oldsmar, 34677, only once he is satisfied on price. Books if offered one clear total."},
+ {id:"biz",title:"Three locks, wants an estimate",src:"Website · 9:30 AM",lv:"Routine",cid:"(813) 555-3553",
+  blurb:"Not today. Needs a number for his boss.",voice:"m",rate:1.02,pitch:.95,
+  persona:"Colin Mercer of Martin Repair Shop, 9245 4th Street North, St. Pete, 33704. Wants to know the cost to change the locks on the front doors of the business — three doors, one lock each, though he only counts them up if asked. He states plainly that he does not want anyone sent today; he needs an estimate to pass to his boss for approval. He asks whether there is a charge for the trip, and later asks whether he could just text photos of the locks to get a price over the phone."},
+ {id:"truck",title:"Freightliner spare key",src:"Inbound · 5:50 PM",lv:"Routine",cid:"(813) 555-1481",
+  blurb:"Not on site. Needs it scheduled for tomorrow.",voice:"m",rate:1.05,pitch:.9,
+  persona:"Devin Yates. Calling to ask whether you can make keys for commercial vehicles — a 2025 Freightliner Cascadia. He is not at the truck and is leaving in about an hour and a half, so the job has to be scheduled; he would take 9:00 AM. The truck is at 11555 East Sligh Avenue in Seffner, zip 33584, and he has to look the zip up. He says 'spare keys' at the start, but if the dispatcher confirms whether he still has a working key he admits he lost it completely. Asks for a rough estimate at the end."},
+ {id:"child",title:"Child locked in vehicle",src:"Inbound · 2:05 PM",lv:"Critical",cid:"(813) 555-0198",
+  blurb:"97 degrees out. Triage before anything else.",voice:"m",rate:1.22,pitch:1.1,
+  persona:"Mark Delgado, 40. His 2-year-old daughter is locked inside his 2021 Ford Explorer in direct afternoon sun at 3358 Noble Creek Place, Lutz FL 33558. Panicking, talking fast, repeating himself, wants someone NOW. If the dispatcher does not tell him to call 911 first and stay with the child, he keeps escalating."}
+];
+
+/* ============================ state ============================ */
+let me=null, isAdmin=false, isGuest=false, authMode="in";
+let job=null, log=[], chips={}, secs=0, timer=null, busy=false, report=null;
+let listening=false, speaking=false, voiceOn=true, heard="", finalTx="", rec=null, voices=[], primed=false;
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const canSpeak = "speechSynthesis" in window;
+const FEM=/female|samantha|karen|victoria|zira|fiona|serena|moira|tessa|susan|linda|joana|ava|allison/i;
+const MAL=/male|daniel|alex|fred|david|george|thomas|oliver|arthur|rishi|mark|tom|aaron/i;
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+
+/* ============================ api ============================ */
+async function ask(messages, system, mode){
+  const { data, error } = await sb.functions.invoke("claude", {
+    body: { system, messages, mode, max_tokens: mode==="review" ? 3000 : 220 }
+  });
+  if(error) throw new Error(error.message||"Server error");
+  if(data && data.error) throw new Error(data.error.message||"API error");
+  return (data.content||[]).map(b=>b.type==="text"?b.text:"").join("").trim();
+}
+
+function toJSON(raw){
+  const c=raw.replace(/```json|```/g,"").trim();
+  const s=c.indexOf("{"), e=c.lastIndexOf("}");
+  return JSON.parse(s>=0?c.slice(s,e+1):c);
+}
+
+/* ============================ voice ============================ */
+if(canSpeak){ const ld=()=>{voices=speechSynthesis.getVoices()||[]; try{fillVoicePickers();}catch(e){}}; ld(); speechSynthesis.onvoiceschanged=ld; }
+function voiceScore(v,want){
+  let n=0;
+  if(/natural|neural|online/i.test(v.name)) n+=100;
+  if(/google/i.test(v.name)) n+=60;
+  if(/^en-US/i.test(v.lang)) n+=15;
+  if(want.test(v.name)) n+=40;
+  if(v.localService===false) n+=10;
+  return n;
+}
+function pickVoice(gender){
+  const saved=localStorage.getItem(gender==="f"?"oc_voice_f":"oc_voice_m");
+  if(saved){ const v=voices.find(x=>x.name===saved); if(v) return v; }
+  const en=voices.filter(v=>(v.lang||"").toLowerCase().startsWith("en"));
+  if(!en.length) return null;
+  const want=gender==="f"?FEM:MAL;
+  return en.slice().sort((a,b)=>voiceScore(b,want)-voiceScore(a,want))[0];
+}
+function browserSpeak(t){
+  if(!canSpeak||!voiceOn||!job) return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(sayable(t));
+  const pick=pickVoice(job.voice);
+  const want=job.voice==="f"?FEM:MAL;
+  if(pick){u.voice=pick;u.lang=pick.lang;}
+  const natural=pick&&/natural|neural|online|google/i.test(pick.name);
+  const jr=(Math.random()-.5)*.08, jp=(Math.random()-.5)*.06;
+  u.rate=job.rate+jr;
+  u.pitch=natural||(pick&&want.test(pick.name))
+    ? job.pitch+jp
+    : (job.voice==="f"?job.pitch+.25:job.pitch-.15)+jp;
+  u.onstart=()=>{speaking=true;drawCapt();};
+  u.onend=u.onerror=()=>{speaking=false;drawCapt();micOn();};
+  speechSynthesis.speak(u);
+}
+function testVoice(gender){
+  if(!canSpeak) return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(gender==="f"
+    ? "Hi, I was wondering what an estimate would be for my Volvo to get new keys?"
+    : "Yeah, how you doing? My key stopped working, it turns but the engine won't start.");
+  const p=pickVoice(gender); if(p){u.voice=p;u.lang=p.lang;}
+  u.rate=1; speechSynthesis.speak(u);
+}
+function drawPause(){
+  const el=document.getElementById("pauseRow"); if(!el) return;
+  const opts=[["Snappy",650],["Normal",900],["Patient",1500]];
+  el.innerHTML=opts.map(([l,v])=>`<button class="chip ${pauseMs==v?"on":""}" data-pz="${v}">${l}</button>`).join("");
+  el.querySelectorAll("[data-pz]").forEach(b=>b.onclick=()=>{
+    pauseMs=+b.dataset.pz; localStorage.setItem("oc_pause",pauseMs); drawPause();
+  });
+}
+function drawSlots(){
+  const el=document.getElementById("slotList"); if(!el) return;
+  const done=SERVICES.filter((_,i)=>MEDIA[i+1]&&(MEDIA[i+1].img||MEDIA[i+1].vid)).length;
+  el.innerHTML=`<div class="lbl">${done} of ${SERVICES.length} filled</div>`+
+    SERVICES.map((v,i)=>{
+      const m=MEDIA[i+1]||{}, has=!!(m.img||m.vid);
+      return `<div class="diff"><span style="flex:1"><b style="color:var(--navy)">${i+1}.</b> ${v.n}
+        <span class="note"> · ${v.c}</span></span>
+        <span style="color:${has?"var(--green)":"var(--muted)"};font-weight:600;font-size:12px">
+        ${has?((m.img?"photo":"")+(m.img&&m.vid?" + ":"")+(m.vid?"video":"")):"empty"}</span></div>`;
+    }).join("");
+}
+function fillVoicePickers(){
+  const en=voices.filter(v=>(v.lang||"").toLowerCase().startsWith("en"));
+  if(!en.length) return;
+  [["voiceM","m","oc_voice_m"],["voiceF","f","oc_voice_f"]].forEach(([id,g,store])=>{
+    const sel=document.getElementById(id); if(!sel) return;
+    const want=g==="f"?FEM:MAL;
+    const sorted=en.slice().sort((a,b)=>voiceScore(b,want)-voiceScore(a,want));
+    const cur=localStorage.getItem(store)||(pickVoice(g)||{}).name||"";
+    sel.innerHTML=sorted.map(v=>{
+      const good=/natural|neural|online|google/i.test(v.name)?" ★":"";
+      return `<option value="${v.name}"${v.name===cur?" selected":""}>${v.name}${good} — ${v.lang}</option>`;
+    }).join("");
+    sel.onchange=()=>{localStorage.setItem(store,sel.value);
+      document.getElementById("voiceMsg").textContent="Saved. Voices marked ★ sound the most human.";};
+  });
+}
+/* Spoken form only — the transcript on screen keeps the real digits.
+   Zips and phone numbers get read digit by digit, the way callers say them. */
+function sayable(t){
+  let x=" "+t+" ";
+  // (813) 555-0134  /  813-555-0134  /  8135550134
+  x=x.replace(/\(?(\d{3})\)?[\s.-]*(\d{3})[\s.-]*(\d{4})/g,
+    (m,a,b,c)=>` ${a.split("").join(" ")}, ${b.split("").join(" ")}, ${c.split("").join(" ")} `);
+  // "ending with 4367" / "ending in 4367"
+  x=x.replace(/((?:ending|ends|end)\s+(?:with|in)\s+)(\d{4})/gi,(m,p,d)=>p+d.split("").join(" "));
+  // a bare 5-digit number is a zip
+  x=x.replace(/(^|[\s,.])(\d{5})(?=[\s,.!?]|$)/g,(m,pre,d)=>pre+d.split("").join(" "));
+  return x.trim();
+}
+
+let curAudio=null, ttsDead=false, ttsWarned=false;
+let callLive=false, silenceT=null, muted=false;
+let tMark=0, tReply=0, tVoice=0;
+let pauseMs = +(localStorage.getItem("oc_pause")||900);
+let naturalOn = localStorage.getItem("oc_natural")!=="0";
+
+async function serverSpeak(t){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session) throw new Error("no session");
+  const r = await fetch(SUPABASE_URL+"/functions/v1/tts",{
+    method:"POST",
+    headers:{ "content-type":"application/json", apikey:SUPABASE_ANON,
+              Authorization:"Bearer "+session.access_token },
+    body: JSON.stringify({ text: sayable(t), gender: job.voice })
+  });
+  if(!r.ok) throw new Error(String(r.status));
+  const url=URL.createObjectURL(await r.blob());
+  if(curAudio){ try{curAudio.pause();}catch(e){} }
+  curAudio=new Audio(url);
+  curAudio.playbackRate=Math.min(1.4,Math.max(.7,job.rate));
+  curAudio.onplay =()=>{speaking=true;tVoice=Math.round(performance.now()-tMark)-tReply;drawCapt();};
+  curAudio.onended=curAudio.onerror=()=>{speaking=false;drawCapt();URL.revokeObjectURL(url);micOn();};
+  await curAudio.play();
+}
+
+function speak(t){
+  if(!voiceOn||!job) return;
+  if(naturalOn && !ttsDead){
+    serverSpeak(t).catch(err=>{
+      const c=String(err.message||"");
+      let why;
+      if(c==="404") why="the tts function isn't deployed, or isn't named exactly \"tts\"";
+      else if(c==="401"||c==="403") why="the tts function is rejecting the request — turn OFF “Verify JWT” in its settings";
+      else if(c==="501") why="no voice key saved — add ELEVENLABS_API_KEY or OPENAI_API_KEY under Edge Functions → Secrets";
+      else if(c==="429") why="the voice provider is rate-limiting or out of credit";
+      else if(c.startsWith("4")||c.startsWith("5")) why="the voice provider returned an error ("+c+") — check the function logs";
+      else why="the request couldn't reach the tts function ("+c+")";
+      if(!ttsWarned){ ttsWarned=true; showErr("Natural voice off: "+why+". Using browser voices meanwhile."); }
+      if(c==="404"||c==="501") ttsDead=true;
+      browserSpeak(t);
+    });
+  } else browserSpeak(t);
+}
+
+function hush(){
+  if(curAudio){ try{curAudio.pause();curAudio.currentTime=0;}catch(e){} } if(canSpeak) speechSynthesis.cancel(); speaking=false; }
+function prime(){
+  if(primed) return;
+  try{ const u=new SpeechSynthesisUtterance(" "); u.volume=0; speechSynthesis.speak(u); }catch(e){}
+  try{ const a=new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMD//////////////////////////wAAAABMYXZjNTguNTQAAAAAAAAAAAAAAAAkAAAAAAAAAAABIFsl+5cAAAAAAAAAAAAAAAAAAAAA//sQxAADwAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVU=");
+       a.volume=0; a.play().catch(()=>{}); }catch(e){}
+  primed=true;
+}
+
+async function askMic(){
+  if(!navigator.mediaDevices?.getUserMedia) return true;
+  try{ const s=await navigator.mediaDevices.getUserMedia({audio:true}); s.getTracks().forEach(t=>t.stop()); return true; }
+  catch(e){
+    const n=e.name;
+    if(n==="NotAllowedError"||n==="SecurityError") showErr("Microphone blocked. Click the mic icon in the address bar and allow it, then reload. The page must be on https.");
+    else if(n==="NotFoundError") showErr("No microphone found on this device.");
+    else showErr("Microphone unavailable ("+n+"). Type your line instead.");
+    return false;
+  }
+}
+function armSilence(){
+  clearTimeout(silenceT);
+  if(!callLive) return;
+  silenceT=setTimeout(()=>{
+    const said=(finalTx||heard).trim();
+    if(said && !busy && callLive){ finalTx=""; heard=""; micOff(); send(said); }
+  }, pauseMs);
+}
+function micOff(){ clearTimeout(silenceT); if(rec){ try{rec.stop();}catch(e){} } listening=false; drawMic(); }
+function micOn(){
+  if(!callLive || muted || busy || speaking || listening) return;
+  startMic(true);          // keep the buffer — Chrome restarts the recogniser mid-sentence
+  if((finalTx||heard).trim()) armSilence();
+}
+function startMic(keep){
+  if(!SR||busy) return;
+  hush();
+  if(!keep){ finalTx=""; heard=""; }
+  rec=new SR(); rec.lang="en-US"; rec.continuous=true; rec.interimResults=true;
+  rec.onresult=ev=>{
+    let it="";
+    for(let i=ev.resultIndex;i<ev.results.length;i++){
+      const c=ev.results[i][0].transcript;
+      if(ev.results[i].isFinal) finalTx+=c+" "; else it+=c;
+    }
+    heard=(finalTx+it).trim(); drawCapt();
+  };
+  rec.onerror=ev=>{
+    listening=false; drawMic();
+    if(ev.error==="not-allowed"||ev.error==="service-not-allowed") showErr("Speech input refused. Allow the microphone for this site and reload.");
+    else if(ev.error==="no-speech" && !callLive) showErr("Nothing came through — tap and speak again.");
+  };
+  rec.onend=()=>{
+    listening=false; drawMic();
+    if(callLive && !muted && !busy && !speaking) setTimeout(micOn,120);
+    else if(callLive && (finalTx||heard).trim()) armSilence();
+  };
+  try{ rec.start(); listening=true; hideErr(); drawMic(); drawCapt(); }
+  catch(e){ showErr("Voice input could not start. Type your line instead."); }
+}
+async function micTap(){
+  if(callLive){                       // hang up and score
+    callLive=false; muted=false; micOff(); hush(); drawMic(); drawCapt();
+    createJob();
+    return;
+  }
+  prime();
+  if(!(await askMic())) return;
+  callLive=true; muted=false;
+  warmUp();
+  drawMic(); drawCapt(); micOn();
+}
+function toggleMute(){
+  if(!callLive) return;
+  muted=!muted;
+  if(muted) micOff(); else micOn();
+  drawMic(); drawCapt();
+}
+
+/* ============================ form ============================ */
+function formData(){ const o={}; $$("[data-k]").forEach(el=>o[el.dataset.k]=el.value.trim()); return o; }
+function setForm(obj){ $$("[data-k]").forEach(el=>{ el.value=obj[el.dataset.k]||""; el.classList.toggle("ok",!!el.value); }); }
+function onFormInput(e){
+  const el=e.target; if(!el.dataset.k) return;
+  el.classList.toggle("ok",!!el.value.trim());
+  drawSteps(); drawCount();
+}
+
+/* ============================ render ============================ */
+function go(v){
+  hush(); if(listening){try{rec.stop();}catch(e){}listening=false;}
+  ["setup","board","call","review","guide","results","learn"].forEach(x=>$("#v-"+x).classList.toggle("hide",x!==v));
+  $$(".nav").forEach(b=>b.classList.toggle("on",b.dataset.go===v));
+  $("#callBar").classList.toggle("hide",v!=="call"||!job);
+  $("#clockWrap").classList.toggle("hide",v!=="call");
+  document.body.style.paddingBottom = (v==="call"&&job)?"110px":"24px";
+  if(v==="results"){ if(!isAdmin){ go("board"); return; } drawResults(); }
+  if(v==="learn") drawLearn();
+  if(v==="setup"){ drawSlots(); drawPause(); }
+  window.scrollTo(0,0);
+}
+function showErr(m){ const e=$("#callErr"); e.textContent=m; e.classList.remove("hide"); }
+function hideErr(){ $("#callErr").classList.add("hide"); }
+
+function drawJobs(){
+  $("#jobList").innerHTML = JOBS.map(j=>`
+    <button class="jc" data-job="${j.id}">
+      <div class="jc-h"><span class="src">${j.src}</span><span class="pri ${j.lv}">${j.lv}</span></div>
+      <div class="jc-b"><div class="jt">${j.title}</div><div class="jd">${j.blurb}</div></div>
+    </button>`).join("");
+  $$("[data-job]").forEach(b=>b.onclick=()=>start(JOBS.find(j=>j.id===b.dataset.job)));
+}
+function drawChips(){
+  $("#chipRow").innerHTML = CHIPS.map(([k,l])=>
+    `<button class="chip ${chips[k]?"on":""}" data-chip="${k}">${chips[k]?"✓":"○"} ${l}</button>`).join("");
+  $$("[data-chip]").forEach(b=>b.onclick=()=>{chips[b.dataset.chip]=!chips[b.dataset.chip];drawChips();drawSteps();});
+}
+function stepDone(s,f){
+  if(s.key==="greet") return log.some(m=>m.w==="you");
+  if(s.key.startsWith("chip:")) return !!chips[s.key.slice(5)];
+  return !!f[s.key];
+}
+function drawSteps(){
+  const f=formData();
+  const now=STEPS.findIndex(s=>!stepDone(s,f));
+  $("#steps").innerHTML = STEPS.map((s,i)=>{
+    const d=stepDone(s,f), n=i===now;
+    return `<div class="step ${n?"now":""} ${d?"done":""}">
+      <span class="tick ${d?"":"no"}">${d?"✓":"○"}</span>
+      <div style="flex:1"><div class="st">${s.t}</div>
+      ${n?`<div class="note">${s.note}</div><div class="say">${s.say}</div>`:""}</div></div>`;
+  }).join("");
+  $("#tabScript").textContent="Script "+STEPS.filter(s=>stepDone(s,f)).length+"/7";
+}
+function drawLog(){
+  const el=$("#log");
+  el.innerHTML = (!log.length?`<div class="sys">Line ringing — tap Talk and answer</div>`:"") +
+    log.map(m=>m.w==="sys"?`<div class="sys">— ${m.t} —</div>`:
+      `<div class="msg ${m.w}"><div class="who">${m.w==="you"?"You":"Caller"}</div><div class="bub">${m.t}</div></div>`).join("") +
+    (busy?`<div class="sys">…</div>`:"");
+  el.scrollTop=el.scrollHeight;
+}
+function drawCapt(){
+  const c=$("#capt");
+  const last=[...log].reverse().find(m=>m.w==="caller");
+  if(listening||heard){ c.className="capt me"; c.innerHTML="<small>You</small>"+(heard||"Listening…"); }
+  else if(last){ c.className="capt"; c.innerHTML=`<small>${speaking?"Caller speaking":"Caller"}</small>`+last.t; }
+  else { c.className="capt"; c.innerHTML="<small>Line 1</small>Ringing — tap Answer"; }
+  const tm=document.getElementById("timing");
+  if(tm) tm.textContent = tReply ? ("reply "+(tReply/1000).toFixed(1)+"s"+(tVoice?" · voice "+(tVoice/1000).toFixed(1)+"s":"")) : "";
+}
+function drawMic(){
+  const m=$("#micBtn");
+  m.classList.toggle("live",callLive);
+  m.textContent = callLive ? "Hang up" : "Answer";
+  m.disabled = !SR && !callLive;
+  const mu=document.getElementById("muteBtn");
+  if(mu){ mu.classList.toggle("hide",!callLive); mu.textContent = muted?"Unmute":"Mute"; }
+}
+function drawCount(){
+  const f=formData(); const n=Object.values(f).filter(v=>v).length;
+  $("#fillCount").textContent = n+"/17 fields filled · creating the job ends the call and scores it";
+}
+function tick(){ secs++; const m=String(Math.floor(secs/60)).padStart(2,"0"), s=String(secs%60).padStart(2,"0");
+  $("#clock").textContent=m+":"+s; }
+
+/* ============================ flow ============================ */
+function start(j){
+  callLive=false; muted=false; micOff(); job=j; log=[]; chips={}; secs=0; report=null; heard=""; finalTx=""; busy=false;
+  setForm({phone:j.cid});
+  $("#navCall").classList.remove("hide");
+  clearInterval(timer); timer=setInterval(tick,1000); $("#clock").textContent="00:00";
+  drawChips(); drawSteps(); drawLog(); drawCapt(); drawMic(); drawCount(); hideErr();
+  go("call");
+}
+async function warmUp(){
+  try{
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session) return;
+    const h={ "content-type":"application/json", apikey:SUPABASE_ANON,
+              Authorization:"Bearer "+session.access_token };
+    fetch(SUPABASE_URL+"/functions/v1/claude",{method:"POST",headers:h,
+      body:JSON.stringify({warm:true})}).catch(()=>{});
+    if(naturalOn) fetch(SUPABASE_URL+"/functions/v1/tts",{method:"POST",headers:h,
+      body:JSON.stringify({warm:true})}).catch(()=>{});
+  }catch(e){}
+}
+
+async function send(spoken){
+  const text=(spoken!==undefined?spoken:$("#typeIn").value).trim();
+  if(!text||busy||!job) return;
+  log.push({w:"you",t:text}); $("#typeIn").value=""; heard=""; finalTx="";
+  busy=true; tMark=performance.now(); tReply=0; tVoice=0; drawMic(); drawLog(); drawCapt(); hideErr();
+
+  const system = `You are role-playing a customer phoning OnCall Locksmith, a 24/7 locksmith in the Tampa Bay area of Florida. The person answering is a trainee dispatcher speaking out loud — their words reach you through speech-to-text, so ignore transcription errors and odd punctuation. Stay fully in character: never coach, never break role, never mention you are an AI.
+
+CHARACTER: ${job.persona}
+CALL: ${job.src}
+
+THESE FACTS ARE FIXED. Never invent, change or contradict them, and never reveal one that has not been asked for:
+${factSheet(job.id)}
+
+Speak natural American English on the phone, 1-3 short sentences per turn, with the small hesitations real callers have. Your reply is read aloud, so no asterisks, no stage directions, no emoji. React honestly: warm up if the dispatcher is calm, competent and specific; get impatient if they are vague, robotic or slow. Give information only when actually asked — your number already showed on their screen from caller ID.
+
+Price is the pressure point. If the dispatcher explains that the technician checks it on site and gives a full price before doing anything, accept that unless your character is written to push. If they quote a hard final price with no caveat, take it as a firm promise and hold them to it later in the call. If they say they don't know or aren't sure, lose confidence in them.
+
+HOW REAL CALLERS IN THIS MARKET SOUND — match this register, never sound scripted or polished:
+  "Yeah, how you doing? Um, I was calling to see how much it would be to get a key fob made for a 2011 Hyundai Sonata?"
+  "Yeah, well, it's weird. Someone shot at my mailbox."
+  "It turns, it's just like the engine does not start. Uh, checked the codes with AutoZone, they said the anti-theft system is not engaging."
+  "Nah, nah. I want to know how much."
+  "I don't know, I don't have a budget, it's the first time I do it. I just want like a good price."
+Use fillers (um, uh, yeah, I mean), trail off, and interrupt yourself. Never speak in full tidy sentences.
+
+Reply with your spoken line ONLY — no JSON, no quotes, no labels, no stage directions.
+If your character would genuinely end the call, put ##END at the very end of the line.`;
+
+  const convo = log.map(m=>({role:m.w==="you"?"user":"assistant",
+    content:m.t}));
+
+  try{
+    let raw=await ask(convo,system);
+    tReply=Math.round(performance.now()-tMark);
+    const done=/##END\s*$/.test(raw);
+    const line=raw.replace(/##END\s*$/,"").replace(/^["']|["']$/g,"").trim()||"...";
+    log.push({w:"caller",t:line});
+    speak(line);
+    if(done) log.push({w:"sys",t:"Caller hung up"});
+  }catch(e){
+    showErr("Could not reach the caller: "+e.message);
+  }
+  busy=false; drawMic(); drawLog(); drawCapt(); drawSteps();
+  if(callLive && !speaking) setTimeout(micOn,200);
+}
+
+async function createJob(){
+  hush(); if(listening){try{rec.stop();}catch(e){}listening=false;drawMic();}
+  if(log.length<2){ showErr("Work the call further before creating the job."); return; }
+  busy=true; drawMic();
+  const f=formData();
+  const transcript=log.filter(m=>m.w!=="sys").map(m=>(m.w==="you"?"DISPATCHER: ":"CALLER: ")+m.t).join("\n");
+  const entered=Object.entries(f).map(([k,v])=>k+": "+(v||"(blank)")).join("; ");
+  const ticked=CHIPS.filter(([k])=>chips[k]).map(([,l])=>l).join(", ")||"none";
+
+  const system = `You are a QA supervisor at OnCall Locksmith / The Locksmith Crew, reviewing a trainee dispatcher's call against the Dispatcher Academy Handbook v2.0. The dispatcher spoke out loud (transcribed — ignore speech typos) and typed the job file while talking. Be specific, fair and direct.
+
+SCENARIO: ${job.title} — ${job.blurb}
+THE CALLER'S ACTUAL DETAILS — the job file must match these exactly:
+${factSheet(job.id)}
+WHAT THEY TYPED INTO THE JOB FILE: ${entered}
+CHECKLIST THEY TICKED: ${ticked}
+
+HANDBOOK STANDARDS — judge against these, not generic call-centre theory:
+- GOLDEN RULE: educate before pricing. Quoting or discussing a number before explaining what the work involves is the single most common failure. Mark Customer Education down hard for it.
+- Approved greeting: "Thank you for calling OnCall Locksmith / The Locksmith Crew, this is ___. How may I help you today?" A greeting with no company name loses marks. A warm, confident tone matters as much as the words.
+- Identify the service, never assume it. Duplication, all-keys-lost and programming are different jobs. On a vehicle: year/make/model, push-to-start versus metal key, and what happened to the original key. On a residential lockout: proof of residency. On all-keys-lost: ownership via title or registration.
+- Information gathering also means vehicle colour, exact address or cross-streets, and the callback number. The address and zip must be read back; if what was typed differs from the ground truth, that is a serious Documentation and Info Gathering failure even if the caller confirmed the wrong version.
+- Objection handling uses approved wording: "I completely understand — different vehicles and locks vary significantly in complexity" and "Every company operates differently. Our goal is professional service with accurate expectations."
+- FORBIDDEN phrases — mark down whenever they appear: "What's your budget?", "It's simple", "The technician will just inspect it", "I have no idea", "I'm not sure". The approved alternative is "Have you received another quote?"
+- Emergency recognition: a child or pet in a vehicle, a panic bar that won't allow egress, or an active break-in must be recognised and the caller told to call 911 or police in parallel. Missing this is an automatic fail on that category.
+- Closing means a clear next step and timing: a technician is on the way and will call to say how far he is. No invented ETA.
+- Documentation means the job file matches the call.
+
+Also flag any checklist item ticked without actually doing it.
+
+Score each category 0-5. Reply with ONLY this JSON, no markdown:
+{"scores":[{"c":"Greeting & Tone (10%)","s":0,"n":"max 12 words"}, ... one object for each of the 7 categories in this exact order: ${CATS.join(", ")}],"data":[{"f":"field","got":"what they typed","should":"what is actually correct"}],"strengths":["2 items, max 15 words"],"fixes":["3 items, max 18 words"],"rewrite":{"said":"one weak line they actually said","better":"a stronger version using approved wording"},"verdict":"PASS or NEEDS WORK"}
+Leave "data" empty if every field matches.`;
+
+  try{
+    const raw=await ask([{role:"user",content:transcript}],system);
+    report=toJSON(raw);
+    report.total=(report.scores||[]).reduce((a,b)=>a+(Number(b.s)||0),0);
+    drawReview(); clearInterval(timer); saveResult();
+    $("#navRev").classList.remove("hide"); go("review");
+  }catch(e){ showErr("The review did not come back: "+e.message); }
+  busy=false; drawMic();
+}
+
+function drawReview(){
+  $("#revSub").textContent = job.title+" · "+$("#clock").textContent+" on the line";
+  $("#revTot").textContent = report.total;
+  const vd=$("#revVd"); vd.textContent=report.verdict||"—";
+  vd.className="vd"+(report.verdict==="PASS"?" ok":"");
+  $("#revScores").innerHTML=(report.scores||[]).map(s=>`
+    <div class="score"><div><div style="font-weight:600;font-size:13.5px;color:var(--navy)">${s.c}</div>
+    <div class="note">${s.n||""}</div></div>
+    <div class="pips">${[1,2,3,4,5].map(p=>`<span class="pip ${p<=s.s?"on":""}"></span>`).join("")}</div></div>`).join("");
+  $("#revData").innerHTML=(report.data&&report.data.length)
+    ? report.data.map(d=>`<div class="diff"><span style="min-width:90px;color:var(--muted)">${d.f}</span>
+       <span style="flex:1;text-align:right"><b>${d.got||"(blank)"}</b><br>
+       <span style="color:var(--green)">should be: ${d.should}</span></span></div>`).join("")
+    : `<div style="color:var(--green);font-weight:600;font-size:13.5px">Every field matches the call. Clean ticket.</div>`;
+  $("#revGood").innerHTML=(report.strengths||[]).map(s=>`<li>${s}</li>`).join("");
+  $("#revFix").innerHTML=(report.fixes||[]).map(s=>`<li>${s}</li>`).join("");
+  if(report.rewrite){
+    $("#revRwWrap").classList.remove("hide");
+    $("#revSaid").textContent=report.rewrite.said||"";
+    $("#revBetter").textContent=report.rewrite.better||"";
+  } else $("#revRwWrap").classList.add("hide");
+}
+
+/* ============================ academy ============================ */
+let aTab="found", aSvc=null, exI=0, exScore=0, exPicked=null;
+
+function media(n){
+  const o = MEDIA[n] || {};
+  let h="";
+  if(o.img) h+=`<img src="${o.img}" alt="" style="width:100%;border-radius:6px;margin-bottom:10px">`;
+  if(o.vid){
+    const id=(o.vid.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/)||[])[1];
+    h+=id?`<div style="position:relative;padding-top:56.25%;margin-bottom:10px">
+      <iframe src="https://www.youtube.com/embed/${id}" style="position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:6px"
+      allowfullscreen loading="lazy"></iframe></div>`
+     :`<a class="btn ghost" href="${o.vid}" target="_blank" rel="noopener" style="display:inline-block;margin-bottom:10px">Watch the video</a>`;
+  }
+  if(!o.img&&!o.vid) h=`<div class="note" style="border:1px dashed var(--line);border-radius:6px;
+    padding:18px;text-align:center;margin-bottom:10px">
+    <b style="color:var(--navy);font-size:15px">Media slot ${n}</b><br>
+    No photo or video yet. Send Claude the link as “${n}: your-url”.</div>`;
+  return h;
+}
+
+function drawLearn(){
+  const b=$("#learnBody");
+  b.innerHTML=`<div class="seg" style="margin-bottom:16px;flex-wrap:wrap">
+    ${[["found","Foundations"],["svc","25 Services"],["kit","Equipment"],["gloss","Glossary"],["exam","Exam"]]
+      .map(([k,l])=>`<button data-at="${k}" class="${aTab===k?"on":""}"
+       style="border:1px solid var(--line);padding:8px 12px;border-radius:4px">${l}</button>`).join("")}
+    </div><div id="aBody"></div>`;
+  $$("[data-at]").forEach(x=>x.onclick=()=>{aTab=x.dataset.at;aSvc=null;drawLearn();});
+  const a=$("#aBody");
+
+  if(aTab==="found"){
+    a.innerHTML=`<h1>Foundations</h1>
+      <div class="panel"><div class="lbl">Company philosophy</div>
+        <p style="margin:0">Customers don't call because they need a key — they call because they have
+        a problem. Locked out, late, stressed, angry, worried about security, responsible for tenants
+        or staff. They are buying speed, confidence, security and peace of mind.</p>
+        <div class="big-say" style="margin-bottom:0">GOLDEN RULE — educate before pricing. Build
+        understanding of the situation before quoting a number.</div></div>
+
+      <div class="panel"><div class="lbl">The approved greeting</div>
+        <div class="say" style="font-size:15px">“Thank you for calling OnCall Locksmith / The Locksmith
+        Crew, this is ______. How may I help you today?”</div>
+        <button class="btn ghost" id="hearGreet" style="margin-top:10px">Hear it</button></div>
+
+      <div class="panel"><div class="lbl">Universal call flow</div>
+        ${STEPS.map((x,i)=>`<div class="step"><span style="color:var(--gold);font-weight:700;min-width:20px">${i+1}</span>
+          <div><div class="st">${x.t}</div><div class="note">${x.note}</div>
+          <div class="say">${x.say}</div></div></div>`).join("")}</div>
+
+      <div class="panel"><div class="lbl">Five emotional states — tap to reveal the response</div>
+        ${STATES_EMO.map((e,i)=>`<button class="opt" data-emo="${i}">
+          <b>${e.s}</b> — <span class="note">${e.eg}</span>
+          <div class="say hide" style="margin-top:8px">${e.r}</div></button>`).join("")}</div>
+
+      <div class="panel"><div class="lbl">Emergencies</div>
+        ${EMERGENCIES.map(([t,d])=>`<div class="diff" style="align-items:flex-start">
+          <b style="flex:1;color:var(--navy);font-weight:600">${t}</b>
+          <span style="flex:2;text-align:right" class="note">${d}</span></div>`).join("")}</div>
+
+      <div class="panel"><div class="lbl">Common dispatcher mistakes</div>
+        <ul>${MISTAKES.map(m=>`<li>${m}</li>`).join("")}</ul></div>
+
+      <div class="panel"><div class="lbl">Objection handling — tap to reveal</div>
+        ${GUIDE_CARDS.map((g,i)=>`<button class="opt" data-obj="${i}"><b>${g[0]}</b>
+          <div class="say hide" style="margin-top:8px">${g[1]}</div></button>`).join("")}</div>
+
+      <div class="panel"><div class="lbl">Quality assurance — how your calls are scored</div>
+        ${CATS.map(c=>`<div class="diff"><span>${c.replace(/ \(.*/,"")}</span>
+          <b style="color:var(--navy)">${(c.match(/\((.*)\)/)||[,""])[1]}</b></div>`).join("")}</div>
+
+      <button class="btn" id="toSvc">Continue to services</button>`;
+    $$("[data-emo],[data-obj]").forEach(x=>x.onclick=()=>x.querySelector(".say").classList.toggle("hide"));
+    $("#hearGreet").onclick=()=>{ if(!canSpeak) return; speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance("Thank you for calling OnCall Locksmith, this is Sara. How may I help you today?");
+      const p=pickVoice("f"); if(p){u.voice=p;u.lang=p.lang;} u.rate=.98; speechSynthesis.speak(u); };
+    $("#toSvc").onclick=()=>{aTab="svc";drawLearn();};
+    return;
+  }
+
+  if(aTab==="svc"){
+    if(aSvc===null){
+      const cats=["Automotive","Residential","Commercial","Safes"];
+      a.innerHTML=`<h1>The 25 services</h1>
+        <p class="sub">Tap any service for the dispatcher questions, timing, pricing factors, the
+        education line and the approved objection response.</p>
+        ${cats.map(c=>`<div class="lbl" style="margin-top:18px">${c}</div>
+          <div class="jobs">${SERVICES.map((s2,i)=>s2.c!==c?"":`
+            <button class="jc" data-svc="${i}"><div class="jc-h">
+              <span class="src">Slot ${i+1}</span>
+              <span class="pri" style="background:${(MEDIA[i+1]&&(MEDIA[i+1].img||MEDIA[i+1].vid))?"#EAF9F1":"#EEF1F4"};
+                color:${(MEDIA[i+1]&&(MEDIA[i+1].img||MEDIA[i+1].vid))?"#1F7A4C":"#8493A2"}">
+                ${(MEDIA[i+1]&&(MEDIA[i+1].img||MEDIA[i+1].vid))?"has media":"empty"}</span></div>
+              <div class="jc-b">
+              <div class="jt" style="font-size:15px">${s2.n}</div>
+              <div class="jd">${s2.w.slice(0,72)}…</div></div></button>`).join("")}</div>`).join("")}`;
+      $$("[data-svc]").forEach(x=>x.onclick=()=>{aSvc=+x.dataset.svc;drawLearn();window.scrollTo(0,0);});
+    } else {
+      const v=SERVICES[aSvc];
+      a.innerHTML=`<button class="btn ghost" id="bk" style="margin-bottom:14px">← All services</button>
+        <div class="lbl">${v.c} · slot ${aSvc+1}</div><h1>${v.n}</h1>
+        <div class="panel">${media(aSvc+1)}<p style="margin:0">${v.w}</p></div>
+        <div class="cols">
+          <div>
+            <div class="panel"><div class="lbl">Ask the customer</div>
+              <ul>${v.q.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+            <div class="panel"><div class="lbl">Educate them like this</div>
+              <div class="say" style="font-size:14px">${v.e}</div></div>
+          </div>
+          <div>
+            <div class="panel"><div class="lbl">Time on site</div>
+              <div>${v.t}</div>
+              <div class="lbl" style="margin-top:14px">What moves the price</div>
+              <ul>${v.p.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+            <div class="panel"><div class="lbl">Tools he'll bring</div>
+              <div class="note">${v.tools.join(" · ")}</div></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${aSvc>0?`<button class="btn" id="pv">← Previous service</button>`:""}
+          ${aSvc<SERVICES.length-1?`<button class="btn" id="nx">Next service →</button>`:""}
+        </div>`;
+      $("#bk").onclick=()=>{aSvc=null;drawLearn();};
+      if($("#pv")) $("#pv").onclick=()=>{aSvc--;drawLearn();window.scrollTo(0,0);};
+      if($("#nx")) $("#nx").onclick=()=>{aSvc++;drawLearn();window.scrollTo(0,0);};
+    }
+    return;
+  }
+
+  if(aTab==="kit"){
+    a.innerHTML=`<h1>Equipment</h1>
+      <p class="sub">Not for field use — knowing this exists is how you explain why jobs vary in
+      time and price.</p>
+      ${EQUIP.map(([n,d])=>`<div class="panel"><div style="font-weight:600;color:var(--navy)">${n}</div>
+        <div class="note" style="font-size:13.5px">${d}</div></div>`).join("")}`;
+    return;
+  }
+
+  if(aTab==="gloss"){
+    a.innerHTML=`<h1>Glossary</h1>
+      <div class="f"><input class="in" id="gq" placeholder="Search a term"></div>
+      <div class="panel" id="gl"></div>`;
+    const paint=()=>{
+      const t=($("#gq").value||"").toLowerCase();
+      $("#gl").innerHTML=GLOSSARY.filter(([k,d])=>(k+d).toLowerCase().includes(t))
+        .map(([k,d])=>`<div class="diff" style="align-items:flex-start">
+          <b style="flex:1;color:var(--navy);font-weight:600">${k}</b>
+          <span style="flex:2;text-align:right" class="note">${d}</span></div>`).join("")
+        || '<div class="note">Nothing matches that.</div>';
+    };
+    $("#gq").oninput=paint; paint();
+    return;
+  }
+
+  if(aTab==="exam"){
+    if(exI>=EXAM.length){
+      const pct=Math.round(exScore/EXAM.length*100), pass=pct>=85;
+      a.innerHTML=`<h1>Certification exam</h1>
+        <div class="panel" style="text-align:center">
+          <div class="tot">${pct}%</div>
+          <div class="vd ${pass?"ok":""}" style="display:inline-block;margin-top:10px">${pass?"PASSED":"NOT YET — 85% NEEDED"}</div>
+          <div class="note" style="margin-top:12px">${exScore} of ${EXAM.length} correct.
+          ${pass?"Certificate issued by your supervisor.":"Review the Foundations tab with a supervisor, then retake."}</div>
+        </div>
+        <button class="btn" id="exAgain">Retake</button>
+        <button class="btn ghost" id="exCalls" style="margin-left:8px">Go to calls</button>`;
+      $("#exAgain").onclick=()=>{exI=0;exScore=0;exPicked=null;drawLearn();};
+      $("#exCalls").onclick=()=>finishTraining(false);
+      return;
+    }
+    const q=EXAM[exI];
+    a.innerHTML=`<h1>Certification exam</h1>
+      <div class="prog"><i style="width:${Math.round(exI/EXAM.length*100)}%"></i></div>
+      <p class="sub">Question ${exI+1} of ${EXAM.length} · 85% to pass</p>
+      <div class="big-say">${q.q}</div>
+      <div id="eo">${q.o.map((o,n)=>`<button class="opt" data-eo="${n}">${o}</button>`).join("")}</div>
+      <div id="ef"></div>`;
+    $$("[data-eo]").forEach(btn=>btn.onclick=()=>{
+      if(exPicked!==null) return;
+      exPicked=+btn.dataset.eo;
+      const ok=exPicked===q.a; if(ok) exScore++;
+      $$("[data-eo]").forEach((x,n)=>{x.disabled=true;
+        if(n===q.a) x.classList.add("right"); else if(n===exPicked) x.classList.add("wrong"); else x.classList.add("dim");});
+      $("#ef").innerHTML=`<button class="btn" id="exNext">${ok?"Correct — next":"Next"}</button>`;
+      $("#exNext").onclick=()=>{exI++;exPicked=null;drawLearn();window.scrollTo(0,0);};
+    });
+    return;
+  }
+}
+function finishTraining(skip){
+  localStorage.setItem("oc_trained", skip?"skipped":"done");
+  go("board");
+}
+
+/* ============================ auth ============================ */
+function gate(on){
+  document.getElementById("gate").classList.toggle("hide",!on);
+  document.getElementById("topBar").classList.toggle("hide",on);
+  document.getElementById("shell").classList.toggle("hide",on);
+  if(on) $("#callBar").classList.add("hide");
+}
+function setAuthMode(m){
+  authMode=m;
+  $("#tabIn").classList.toggle("on",m==="in");
+  $("#tabUp").classList.toggle("on",m==="up");
+  $("#nameWrap").classList.toggle("hide",m!=="up");
+  $("#auGo").textContent = m==="in" ? "Sign in" : "Create account";
+  $("#auPass").setAttribute("autocomplete", m==="in"?"current-password":"new-password");
+  $("#auMsg").textContent="";
+}
+async function doAuth(){
+  const email=$("#auEmail").value.trim(), pass=$("#auPass").value, name=$("#auName").value.trim();
+  const msg=$("#auMsg");
+  if(!email||!pass){ msg.textContent="Email and password are both needed."; return; }
+  if(authMode==="up" && !name){ msg.textContent="Put your full name in so your supervisor knows whose scores these are."; return; }
+  msg.textContent="Working…";
+  try{
+    if(authMode==="up"){
+      const {error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
+      if(error) throw error;
+      msg.textContent="Account created. If it asks you to confirm your email, do that then sign in.";
+      setTimeout(()=>setAuthMode("in"),1200);
+    }else{
+      const {error}=await sb.auth.signInWithPassword({email,password:pass});
+      if(error) throw error;
+    }
+  }catch(e){ msg.textContent=e.message||"That didn't work."; }
+}
+async function doGuest(){
+  const msg=$("#auMsg"); msg.textContent="Opening a guest session…";
+  try{
+    const {error}=await sb.auth.signInAnonymously();
+    if(error) throw error;
+  }catch(e){
+    msg.textContent=(e.message||"Guest access failed.")+" — a supervisor may need to enable anonymous sign-ins in Supabase.";
+  }
+}
+async function loadMe(session){
+  if(!session){ me=null; isAdmin=false; gate(true); return; }
+  me=session.user;
+  isGuest = !!me.is_anonymous || !me.email;
+  const {data}=await sb.from("profiles").select("full_name,is_admin").eq("id",me.id).single();
+  isAdmin=!isGuest && !!(data&&data.is_admin);
+  $("#whoami").textContent = isGuest ? "Guest session"
+    : (data&&data.full_name?data.full_name+" · ":"")+me.email;
+  $("#roleNote").textContent = isGuest
+    ? "Nothing is saved under your name. Sign out and register to have your scores tracked."
+    : (isAdmin?"Supervisor — you can see everyone's results.":"Trainee — you see your own results.");
+  $("#resTitle").textContent=isAdmin?"Team results":"My results";
+  $("#outBtn").textContent=isGuest?"Exit guest":"Sign out";
+  $("#whoTop").textContent = isGuest ? "Guest" : ((data&&data.full_name)||me.email||"");
+  $("#navResults").classList.toggle("hide", !isAdmin);
+  gate(false);
+  go(localStorage.getItem("oc_trained") ? "board" : "guide");
+}
+async function saveResult(){
+  if(!me||!report||isGuest) return;
+  try{
+    await sb.from("results").insert({
+      user_id: me.id,
+      scenario: job.title,
+      scenario_id: job.id,
+      total: report.total,
+      verdict: report.verdict,
+      scores: report.scores||[],
+      data_errors: report.data||[],
+      fixes: report.fixes||[],
+      duration_secs: secs
+    });
+  }catch(e){ console.warn("save failed",e); }
+}
+async function drawResults(){
+  const wrap=$("#resWrap");
+  wrap.innerHTML='<div class="note">Loading…</div>';
+  if(isGuest){
+    wrap.innerHTML='<div class="note">Guest sessions aren\'t saved. Register an account and every '+
+      'call you take from then on is kept here, with your scores over time.</div>';
+    $("#resSub").textContent=""; return;
+  }
+  let q=sb.from("results").select("*, profiles(full_name)").order("created_at",{ascending:false}).limit(100);
+  if(!isAdmin) q=q.eq("user_id",me.id);
+  const {data,error}=await q;
+  if(error){ wrap.innerHTML='<div class="note">Could not load results: '+error.message+'</div>'; return; }
+  if(!data||!data.length){ wrap.innerHTML='<div class="note">No calls scored yet.</div>'; return; }
+  const avg=Math.round(data.reduce((a,b)=>a+(b.total||0),0)/data.length*10)/10;
+  const pass=data.filter(r=>r.verdict==="PASS").length;
+  $("#resSub").textContent=data.length+" calls · average "+avg+"/35 · "+pass+" passed";
+  wrap.innerHTML=data.map(r=>{
+    const d=new Date(r.created_at);
+    const who=isAdmin&&r.profiles&&r.profiles.full_name?r.profiles.full_name+" — ":"";
+    const errs=(r.data_errors&&r.data_errors.length)?r.data_errors.length+" field error"+(r.data_errors.length>1?"s":""):"clean ticket";
+    return `<div class="diff" style="align-items:flex-start">
+      <span style="flex:1">
+        <b style="color:var(--navy);font-weight:600">${who}${r.scenario||""}</b><br>
+        <span class="note">${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} · ${errs}</span>
+      </span>
+      <span style="text-align:right;white-space:nowrap">
+        <b style="color:var(--navy);font-size:16px;font-weight:700">${r.total}</b><span class="note">/35</span><br>
+        <span class="vd ${r.verdict==="PASS"?"ok":""}" style="font-size:10px;padding:2px 8px">${r.verdict||""}</span>
+      </span></div>`;
+  }).join("");
+}
+
+/* ============================ init ============================ */
+function init(){
+  $("#stateSel").innerHTML=`<option value="">State</option>`+STATES.map(s=>`<option>${s}</option>`).join("");
+  $("#jobType").innerHTML=JOB_TYPES.map(t=>`<option value="${t}">${t||"Job type"}</option>`).join("");
+  $("#jobSource").innerHTML=SOURCES.map(t=>`<option value="${t}">${t||"Job source"}</option>`).join("");
+  $("#guideSteps").innerHTML=STEPS.map((s,i)=>`<div class="step">
+    <span style="color:var(--gold);font-weight:700;min-width:20px">${String(i+1).padStart(2,"0")}</span>
+    <div><div class="st">${s.t}</div><div class="note">${s.note}</div><div class="say">${s.say}</div></div></div>`).join("");
+  $("#guideCards").innerHTML=GUIDE_CARDS.map(([q,a])=>`<div class="panel">
+    <div style="font-weight:600;color:var(--navy);margin-bottom:5px">${q}</div>
+    <div style="font-size:13.5px;color:#5D6C7B">${a}</div></div>`).join("");
+
+  drawJobs(); drawChips(); drawSteps(); drawCount();
+  if(!SR){ const e=$("#boardErr"); e.textContent="This browser has no speech recognition. Use Chrome or Edge for voice — typing still works."; e.classList.remove("hide"); }
+
+  document.addEventListener("input",onFormInput);
+  $$("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
+  $("#micBtn").onclick=micTap;
+  $("#muteBtn").onclick=toggleMute;
+  $("#endBtn").onclick=()=>{callLive=false;micOff();hush();createJob();};
+  $("#createBtn").onclick=createJob;
+  $("#againBtn").onclick=()=>start(job);
+  $("#repeatBtn").onclick=()=>{const l=[...log].reverse().find(m=>m.w==="caller"); if(l) speak(l.t);};
+  $("#typeIn").onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();send();} };
+  $("#audioTgl").onclick=()=>{voiceOn=!voiceOn;hush();$("#audioTgl").textContent=voiceOn?"Audio on":"Audio off";};
+  $("#tabScript").onclick=()=>{$("#steps").classList.remove("hide");$("#log").classList.add("hide");
+    $("#tabScript").classList.add("on");$("#tabLog").classList.remove("on");};
+  $("#tabLog").onclick=()=>{$("#log").classList.remove("hide");$("#steps").classList.add("hide");
+    $("#tabLog").classList.add("on");$("#tabScript").classList.remove("on");drawLog();};
+  $("#skipBtn").onclick=()=>finishTraining(true);
+  $("#toTraining").onclick=()=>go("learn");
+  $("#tabIn").onclick=()=>setAuthMode("in");
+  $("#tabUp").onclick=()=>setAuthMode("up");
+  $("#auGo").onclick=doAuth;
+  $("#guestGo").onclick=doGuest;
+  $("#auPass").onkeydown=e=>{ if(e.key==="Enter") doAuth(); };
+  $("#outBtn").onclick=async()=>{
+    localStorage.removeItem("oc_trained");
+    await sb.auth.signOut(); location.reload();
+  };
+  sb.auth.getSession().then(({data})=>loadMe(data.session));
+  sb.auth.onAuthStateChange((_e,session)=>loadMe(session));
+  const paintNat=()=>{
+    $("#natTgl").className="chip"+(naturalOn?" on":"");
+    $("#natTgl").textContent=(naturalOn?"✓ ":"○ ")+"Natural voice (recommended)";
+    $("#natNote").textContent=naturalOn
+      ? "Callers use a real text-to-speech service through your server. If it isn't set up yet, the app quietly falls back to the browser voices below."
+      : "Using the browser's built-in voices. These sound robotic on most machines.";
+  };
+  $("#natTgl").onclick=()=>{naturalOn=!naturalOn;localStorage.setItem("oc_natural",naturalOn?"1":"0");ttsDead=false;paintNat();};
+  paintNat();
+  $("#testM").onclick=()=>testVoice("m");
+  $("#testF").onclick=()=>testVoice("f");
+  fillVoicePickers();
+  $("#hearBtn").onclick=()=>{ if(!canSpeak||!report?.rewrite) return;
+    speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(report.rewrite.better); u.rate=.95; speechSynthesis.speak(u); };
+}
+init();
+</script>
+</body>
+</html>
