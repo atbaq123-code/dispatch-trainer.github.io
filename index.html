@@ -235,8 +235,9 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
         <h1 style="margin-top:34px">How long the caller waits</h1>
         <div class="panel">
           <div class="chips" id="pauseRow" style="margin-bottom:0"></div>
-          <div class="note" style="margin-top:10px">How long a silence means you've finished
-            speaking. Shorter feels snappier; longer lets a trainee think mid-sentence.</div>
+          <div class="note" style="margin-top:10px">Extra grace after the browser decides you've
+            stopped talking. Instant replies fastest; Patient gives a trainee room to pause
+            mid-sentence without the caller jumping in.</div>
         </div>
 
         <h1 style="margin-top:34px">Media slots</h1>
@@ -415,7 +416,6 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   <button class="mic" id="micBtn">Talk</button>
   <div class="capt" id="capt"><small>Line 1</small>Ringing — tap Talk and answer</div>
   <input class="type" id="typeIn" placeholder="or type your line">
-  <span id="timing" style="font-size:10px;color:#7C8B9B;letter-spacing:.06em"></span>
   <button class="barbtn hide" id="muteBtn">Mute</button>
   <button class="barbtn" id="repeatBtn">Repeat</button>
   <button class="barbtn end" id="endBtn">End &amp; score</button>
@@ -864,7 +864,7 @@ function testVoice(gender){
 }
 function drawPause(){
   const el=document.getElementById("pauseRow"); if(!el) return;
-  const opts=[["Snappy",650],["Normal",900],["Patient",1500]];
+  const opts=[["Instant",0],["Normal",250],["Patient",700]];
   el.innerHTML=opts.map(([l,v])=>`<button class="chip ${pauseMs==v?"on":""}" data-pz="${v}">${l}</button>`).join("");
   el.querySelectorAll("[data-pz]").forEach(b=>b.onclick=()=>{
     pauseMs=+b.dataset.pz; localStorage.setItem("oc_pause",pauseMs); drawPause();
@@ -914,8 +914,7 @@ function sayable(t){
 
 let curAudio=null, ttsDead=false, ttsWarned=false;
 let callLive=false, silenceT=null, muted=false;
-let tMark=0, tReply=0, tVoice=0;
-let pauseMs = +(localStorage.getItem("oc_pause")||900);
+let pauseMs = +(localStorage.getItem("oc_pause")||250);
 let naturalOn = localStorage.getItem("oc_natural")!=="0";
 
 async function serverSpeak(t){
@@ -932,7 +931,7 @@ async function serverSpeak(t){
   if(curAudio){ try{curAudio.pause();}catch(e){} }
   curAudio=new Audio(url);
   curAudio.playbackRate=Math.min(1.4,Math.max(.7,job.rate));
-  curAudio.onplay =()=>{speaking=true;tVoice=Math.round(performance.now()-tMark)-tReply;drawCapt();};
+  curAudio.onplay =()=>{speaking=true;drawCapt();};
   curAudio.onended=curAudio.onerror=()=>{speaking=false;drawCapt();URL.revokeObjectURL(url);micOn();};
   await curAudio.play();
 }
@@ -980,10 +979,13 @@ async function askMic(){
 function armSilence(){
   clearTimeout(silenceT);
   if(!callLive) return;
-  silenceT=setTimeout(()=>{
-    const said=(finalTx||heard).trim();
-    if(said && !busy && callLive){ finalTx=""; heard=""; micOff(); send(said); }
-  }, pauseMs);
+  silenceT=setTimeout(commit, pauseMs);
+}
+function commit(){
+  clearTimeout(silenceT);
+  const said=(finalTx||heard).trim();
+  if(!said || busy || !callLive) return;
+  finalTx=""; heard=""; micOff(); send(said);
 }
 function micOff(){ clearTimeout(silenceT); if(rec){ try{rec.stop();}catch(e){} } listening=false; drawMic(); }
 function micOn(){
@@ -995,7 +997,7 @@ function startMic(keep){
   if(!SR||busy) return;
   hush();
   if(!keep){ finalTx=""; heard=""; }
-  rec=new SR(); rec.lang="en-US"; rec.continuous=true; rec.interimResults=true;
+  rec=new SR(); rec.lang="en-US"; rec.continuous=false; rec.interimResults=true;
   rec.onresult=ev=>{
     let it="";
     for(let i=ev.resultIndex;i<ev.results.length;i++){
@@ -1003,6 +1005,7 @@ function startMic(keep){
       if(ev.results[i].isFinal) finalTx+=c+" "; else it+=c;
     }
     heard=(finalTx+it).trim(); drawCapt();
+    if(callLive && finalTx.trim()) armSilence();   // a final chunk means they stopped talking
   };
   rec.onerror=ev=>{
     listening=false; drawMic();
@@ -1011,8 +1014,9 @@ function startMic(keep){
   };
   rec.onend=()=>{
     listening=false; drawMic();
-    if(callLive && !muted && !busy && !speaking) setTimeout(micOn,120);
-    else if(callLive && (finalTx||heard).trim()) armSilence();
+    if(!callLive) return;
+    if((finalTx||heard).trim() && !busy){ commit(); return; }   // recogniser closed = they stopped
+    if(!muted && !busy && !speaking) setTimeout(()=>micOn(),80);
   };
   try{ rec.start(); listening=true; hideErr(); drawMic(); drawCapt(); }
   catch(e){ showErr("Voice input could not start. Type your line instead."); }
@@ -1105,8 +1109,7 @@ function drawCapt(){
   if(listening||heard){ c.className="capt me"; c.innerHTML="<small>You</small>"+(heard||"Listening…"); }
   else if(last){ c.className="capt"; c.innerHTML=`<small>${speaking?"Caller speaking":"Caller"}</small>`+last.t; }
   else { c.className="capt"; c.innerHTML="<small>Line 1</small>Ringing — tap Answer"; }
-  const tm=document.getElementById("timing");
-  if(tm) tm.textContent = tReply ? ("reply "+(tReply/1000).toFixed(1)+"s"+(tVoice?" · voice "+(tVoice/1000).toFixed(1)+"s":"")) : "";
+
 }
 function drawMic(){
   const m=$("#micBtn");
@@ -1149,7 +1152,7 @@ async function send(spoken){
   const text=(spoken!==undefined?spoken:$("#typeIn").value).trim();
   if(!text||busy||!job) return;
   log.push({w:"you",t:text}); $("#typeIn").value=""; heard=""; finalTx="";
-  busy=true; tMark=performance.now(); tReply=0; tVoice=0; drawMic(); drawLog(); drawCapt(); hideErr();
+  busy=true; drawMic(); drawLog(); drawCapt(); hideErr();
 
   const system = `You are role-playing a customer phoning OnCall Locksmith, a 24/7 locksmith in the Tampa Bay area of Florida. The person answering is a trainee dispatcher speaking out loud — their words reach you through speech-to-text, so ignore transcription errors and odd punctuation. Stay fully in character: never coach, never break role, never mention you are an AI.
 
@@ -1179,7 +1182,6 @@ If your character would genuinely end the call, put ##END at the very end of the
 
   try{
     let raw=await ask(convo,system);
-    tReply=Math.round(performance.now()-tMark);
     const done=/##END\s*$/.test(raw);
     const line=raw.replace(/##END\s*$/,"").replace(/^["']|["']$/g,"").trim()||"...";
     log.push({w:"caller",t:line});
