@@ -157,6 +157,36 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .slot.bad{background:#FDECE9;}
 .big-say{font-size:17px;line-height:1.5;color:var(--navy);background:#F4FBFC;
   border-left:3px solid var(--teal);padding:13px 15px;border-radius:0 5px 5px 0;margin:12px 0;}
+/* home */
+.hero{padding:26px 0 8px;}
+.hero h1{font-size:30px;margin:0 0 4px;}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:6px;}
+.tile{background:#fff;border:1px solid var(--line2);border-radius:10px;padding:20px;text-align:left;
+  position:relative;overflow:hidden;transition:transform .18s cubic-bezier(.2,.7,.3,1),box-shadow .18s;}
+.tile:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(33,43,59,.13);}
+.tile:hover .tile-go{transform:translateX(4px);}
+.tile-ic{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  font-size:19px;margin-bottom:14px;background:#EEF3F7;}
+.tile h3{margin:0 0 5px;font-size:17px;color:var(--navy);font-weight:600;}
+.tile p{margin:0;font-size:13px;color:var(--muted);line-height:1.45;}
+.tile-go{display:inline-block;margin-top:12px;font-size:12px;font-weight:600;color:var(--teal);
+  letter-spacing:.04em;transition:transform .18s;}
+.tile-bar{height:4px;background:#E6ECF1;border-radius:3px;margin-top:12px;overflow:hidden;}
+.tile-bar i{display:block;height:100%;background:var(--gold);transition:width .6s cubic-bezier(.2,.7,.3,1);}
+.stat{background:#fff;border:1px solid var(--line2);border-radius:10px;padding:16px;text-align:center;}
+.stat b{display:block;font-size:26px;color:var(--navy);line-height:1.1;}
+.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;}
+
+/* section + tile entrances */
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.enter{animation:rise .32s cubic-bezier(.2,.7,.3,1) both;}
+.tiles>*{animation:rise .38s cubic-bezier(.2,.7,.3,1) both;}
+.tiles>*:nth-child(1){animation-delay:.03s}.tiles>*:nth-child(2){animation-delay:.07s}
+.tiles>*:nth-child(3){animation-delay:.11s}.tiles>*:nth-child(4){animation-delay:.15s}
+.tiles>*:nth-child(5){animation-delay:.19s}.tiles>*:nth-child(6){animation-delay:.23s}
+.brandbtn{cursor:pointer}
+.shell.solo{grid-template-columns:1fr;}
+.shell.solo .side{display:none;}
 @media(prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important;}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -190,11 +220,11 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 </div>
 
 <div class="top hide" id="topBar">
-  <div style="display:flex;align-items:center;gap:10px">
+  <div style="display:flex;align-items:center;gap:10px" class="brandbtn" data-go="home">
     <span class="logo">OnCall</span><span class="co">Locksmith · Dispatch</span>
   </div>
   <div class="navs">
-    <button class="nav" data-go="guide">Script</button>
+    <button class="nav" data-go="home">Home</button>
     <button class="nav" data-go="learn">Training</button>
     <button class="nav on" data-go="board">Calls</button>
     <button class="nav hide" id="navCall" data-go="call">New job</button>
@@ -278,6 +308,17 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
       <h1 id="resTitle">My results</h1>
       <p class="sub" id="resSub"></p>
       <div class="panel" id="resWrap"><div class="note">Loading…</div></div>
+    </section>
+
+    <!-- HOME -->
+    <section id="v-home" class="hide">
+      <div class="hero">
+        <div class="crumb" id="homeCrumb">Dispatcher Academy</div>
+        <h1 id="homeHi">Welcome</h1>
+        <p class="sub" id="homeSub">Everything you need is below.</p>
+      </div>
+      <div class="cols" style="grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px" id="homeStats"></div>
+      <div class="tiles" id="homeTiles"></div>
     </section>
 
     <!-- LEARN -->
@@ -400,25 +441,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
     </section>
 
     <!-- GUIDE -->
-    <section id="v-guide" class="hide">
-      <div class="crumb">Dispatcher Academy # Quick reference</div>
-      <h1>On-call cheat sheet</h1>
-      <p class="sub">The handbook lives under Training. This is what you keep open while the phone
-        is ringing.</p>
-      <div class="panel" style="padding:0" id="guideSteps"></div>
-      <div class="cols" id="guideCards"></div>
-      <div class="panel" style="margin-top:14px">
-        <div class="lbl">Before you close the job file</div>
-        <ul>
-          <li>Read the street number and zip back out loud. If it doesn't match the map, ask again — the caller may confirm your mistake without noticing.</li>
-          <li>Year, make, model, colour and push-to-start or metal key, or the tech brings the wrong gear.</li>
-          <li>Educate before you price. Never a number in the first ten seconds.</li>
-          <li>Gate codes, unit numbers, business name, which entrance — anything that costs the tech ten minutes on arrival.</li>
-          <li>The job file has to match the call. That is 5% of your score on its own.</li>
-        </ul>
-      </div>
-      <div style="margin-top:16px"><button class="btn" id="toTraining">Continue to training →</button></div>
-    </section>
+
 
     
   </div>
@@ -1152,13 +1175,17 @@ function onFormInput(e){
 /* ============================ render ============================ */
 function go(v){
   hush(); if(listening){try{rec.stop();}catch(e){}listening=false;}
-  ["setup","board","call","review","guide","results","learn"].forEach(x=>$("#v-"+x).classList.toggle("hide",x!==v));
+  ["home","setup","board","call","review","results","learn"].forEach(x=>$("#v-"+x).classList.toggle("hide",x!==v));
   $$(".nav").forEach(b=>b.classList.toggle("on",b.dataset.go===v));
   $("#callBar").classList.toggle("hide",v!=="call"||!job);
+  document.getElementById("shell").classList.toggle("solo", v!=="call");
+  const sec=document.getElementById("v-"+v);
+  if(sec){ sec.classList.remove("enter"); void sec.offsetWidth; sec.classList.add("enter"); }
   $("#clockWrap").classList.toggle("hide",v!=="call");
   document.body.style.paddingBottom = (v==="call"&&job)?"110px":"24px";
   if(v==="results"){ if(!isAdmin){ go("board"); return; } drawResults(); }
   if(v==="learn") drawLearn();
+  if(v==="home") drawHome();
   if(v==="setup"){ drawSlots(); drawPause(); drawLang(); }
   window.scrollTo(0,0);
 }
@@ -1815,7 +1842,7 @@ async function loadMe(session){
   $("#whoTop").textContent = isGuest ? "Guest" : ((data&&data.full_name)||me.email||"");
   $("#navResults").classList.toggle("hide", !isAdmin);
   gate(false);
-  go(localStorage.getItem("oc_trained") ? "board" : "guide");
+  go(localStorage.getItem("oc_trained") ? "home" : "learn");
 }
 async function saveResult(){
   if(!me||!report||isGuest) return;
@@ -1893,6 +1920,47 @@ function copyCall(ix){
   const body=(r.transcript||[]).map(m=>(m.w==="you"?"DISPATCHER: ":"CALLER: ")+m.t).join("\n");
   navigator.clipboard.writeText(head+body).catch(()=>{});
 }
+async function drawHome(){
+  const first=((($("#whoTop").textContent)||"").split(" ")[0])||"";
+  $("#homeHi").textContent = first ? "Hello, "+first : "Dispatcher Academy";
+  $("#homeCrumb").textContent = isAdmin ? "Supervisor" : (isGuest ? "Guest session" : "Trainee");
+  $("#homeSub").textContent = isAdmin
+    ? "Take calls yourself, or review how your dispatchers are doing."
+    : "Work through the academy, then take live calls until they feel easy.";
+
+  const trained = localStorage.getItem("oc_trained")==="done";
+  const tiles=[
+    {go:"learn", ic:"📘", bg:"#FFF6E2", h:"Training", p:"The handbook, all 25 services, the typing test and the certification exam.",
+     bar: trained?100:0, note: trained?"Completed":"Not finished"},
+    {go:"board", ic:"📞", bg:"#E8F7F9", h:"Take a call", p:"Ten live scenarios with a real caller. You answer, you fill the job file, you get scored."},
+    {go:"setup", ic:"⚙️", bg:"#EEF1F4", h:"Settings", p:"Caller voices, how long the caller waits before replying, speech recognition."}
+  ];
+  if(isAdmin) tiles.splice(2,0,{go:"results", ic:"📊", bg:"#EAF9F1", h:"Team results",
+    p:"Every call your dispatchers have taken, with transcripts and recordings."});
+
+  $("#homeTiles").innerHTML = tiles.map(t=>`
+    <button class="tile" data-tile="${t.go}">
+      <div class="tile-ic" style="background:${t.bg}">${t.ic}</div>
+      <h3>${t.h}</h3><p>${t.p}</p>
+      ${t.bar!==undefined?`<div class="tile-bar"><i style="width:${t.bar}%"></i></div>
+        <span class="tile-go">${t.note}</span>`:`<span class="tile-go">Open →</span>`}
+    </button>`).join("");
+  $$("[data-tile]").forEach(b=>b.onclick=()=>go(b.dataset.tile));
+
+  const box=$("#homeStats");
+  if(isGuest||!me){ box.innerHTML=""; return; }
+  try{
+    let q=sb.from("results").select("total,verdict,scenario_id").order("created_at",{ascending:false}).limit(200);
+    if(!isAdmin) q=q.eq("user_id",me.id);
+    const {data}=await q;
+    const calls=(data||[]).filter(r=>r.scenario_id!=="typing");
+    const avg=calls.length?Math.round(calls.reduce((a,b)=>a+(b.total||0),0)/calls.length):0;
+    const pass=calls.filter(r=>r.verdict==="PASS").length;
+    box.innerHTML=[[calls.length,"Calls taken"],[avg+"/35","Average score"],[pass,"Passed"]]
+      .map(([v,l])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join("");
+  }catch(e){ box.innerHTML=""; }
+}
+
 async function drawResults(){
   const wrap=$("#resWrap");
   wrap.innerHTML='<div class="note">Loading…</div>';
@@ -1939,13 +2007,6 @@ function init(){
   $("#stateSel").innerHTML=`<option value="">State</option>`+STATES.map(s=>`<option>${s}</option>`).join("");
   $("#jobType").innerHTML=JOB_TYPES.map(t=>`<option value="${t}">${t||"Job type"}</option>`).join("");
   $("#jobSource").innerHTML=SOURCES.map(t=>`<option value="${t}">${t||"Job source"}</option>`).join("");
-  $("#guideSteps").innerHTML=STEPS.map((s,i)=>`<div class="step">
-    <span style="color:var(--gold);font-weight:700;min-width:20px">${String(i+1).padStart(2,"0")}</span>
-    <div><div class="st">${s.t}</div><div class="note">${forKind(s.note)}</div><div class="say">${forKind(s.say)}</div></div></div>`).join("");
-  $("#guideCards").innerHTML=GUIDE_CARDS.map(([q,a])=>`<div class="panel">
-    <div style="font-weight:600;color:var(--navy);margin-bottom:5px">${q}</div>
-    <div style="font-size:13.5px;color:#5D6C7B">${a}</div></div>`).join("");
-
   drawJobs(); drawChips(); drawSteps(); drawCount();
   if(!SR){ const e=$("#boardErr"); e.textContent="This browser has no speech recognition. Use Chrome or Edge for voice — typing still works."; e.classList.remove("hide"); }
 
@@ -1964,7 +2025,6 @@ function init(){
   $("#tabLog").onclick=()=>{$("#log").classList.remove("hide");$("#steps").classList.add("hide");
     $("#tabLog").classList.add("on");$("#tabScript").classList.remove("on");drawLog();};
   $("#skipBtn").onclick=()=>finishTraining(true);
-  $("#toTraining").onclick=()=>go("learn");
   $("#tabIn").onclick=()=>setAuthMode("in");
   $("#tabUp").onclick=()=>setAuthMode("up");
   $("#auGo").onclick=doAuth;
