@@ -414,7 +414,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 <!-- call bar -->
 <div class="bar hide" id="callBar">
   <button class="mic" id="micBtn">Talk</button>
-  <div class="capt" id="capt"><small>Line 1</small>Ringing — tap Talk and answer</div>
+  <div class="capt" id="capt"></div>
   <input class="type" id="typeIn" placeholder="or type your line">
   <button class="barbtn hide" id="muteBtn">Mute</button>
   <button class="barbtn" id="repeatBtn">Repeat</button>
@@ -1117,6 +1117,14 @@ function drawLog(){
 }
 function drawCapt(){
   const c=$("#capt");
+  c.className="capt";
+  if(!callLive){ c.innerHTML='<small>Line 1</small>Ringing — tap Answer'; return; }
+  if(busy)     { c.innerHTML='<small>&nbsp;</small>…'; return; }
+  if(speaking) { c.innerHTML='<small>&nbsp;</small>Caller speaking'; return; }
+  if(muted)    { c.innerHTML='<small>&nbsp;</small>Muted'; return; }
+  c.innerHTML='<small>&nbsp;</small>Listening';
+  return;
+  /* old caption below, unused */
   const last=[...log].reverse().find(m=>m.w==="caller");
   if(listening||heard){ c.className="capt me"; c.innerHTML="<small>You</small>"+(heard||"Listening…"); }
   else if(last){ c.className="capt"; c.innerHTML=`<small>${speaking?"Caller speaking":"Caller"}</small>`+last.t; }
