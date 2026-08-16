@@ -1893,10 +1893,7 @@ async function loadMe(session){
   $("#whoTop").textContent = isGuest ? "Guest" : ((data&&data.full_name)||me.email||"");
   $("#navResults").classList.remove("hide");
   gate(false);
-  if(!booted){
-    booted=true;
-    go(localStorage.getItem(trainedKey()) ? "home" : "learn");
-  }
+  if(!booted){ booted=true; go("home"); }
 }
 async function saveResult(blob, f){
   if(!me||!report||isGuest) return;
@@ -2117,8 +2114,10 @@ async function drawHome(){
 
   const trained = localStorage.getItem(trainedKey())==="done";
   const tiles=[
-    {go:"learn", ic:"📘", bg:"#FFF6E2", h:"Training", p:"The handbook, all 25 services, the typing test and the certification exam.",
-     bar: trained?100:0, note: trained?"Completed":"Not finished"},
+    {go:"learn", ic:"📘", bg:"#FFF6E2", h:"Training",
+     p: trained ? "The handbook, all 25 services, the typing test and the certification exam."
+                : "Start here. The handbook, all 25 services, the typing test and the certification exam.",
+     bar: trained?100:0, note: trained?"Completed →":"Not started yet →"},
     {go:"board", ic:"📞", bg:"#E8F7F9", h:"Take a call", p:"Ten live scenarios with a real caller. You answer, you fill the job file, you get scored."},
     {go:"setup", ic:"⚙️", bg:"#EEF1F4", h:"Settings", p:"Caller voices, how long the caller waits before replying, speech recognition."}
   ];
