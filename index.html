@@ -916,7 +916,7 @@ const JOBS=[
 ];
 
 /* ============================ state ============================ */
-let me=null, isAdmin=false, isGuest=false, authMode="in";
+let me=null, isAdmin=false, isGuest=false, authMode="in", booted=false;
 let job=null, log=[], chips={}, secs=0, timer=null, busy=false, report=null;
 let listening=false, speaking=false, voiceOn=true, heard="", finalTx="", rec=null, voices=[], primed=false;
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1829,7 +1829,7 @@ function drawLearn(){
   }
 }
 function finishTraining(skip){
-  localStorage.setItem("oc_trained", skip?"skipped":"done");
+  localStorage.setItem(trainedKey(), skip?"skipped":"done");
   go("board");
 }
 
@@ -1876,6 +1876,7 @@ async function doGuest(){
     msg.textContent=(e.message||"Guest access failed.")+" — a supervisor may need to enable anonymous sign-ins in Supabase.";
   }
 }
+function trainedKey(){ return "oc_trained_"+((me&&me.id)||"anon"); }
 async function loadMe(session){
   if(!session){ me=null; isAdmin=false; gate(true); return; }
   me=session.user;
@@ -1892,7 +1893,10 @@ async function loadMe(session){
   $("#whoTop").textContent = isGuest ? "Guest" : ((data&&data.full_name)||me.email||"");
   $("#navResults").classList.remove("hide");
   gate(false);
-  go(localStorage.getItem("oc_trained") ? "home" : "learn");
+  if(!booted){
+    booted=true;
+    go(localStorage.getItem(trainedKey()) ? "home" : "learn");
+  }
 }
 async function saveResult(blob, f){
   if(!me||!report||isGuest) return;
@@ -2023,7 +2027,7 @@ async function drawTechs(){
     <div class="panel" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
       <div style="flex:1;min-width:200px">
         <div style="font-weight:600;color:var(--navy);font-size:16px">${t.name}</div>
-        <div class="note">${t.phone||"no number"} · ${t.status||""}</div>
+        <div class="note">${t.job_type||"no job type"} · ${t.status||""}</div>
         <div class="note" style="margin-top:6px">${t.label||t.address||"no address set"}</div>
         ${t.lat?"":'<div class="note" style="color:var(--red)">Address not located — edit and try a fuller address.</div>'}
       </div>
@@ -2048,7 +2052,8 @@ function drawTechForm(){
     <div class="lbl">${t.id?"Edit technician":"New technician"}</div>
     <div class="gh">
       <div class="f"><input class="in" id="tfName" placeholder="Name" value="${t.name||""}"></div>
-      <div class="f"><input class="in" id="tfPhone" placeholder="Phone" value="${t.phone||""}"></div>
+      <div class="f"><select class="in" id="tfJob">${JOB_TYPES.map(j=>
+        `<option value="${j}"${(t.job_type||"")===j?" selected":""}>${j||"Job type he's on"}</option>`).join("")}</select></div>
     </div>
     <div class="f"><input class="in" id="tfAddr" placeholder="Address of the job he is on now"
       value="${(t.address||"").replace(/"/g,"&quot;")}"></div>
@@ -2066,7 +2071,7 @@ function drawTechForm(){
     let geo=null;
     if(addr){ try{ geo=await geoCall({op:"geocode",q:addr}); }
               catch(e){ msg.textContent="Address not found — saving without it. ("+e.message+")"; } }
-    const row={ name, phone:$("#tfPhone").value.trim(), address:addr,
+    const row={ name, job_type:$("#tfJob").value, address:addr,
       label:geo?geo.label:null, lat:geo?geo.lat:null, lng:geo?geo.lng:null,
       status:$("#tfStatus").value.trim()||"On a job", updated_at:new Date().toISOString(), updated_by:me.id };
     const res = t.id ? await sb.from("techs").update(row).eq("id",t.id)
@@ -2092,7 +2097,7 @@ async function findNearest(){
       ranked.map((x,i)=>`<div class="diff" style="align-items:center">
         <span style="flex:1">
           <b style="color:var(--navy);font-weight:600">${i===0?"★ ":""}${x.t.name}</b>
-          <span class="note"> · ${x.t.phone||"no number"}</span><br>
+          <span class="note"> · ${x.t.job_type||"no job type"}</span><br>
           <span class="note">${x.t.label||x.t.address||""}</span>
         </span>
         <span style="text-align:right;white-space:nowrap">
@@ -2110,7 +2115,7 @@ async function drawHome(){
     ? "Take calls yourself, or review how your dispatchers are doing."
     : "Work through the academy, then take live calls until they feel easy.";
 
-  const trained = localStorage.getItem("oc_trained")==="done";
+  const trained = localStorage.getItem(trainedKey())==="done";
   const tiles=[
     {go:"learn", ic:"📘", bg:"#FFF6E2", h:"Training", p:"The handbook, all 25 services, the typing test and the certification exam.",
      bar: trained?100:0, note: trained?"Completed":"Not finished"},
@@ -2233,8 +2238,7 @@ function init(){
   $("#guestGo").onclick=doGuest;
   $("#auPass").onkeydown=e=>{ if(e.key==="Enter") doAuth(); };
   $("#outBtn").onclick=async()=>{
-    localStorage.removeItem("oc_trained");
-    await sb.auth.signOut(); location.reload();
+    booted=false; await sb.auth.signOut(); location.reload();
   };
   sb.auth.getSession().then(({data})=>loadMe(data.session));
   sb.auth.onAuthStateChange((_e,session)=>loadMe(session));
