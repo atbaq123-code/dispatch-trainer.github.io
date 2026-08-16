@@ -255,6 +255,9 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
           <div class="lbl">Signed in as</div>
           <div id="whoami" style="font-weight:600;color:var(--navy)"></div>
           <div class="note" id="roleNote" style="margin-top:6px"></div>
+          <div class="note" style="margin-top:10px;font-family:Inter,monospace">
+            Build <b id="buildTag"></b> — tell Claude this number if something looks out of date.
+          </div>
         </div>
 
         <h1 style="margin-top:34px">Voice quality</h1>
@@ -483,6 +486,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
+const BUILD = "B-0816-33";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -1889,6 +1893,7 @@ async function loadMe(session){
     ? "Nothing is saved under your name. Sign out and register to have your scores tracked."
     : (isAdmin?"Supervisor — you can see everyone's results.":"Trainee — you see your own results.");
   $("#resTitle").textContent=isAdmin?"Team results":"My results";
+  const bt=document.getElementById("buildTag"); if(bt) bt.textContent=BUILD;
   $("#outBtn").textContent=isGuest?"Exit guest":"Sign out";
   $("#whoTop").textContent = isGuest ? "Guest" : ((data&&data.full_name)||me.email||"");
   $("#navResults").classList.remove("hide");
