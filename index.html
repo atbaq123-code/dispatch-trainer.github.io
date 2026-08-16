@@ -274,6 +274,14 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
             mid-sentence without the caller jumping in.</div>
         </div>
 
+        <h1 style="margin-top:34px">Microphone sensitivity</h1>
+        <div class="panel">
+          <div class="chips" id="gateRow" style="margin-bottom:0"></div>
+          <div class="note" style="margin-top:10px">If people talking nearby keep getting picked
+            up, move this toward Strict &mdash; only speech close to the microphone counts. Move
+            toward Sensitive if your own quiet speech is being ignored.</div>
+        </div>
+
         <h1 style="margin-top:34px">Speech recognition</h1>
         <div class="panel">
           <button class="chip" id="sttTgl" style="font-size:13px;padding:10px 16px"></button>
@@ -1001,6 +1009,16 @@ function testVoice(gender){
   const p=pickVoice(gender); if(p){u.voice=p;u.lang=p.lang;}
   u.rate=1; speechSynthesis.speak(u);
 }
+function drawGate(){
+  var el=document.getElementById("gateRow"); if(!el) return;
+  var opts=[["Sensitive",0.010],["Normal",0.020],["Strict",0.040]];
+  el.innerHTML=opts.map(function(o){
+    return '<button class="chip '+(Math.abs(micGate-o[1])<0.0001?"on":"")+'" data-gt="'+o[1]+'">'+o[0]+'</button>';
+  }).join("");
+  el.querySelectorAll("[data-gt]").forEach(function(b){
+    b.onclick=function(){ micGate=+b.dataset.gt; localStorage.setItem("oc_gate",micGate); drawGate(); };
+  });
+}
 function drawLang(){
   const el=document.getElementById("langRow"); if(!el) return;
   const cur=localStorage.getItem("oc_lang")||"en-US";
@@ -1116,7 +1134,7 @@ function prime(){
 
 async function askMic(){
   if(!navigator.mediaDevices?.getUserMedia) return true;
-  try{ const s=await navigator.mediaDevices.getUserMedia({audio:true}); s.getTracks().forEach(t=>t.stop()); return true; }
+  try{ const s=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:true, channelCount:1}}); s.getTracks().forEach(t=>t.stop()); return true; }
   catch(e){
     const n=e.name;
     if(n==="NotAllowedError"||n==="SecurityError") showErr("Microphone blocked. Click the mic icon in the address bar and allow it, then reload. The page must be on https.");
@@ -1144,6 +1162,11 @@ async function commit(){
   clearTimeout(silenceT);
   const said=(finalTx||heard).trim();
   if(said.length<2 || busy || holding || !callLive) return;
+  if(anaNode && turnPeak && turnPeak < micGate){
+    finalTx=""; heard=""; turnPeak=0; drawCapt();
+    if(turnRec){ turnStop().then(turnStart); }
+    return;
+  }
   finalTx=""; heard=""; holding=true; micOff();
   let text=said;
   if(sttOn){
@@ -1202,6 +1225,7 @@ async function micTap(){
   callLive=true; muted=false; holding=false;
   warmUp();
   await startRecording();
+  startMeter();
   turnStart();
   drawMic(); drawCapt(); micOn();
 }
@@ -1236,7 +1260,7 @@ function go(v){
   if(v==="learn") drawLearn();
   if(v==="home") drawHome();
   if(v==="techs") drawTechs();
-  if(v==="setup"){ drawSlots(); drawPause(); drawLang(); }
+  if(v==="setup"){ drawSlots(); drawPause(); drawLang(); drawGate(); }
   window.scrollTo(0,0);
 }
 function showErr(m){ const e=$("#callErr"); e.textContent=m; e.classList.remove("hide"); }
@@ -1327,9 +1351,31 @@ function start(j){
 /* ---------- accurate speech to text: the browser detects when you stop,
      Whisper works out what you actually said ---------- */
 let turnRec=null, turnChunks=[], holding=false;
+let anaNode=null, anaBuf=null, anaTimer=null, turnPeak=0;
+let micGate = +(localStorage.getItem("oc_gate")||0.020);
+
+function startMeter(){
+  if(!recCtx || !micStream || anaNode) return;
+  try{
+    anaNode=recCtx.createAnalyser();
+    anaNode.fftSize=1024;
+    recCtx.createMediaStreamSource(micStream).connect(anaNode);
+    anaBuf=new Float32Array(anaNode.fftSize);
+    clearInterval(anaTimer);
+    anaTimer=setInterval(function(){
+      if(!anaNode||!listening) return;
+      anaNode.getFloatTimeDomainData(anaBuf);
+      var sum=0; for(var i=0;i<anaBuf.length;i++) sum+=anaBuf[i]*anaBuf[i];
+      var rms=Math.sqrt(sum/anaBuf.length);
+      if(rms>turnPeak) turnPeak=rms;
+    },80);
+  }catch(e){ anaNode=null; }
+}
+function stopMeter(){ clearInterval(anaTimer); anaTimer=null; anaNode=null; }
 let sttOn = localStorage.getItem("oc_stt")!=="0";
 
 function turnStart(){
+  turnPeak=0;
   if(!sttOn || !micStream || !window.MediaRecorder || turnRec) return;
   try{
     turnChunks=[];
@@ -1366,7 +1412,7 @@ let recCtx=null, recDest=null, recorder=null, recChunks=[], micStream=null, recB
 async function startRecording(){
   try{
     if(!window.MediaRecorder) return;
-    micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    micStream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:true, channelCount:1}});
     recCtx  = new (window.AudioContext||window.webkitAudioContext)();
     recDest = recCtx.createMediaStreamDestination();
     recCtx.createMediaStreamSource(micStream).connect(recDest);
@@ -1399,6 +1445,7 @@ function stopRecording(){
   });
 }
 function cleanupRec(){
+  stopMeter();
   try{ micStream && micStream.getTracks().forEach(t=>t.stop()); }catch(e){}
   try{ recCtx && recCtx.close(); }catch(e){}
   recorder=null; recCtx=null; recDest=null; micStream=null;
