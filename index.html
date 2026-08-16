@@ -229,6 +229,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
     <button class="nav on" data-go="board">Calls</button>
     <button class="nav hide" id="navCall" data-go="call">New job</button>
     <button class="nav hide" id="navRev" data-go="review">Review</button>
+    <button class="nav" data-go="techs">Dispatch</button>
     <button class="nav" id="navResults" data-go="results">Results</button>
     <button class="nav" data-go="setup">Settings</button>
     <button class="nav" id="outBtn" style="border:1px solid rgba(255,255,255,.25)">Sign out</button>
@@ -308,6 +309,29 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
       <h1 id="resTitle">My results</h1>
       <p class="sub" id="resSub"></p>
       <div class="panel" id="resWrap"><div class="note">Loading…</div></div>
+    </section>
+
+    <!-- TECHS -->
+    <section id="v-techs" class="hide">
+      <div class="crumb">Dispatch # Technician board</div>
+      <h1>Who's closest?</h1>
+      <p class="sub">Put in the new job's address and it ranks your technicians by drive time
+        from wherever each of them is working right now.</p>
+
+      <div class="panel">
+        <div class="g2">
+          <div class="f"><input class="in" id="jobAddr" placeholder="New job address, e.g. 2614 E 112th Ave, Tampa FL 33612"></div>
+          <div class="f"><button class="btn" id="findBtn" style="width:100%">Find nearest</button></div>
+        </div>
+        <div id="findOut"></div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <h1 style="font-size:20px;margin-top:22px">Technicians</h1>
+        <button class="btn ghost hide" id="addTechBtn">+ Add technician</button>
+      </div>
+      <div id="techForm"></div>
+      <div id="techList"><div class="note">Loading…</div></div>
     </section>
 
     <!-- HOME -->
@@ -1182,7 +1206,7 @@ function onFormInput(e){
 /* ============================ render ============================ */
 function go(v){
   hush(); if(listening){try{rec.stop();}catch(e){}listening=false;}
-  ["home","setup","board","call","review","results","learn"].forEach(x=>$("#v-"+x).classList.toggle("hide",x!==v));
+  ["home","setup","board","call","review","results","learn","techs"].forEach(x=>$("#v-"+x).classList.toggle("hide",x!==v));
   $$(".nav").forEach(b=>b.classList.toggle("on",b.dataset.go===v));
   $("#callBar").classList.toggle("hide",v!=="call"||!job);
   document.getElementById("shell").classList.toggle("solo", v!=="call");
@@ -1193,6 +1217,7 @@ function go(v){
   if(v==="results") drawResults();
   if(v==="learn") drawLearn();
   if(v==="home") drawHome();
+  if(v==="techs") drawTechs();
   if(v==="setup"){ drawSlots(); drawPause(); drawLang(); }
   window.scrollTo(0,0);
 }
@@ -1972,6 +1997,111 @@ function copyCall(ix){
   const body=(r.transcript||[]).map(m=>(m.w==="you"?"DISPATCHER: ":"CALLER: ")+m.t).join("\n");
   navigator.clipboard.writeText(head+body).catch(()=>{});
 }
+/* ---------------- technician board ---------------- */
+let techs=[], techEdit=null;
+
+async function geoCall(body){
+  const { data:{ session } } = await sb.auth.getSession();
+  const r=await fetch(SUPABASE_URL+"/functions/v1/geo",{method:"POST",
+    headers:{"content-type":"application/json",apikey:SUPABASE_ANON,
+             Authorization:"Bearer "+session.access_token},
+    body:JSON.stringify(body)});
+  const d=await r.json().catch(()=>({error:"bad response"}));
+  if(!r.ok) throw new Error(d.error||("error "+r.status));
+  return d;
+}
+
+async function drawTechs(){
+  $("#addTechBtn").classList.toggle("hide", !isAdmin);
+  $("#addTechBtn").onclick=()=>{ techEdit={}; drawTechForm(); };
+  const {data,error}=await sb.from("techs").select("*").order("name");
+  if(error){ $("#techList").innerHTML='<div class="note">Could not load: '+error.message+'</div>'; return; }
+  techs=data||[];
+  if(!techs.length){ $("#techList").innerHTML='<div class="note">No technicians yet'+
+    (isAdmin?' — add your first one above.':'. A supervisor needs to add them.')+'</div>'; return; }
+  $("#techList").innerHTML=techs.map((t,i)=>`
+    <div class="panel" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
+      <div style="flex:1;min-width:200px">
+        <div style="font-weight:600;color:var(--navy);font-size:16px">${t.name}</div>
+        <div class="note">${t.phone||"no number"} · ${t.status||""}</div>
+        <div class="note" style="margin-top:6px">${t.label||t.address||"no address set"}</div>
+        ${t.lat?"":'<div class="note" style="color:var(--red)">Address not located — edit and try a fuller address.</div>'}
+      </div>
+      ${isAdmin?`<div style="display:flex;gap:6px">
+        <button class="btn ghost" data-ed="${i}">Edit</button>
+        <button class="btn ghost" style="border-color:var(--red);color:var(--red)" data-del="${i}">Remove</button>
+      </div>`:""}
+    </div>`).join("");
+  $$("[data-ed]").forEach(b=>b.onclick=()=>{techEdit={...techs[+b.dataset.ed]};drawTechForm();});
+  $$("[data-del]").forEach(b=>b.onclick=async()=>{
+    const t=techs[+b.dataset.del];
+    if(!confirm("Remove "+t.name+" from the board?")) return;
+    await sb.from("techs").delete().eq("id",t.id); drawTechs();
+  });
+}
+
+function drawTechForm(){
+  const box=$("#techForm");
+  if(!techEdit){ box.innerHTML=""; return; }
+  const t=techEdit;
+  box.innerHTML=`<div class="panel">
+    <div class="lbl">${t.id?"Edit technician":"New technician"}</div>
+    <div class="gh">
+      <div class="f"><input class="in" id="tfName" placeholder="Name" value="${t.name||""}"></div>
+      <div class="f"><input class="in" id="tfPhone" placeholder="Phone" value="${t.phone||""}"></div>
+    </div>
+    <div class="f"><input class="in" id="tfAddr" placeholder="Address of the job he is on now"
+      value="${(t.address||"").replace(/"/g,"&quot;")}"></div>
+    <div class="f"><input class="in" id="tfStatus" placeholder="Status, e.g. On a job until 3pm" value="${t.status||""}"></div>
+    <button class="btn" id="tfSave">Save</button>
+    <button class="btn ghost" id="tfCancel" style="margin-left:8px">Cancel</button>
+    <div class="note" id="tfMsg" style="margin-top:10px"></div>
+  </div>`;
+  $("#tfCancel").onclick=()=>{techEdit=null;drawTechForm();};
+  $("#tfSave").onclick=async()=>{
+    const name=$("#tfName").value.trim(), addr=$("#tfAddr").value.trim();
+    const msg=$("#tfMsg");
+    if(!name){ msg.textContent="A name is needed."; return; }
+    msg.textContent="Locating the address…";
+    let geo=null;
+    if(addr){ try{ geo=await geoCall({op:"geocode",q:addr}); }
+              catch(e){ msg.textContent="Address not found — saving without it. ("+e.message+")"; } }
+    const row={ name, phone:$("#tfPhone").value.trim(), address:addr,
+      label:geo?geo.label:null, lat:geo?geo.lat:null, lng:geo?geo.lng:null,
+      status:$("#tfStatus").value.trim()||"On a job", updated_at:new Date().toISOString(), updated_by:me.id };
+    const res = t.id ? await sb.from("techs").update(row).eq("id",t.id)
+                     : await sb.from("techs").insert(row);
+    if(res.error){ msg.textContent="Could not save: "+res.error.message; return; }
+    techEdit=null; drawTechForm(); drawTechs();
+  };
+}
+
+async function findNearest(){
+  const out=$("#findOut"), q=$("#jobAddr").value.trim();
+  if(!q){ out.innerHTML='<div class="note">Type the job address first.</div>'; return; }
+  const withPos=techs.filter(t=>t.lat!=null&&t.lng!=null);
+  if(!withPos.length){ out.innerHTML='<div class="note">No technician has a located address yet.</div>'; return; }
+  out.innerHTML='<div class="note">Looking up the address and checking drive times…</div>';
+  try{
+    const job=await geoCall({op:"geocode",q});
+    const {results}=await geoCall({op:"eta",from:[job.lat,job.lng],to:withPos.map(t=>[t.lat,t.lng])});
+    const ranked=withPos.map((t,i)=>({t,e:results[i]})).filter(x=>x.e)
+      .sort((a,b)=>a.e.minutes-b.e.minutes);
+    if(!ranked.length){ out.innerHTML='<div class="note">Could not work out drive times just now.</div>'; return; }
+    out.innerHTML=`<div class="lbl" style="margin-top:14px">Job at ${job.label}</div>`+
+      ranked.map((x,i)=>`<div class="diff" style="align-items:center">
+        <span style="flex:1">
+          <b style="color:var(--navy);font-weight:600">${i===0?"★ ":""}${x.t.name}</b>
+          <span class="note"> · ${x.t.phone||"no number"}</span><br>
+          <span class="note">${x.t.label||x.t.address||""}</span>
+        </span>
+        <span style="text-align:right;white-space:nowrap">
+          <b style="font-size:18px;color:${i===0?"var(--green)":"var(--navy)"}">${x.e.minutes}</b>
+          <span class="note"> min</span><br><span class="note">${x.e.km} km</span>
+        </span></div>`).join("");
+  }catch(e){ out.innerHTML='<div class="note" style="color:var(--red)">'+e.message+'</div>'; }
+}
+
 async function drawHome(){
   const first=((($("#whoTop").textContent)||"").split(" ")[0])||"";
   $("#homeHi").textContent = first ? "Hello, "+first : "Dispatcher Academy";
@@ -1987,6 +2117,8 @@ async function drawHome(){
     {go:"board", ic:"📞", bg:"#E8F7F9", h:"Take a call", p:"Ten live scenarios with a real caller. You answer, you fill the job file, you get scored."},
     {go:"setup", ic:"⚙️", bg:"#EEF1F4", h:"Settings", p:"Caller voices, how long the caller waits before replying, speech recognition."}
   ];
+  tiles.push({go:"techs", ic:"📍", bg:"#FFF1EC", h:"Dispatch board",
+    p:"Where every technician is, and who is closest to a new job."});
   tiles.splice(2,0, isAdmin
     ? {go:"results", ic:"📊", bg:"#EAF9F1", h:"Team results",
        p:"Every call your dispatchers have taken, with transcripts and recordings."}
@@ -2024,10 +2156,23 @@ async function drawResults(){
       'call you take from then on is kept here, with your scores over time.</div>';
     $("#resSub").textContent=""; return;
   }
-  let q=sb.from("results").select("*, profiles(full_name)").order("created_at",{ascending:false}).limit(100);
-  if(!isAdmin) q=q.eq("user_id",me.id);
-  const {data,error}=await q;
-  if(error){ wrap.innerHTML='<div class="note">Could not load results: '+error.message+'</div>'; return; }
+  const run = sel => {
+    let q=sb.from("results").select(sel).order("created_at",{ascending:false}).limit(100);
+    if(!isAdmin) q=q.eq("user_id",me.id);
+    return q;
+  };
+  let {data,error}=await run("*, profiles(full_name)");
+  if(error){
+    // no foreign key between results and profiles yet — read them separately
+    ({data,error}=await run("*"));
+    if(error){ wrap.innerHTML='<div class="note">Could not load results: '+error.message+'</div>'; return; }
+    if(isAdmin && data && data.length){
+      const ids=[...new Set(data.map(r=>r.user_id))];
+      const {data:ppl}=await sb.from("profiles").select("id,full_name").in("id",ids);
+      const byId=Object.fromEntries((ppl||[]).map(p=>[p.id,p.full_name]));
+      data.forEach(r=>{ r.profiles={full_name:byId[r.user_id]||""}; });
+    }
+  }
   if(!data||!data.length){ wrap.innerHTML='<div class="note">No calls scored yet.</div>'; return; }
   const calls=data.filter(r=>r.scenario_id!=="typing");
   const avg=calls.length?Math.round(calls.reduce((a,b)=>a+(b.total||0),0)/calls.length*10)/10:0;
@@ -2068,6 +2213,8 @@ function init(){
   document.addEventListener("input",onFormInput);
   $$("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
   $("#micBtn").onclick=micTap;
+  $("#findBtn").onclick=findNearest;
+  $("#jobAddr").onkeydown=e=>{ if(e.key==="Enter") findNearest(); };
   $("#muteBtn").onclick=toggleMute;
   $("#endBtn").onclick=()=>{callLive=false;micOff();hush();createJob();};
   $("#createBtn").onclick=createJob;
