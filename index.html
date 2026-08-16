@@ -276,6 +276,10 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
         <h1 style="margin-top:34px">Speech recognition</h1>
         <div class="panel">
+          <button class="chip" id="sttTgl" style="font-size:13px;padding:10px 16px"></button>
+          <div class="note" id="sttNote" style="margin-top:10px"></div>
+        </div>
+        <div class="panel">
           <div class="chips" id="langRow" style="margin-bottom:0"></div>
           <div class="note" style="margin-top:10px">If the app mishears you often, try another
             English variant — recognition accuracy changes a lot between them. Takes effect on
@@ -1136,16 +1140,25 @@ function armSilence(){
   if(!callLive) return;
   silenceT=setTimeout(commit, graceFor(finalTx||heard));
 }
-function commit(){
+async function commit(){
   clearTimeout(silenceT);
   const said=(finalTx||heard).trim();
-  if(said.length<2 || busy || !callLive) return;
-  finalTx=""; heard=""; micOff(); send(said);
+  if(said.length<2 || busy || holding || !callLive) return;
+  finalTx=""; heard=""; holding=true; micOff();
+  let text=said;
+  if(sttOn){
+    const blob=await turnStop();
+    const better=await transcribeTurn(blob);
+    if(better) text=better;
+  }
+  holding=false;
+  send(text);
 }
 function micOff(){ clearTimeout(silenceT); if(rec){ try{rec.stop();}catch(e){} } listening=false; drawMic(); }
 function micOn(){
-  if(!callLive || muted || busy || speaking || listening) return;
+  if(!callLive || muted || busy || speaking || listening || holding) return;
   startMic(true);          // keep the buffer — Chrome restarts the recogniser mid-sentence
+  turnStart();
   if((finalTx||heard).trim()) armSilence();
 }
 function startMic(keep){
@@ -1186,9 +1199,10 @@ async function micTap(){
   }
   prime();
   if(!(await askMic())) return;
-  callLive=true; muted=false;
+  callLive=true; muted=false; holding=false;
   warmUp();
-  startRecording();
+  await startRecording();
+  turnStart();
   drawMic(); drawCapt(); micOn();
 }
 function toggleMute(){
@@ -1310,6 +1324,42 @@ function start(j){
   drawChips(); drawSteps(); drawLog(); drawCapt(); drawMic(); drawCount(); hideErr();
   go("call");
 }
+/* ---------- accurate speech to text: the browser detects when you stop,
+     Whisper works out what you actually said ---------- */
+let turnRec=null, turnChunks=[], holding=false;
+let sttOn = localStorage.getItem("oc_stt")!=="0";
+
+function turnStart(){
+  if(!sttOn || !micStream || !window.MediaRecorder || turnRec) return;
+  try{
+    turnChunks=[];
+    turnRec=new MediaRecorder(micStream,{mimeType:"audio/webm"});
+    turnRec.ondataavailable=e=>{ if(e.data&&e.data.size) turnChunks.push(e.data); };
+    turnRec.start();
+  }catch(e){ turnRec=null; }
+}
+function turnStop(){
+  return new Promise(res=>{
+    const r=turnRec; turnRec=null;
+    if(!r || r.state==="inactive") return res(null);
+    r.onstop=()=>res(new Blob(turnChunks,{type:"audio/webm"}));
+    try{ r.stop(); }catch(e){ res(null); }
+  });
+}
+async function transcribeTurn(blob){
+  if(!blob || blob.size<3500) return null;      // too short to be speech
+  try{
+    const { data:{ session } } = await sb.auth.getSession();
+    const r=await fetch(SUPABASE_URL+"/functions/v1/stt",{method:"POST",
+      headers:{ apikey:SUPABASE_ANON, Authorization:"Bearer "+session.access_token,
+                "content-type":"audio/webm" },
+      body:blob});
+    if(!r.ok){ console.warn("stt", r.status, (await r.text()).slice(0,120)); return null; }
+    const d=await r.json();
+    return (d.text||"").trim()||null;
+  }catch(e){ console.warn("stt failed", e.message); return null; }
+}
+
 /* ---------- call recording: trainee mic + caller voice mixed into one file ---------- */
 let recCtx=null, recDest=null, recorder=null, recChunks=[], micStream=null, recBlob=null;
 
@@ -2255,6 +2305,15 @@ function init(){
   };
   $("#natTgl").onclick=()=>{naturalOn=!naturalOn;localStorage.setItem("oc_natural",naturalOn?"1":"0");ttsDead=false;paintNat();};
   paintNat();
+  const paintStt=()=>{
+    $("#sttTgl").className="chip"+(sttOn?" on":"");
+    $("#sttTgl").textContent=(sttOn?"✓ ":"○ ")+"Accurate transcription";
+    $("#sttNote").textContent=sttOn
+      ? "Your speech is transcribed by a proper speech service, which handles accents far better than the browser. Needs the stt function deployed with an OpenAI key; falls back to the browser if it isn't."
+      : "Using the browser's own recogniser. Faster, but it mishears non-native speakers often.";
+  };
+  $("#sttTgl").onclick=()=>{sttOn=!sttOn;localStorage.setItem("oc_stt",sttOn?"1":"0");paintStt();};
+  paintStt();
   $("#testNat").onclick=async()=>{
     const g=Math.random()<.5?"m":"f", v=Math.floor(Math.random()*3);
     const out=$("#natResult");
