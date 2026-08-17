@@ -266,12 +266,17 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
           <div class="note" id="natNote" style="margin-top:10px"></div>
         </div>
 
-        <h1 style="margin-top:34px">How long the caller waits</h1>
+        <h1 style="margin-top:34px">When your turn gets sent</h1>
         <div class="panel">
+          <div class="chips" id="modeRow"></div>
+          <div class="note" id="modeNote" style="margin-top:10px"></div>
+          <div id="pauseWrap" style="border-top:1px solid var(--line2);margin-top:14px;padding-top:14px">
+          <div class="lbl">Length of pause</div>
           <div class="chips" id="pauseRow" style="margin-bottom:0"></div>
           <div class="note" style="margin-top:10px">How long a silence has to last before the caller
             answers. Longer is safer &mdash; you can pause between sentences without being cut
-            off, and press <b>Send now</b> (or Enter) the moment you have finished.</div>
+            off, and press <b>Send</b> (or Enter) the moment you have finished.</div>
+          </div>
         </div>
 
         <h1 style="margin-top:34px">Microphone sensitivity</h1>
@@ -491,7 +496,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   <button class="mic" id="micBtn">Talk</button>
   <div class="capt" id="capt"></div>
   <input class="type" id="typeIn" placeholder="or type your line">
-  <button class="barbtn hide" id="sendNowBtn" style="background:var(--teal);border-color:var(--teal)">Send now</button>
+  <button class="barbtn hide" id="sendNowBtn" style="background:var(--teal);border-color:var(--teal);font-size:13px;padding:11px 18px">Send ⏎</button>
   <button class="barbtn hide" id="muteBtn">Mute</button>
   <button class="barbtn" id="repeatBtn">Repeat</button>
   <button class="barbtn end" id="endBtn">End &amp; score</button>
@@ -1010,6 +1015,21 @@ function testVoice(gender){
   const p=pickVoice(gender); if(p){u.voice=p;u.lang=p.lang;}
   u.rate=1; speechSynthesis.speak(u);
 }
+function drawMode(){
+  var el=document.getElementById("modeRow"); if(!el) return;
+  var opts=[["Wait for me","manual"],["Send after a pause","auto"]];
+  el.innerHTML=opts.map(function(o){
+    return '<button class="chip '+(sendMode===o[1]?"on":"")+'" data-md="'+o[1]+'">'+o[0]+'</button>';
+  }).join("");
+  el.querySelectorAll("[data-md]").forEach(function(b){
+    b.onclick=function(){ sendMode=b.dataset.md; localStorage.setItem("oc_sendmode",sendMode); drawMode(); };
+  });
+  document.getElementById("modeNote").textContent = sendMode==="manual"
+    ? "The microphone stays open until you press Send or hit Enter. Pause, think, say umm — nothing is sent until you decide. Recommended."
+    : "The caller answers on its own once you have been quiet long enough. Faster, but it can cut you off mid-thought.";
+  var pw=document.getElementById("pauseWrap");
+  if(pw) pw.style.display = sendMode==="auto" ? "block" : "none";
+}
 function drawGate(){
   var el=document.getElementById("gateRow"); if(!el) return;
   var opts=[["Sensitive",0.010],["Normal",0.020],["Strict",0.040]];
@@ -1082,6 +1102,7 @@ function sayable(t){
 let curAudio=null, ttsDead=false, ttsWarned=false;
 let callLive=false, silenceT=null, muted=false;
 let pauseMs = +(localStorage.getItem("oc_pause")||1600);
+let sendMode = localStorage.getItem("oc_sendmode")||"manual";
 let naturalOn = localStorage.getItem("oc_natural")!=="0";
 
 async function serverSpeak(t){
@@ -1157,7 +1178,7 @@ function graceFor(t){
 }
 function armSilence(){
   clearTimeout(silenceT);
-  if(!callLive) return;
+  if(!callLive || sendMode==="manual") return;   // manual: the mic waits for you
   silenceT=setTimeout(commit, graceFor(finalTx||heard));
 }
 async function commit(){
@@ -1262,7 +1283,7 @@ function go(v){
   if(v==="learn") drawLearn();
   if(v==="home") drawHome();
   if(v==="techs") drawTechs();
-  if(v==="setup"){ drawSlots(); drawPause(); drawLang(); drawGate(); }
+  if(v==="setup"){ drawSlots(); drawMode(); drawPause(); drawLang(); drawGate(); }
   window.scrollTo(0,0);
 }
 function showErr(m){ const e=$("#callErr"); e.textContent=m; e.classList.remove("hide"); }
@@ -1313,7 +1334,10 @@ function drawCapt(){
   if(busy)     { c.innerHTML='<small>&nbsp;</small>…'; return; }
   if(speaking) { c.innerHTML='<small>&nbsp;</small>Caller speaking'; return; }
   if(muted)    { c.innerHTML='<small>&nbsp;</small>Muted'; return; }
-  c.innerHTML='<small>Listening</small>Pause when done, or press Send now';
+  const words=(finalTx||heard).trim().split(/\s+/).filter(Boolean).length;
+  c.innerHTML = sendMode==="manual"
+    ? '<small>Listening — '+words+' words</small>Take your time, then press Send'
+    : '<small>Listening</small>Pause when done, or press Send';
   return;
   /* old caption below, unused */
   const last=[...log].reverse().find(m=>m.w==="caller");
