@@ -281,7 +281,17 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
         <h1 style="margin-top:34px">Microphone sensitivity</h1>
         <div class="panel">
-          <div class="chips" id="gateRow" style="margin-bottom:0"></div>
+          <div class="chips" id="gateRow"></div>
+          <div style="border-top:1px solid var(--line2);margin-top:14px;padding-top:14px">
+            <div class="lbl">Calibrate to your room</div>
+            <div style="height:14px;background:#E6ECF1;border-radius:7px;overflow:hidden;position:relative;margin:10px 0">
+              <i id="lvlBar" style="display:block;height:100%;width:0%;background:var(--teal);transition:width .08s"></i>
+              <i id="lvlMark" style="position:absolute;top:0;bottom:0;width:2px;background:var(--red);left:0"></i>
+            </div>
+            <button class="btn" id="calBtn">Start calibration</button>
+            <div class="note" id="calMsg" style="margin-top:10px">Takes eight seconds. Stay quiet
+              for the first half, then talk normally the way you would on a call.</div>
+          </div>
           <div class="note" style="margin-top:10px">If people talking nearby keep getting picked
             up, move this toward Strict &mdash; only speech close to the microphone counts. Move
             toward Sensitive if your own quiet speech is being ignored.</div>
@@ -1030,6 +1040,59 @@ function drawMode(){
   var pw=document.getElementById("pauseWrap");
   if(pw) pw.style.display = sendMode==="auto" ? "block" : "none";
 }
+let calCtx=null, calTimer=null;
+function calStop(){
+  clearInterval(calTimer); calTimer=null;
+  try{ calCtx && calCtx.stream && calCtx.stream.getTracks().forEach(t=>t.stop()); }catch(e){}
+  try{ calCtx && calCtx.ctx && calCtx.ctx.close(); }catch(e){}
+  calCtx=null;
+}
+async function calibrate(){
+  const msg=document.getElementById("calMsg"), bar=document.getElementById("lvlBar");
+  calStop();
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia(
+      {audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1}});
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const ana=ctx.createAnalyser(); ana.fftSize=1024;
+    ctx.createMediaStreamSource(stream).connect(ana);
+    const buf=new Float32Array(ana.fftSize);
+    calCtx={stream,ctx};
+
+    let phase="quiet", quiet=[], loud=[], t=0;
+    msg.textContent="Stay quiet… 4";
+    calTimer=setInterval(()=>{
+      ana.getFloatTimeDomainData(buf);
+      let sum=0; for(let i=0;i<buf.length;i++) sum+=buf[i]*buf[i];
+      const rms=Math.sqrt(sum/buf.length);
+      bar.style.width=Math.min(100,Math.round(rms*400))+"%";
+      t+=100;
+      if(phase==="quiet"){
+        if(t>600) quiet.push(rms);
+        msg.textContent="Stay quiet… "+Math.max(1,Math.ceil((4000-t)/1000));
+        if(t>=4000){ phase="loud"; t=0; msg.textContent="Now talk normally… 4"; }
+      } else {
+        if(t>300) loud.push(rms);
+        msg.textContent="Now talk normally… "+Math.max(1,Math.ceil((4000-t)/1000));
+        if(t>=4000){
+          calStop();
+          quiet.sort((a,b)=>a-b); loud.sort((a,b)=>a-b);
+          const floor=quiet[Math.floor(quiet.length*0.9)]||0.002;
+          const speech=loud[Math.floor(loud.length*0.75)]||0.05;
+          if(speech < floor*1.8){
+            msg.textContent="Your voice wasn't much louder than the room. Move the microphone closer, or use a headset, then try again.";
+            return;
+          }
+          micGate=Math.min(0.15,Math.max(0.004, floor + (speech-floor)*0.35));
+          localStorage.setItem("oc_gate",micGate);
+          drawGate();
+          msg.textContent="Done. Room noise "+floor.toFixed(4)+", your voice "+speech.toFixed(4)+
+            " — threshold set to "+micGate.toFixed(4)+". Anything quieter than the red line is ignored.";
+        }
+      }
+    },100);
+  }catch(e){ msg.textContent="Could not open the microphone: "+(e.message||e); }
+}
 function drawGate(){
   var el=document.getElementById("gateRow"); if(!el) return;
   var opts=[["Sensitive",0.010],["Normal",0.020],["Strict",0.040]];
@@ -1039,6 +1102,10 @@ function drawGate(){
   el.querySelectorAll("[data-gt]").forEach(function(b){
     b.onclick=function(){ micGate=+b.dataset.gt; localStorage.setItem("oc_gate",micGate); drawGate(); };
   });
+  var mk=document.getElementById("lvlMark");
+  if(mk) mk.style.left=Math.min(99,Math.round(micGate*400))+"%";
+  var cb=document.getElementById("calBtn");
+  if(cb) cb.onclick=calibrate;
 }
 function drawLang(){
   const el=document.getElementById("langRow"); if(!el) return;
@@ -1193,7 +1260,7 @@ async function commit(){
   clearTimeout(silenceT);
   const said=(finalTx||heard).trim();
   if(said.length<2 || busy || holding || !callLive) return;
-  if(anaNode && turnPeak && turnPeak < micGate){
+  if(anaNode && turnPeak && (turnPeak < micGate || turnLoudMs < 240)){
     finalTx=""; heard=""; turnPeak=0; drawCapt();
     if(turnRec){ turnStop().then(turnStart); }
     return;
@@ -1291,6 +1358,7 @@ function go(v){
   if(v==="learn") drawLearn();
   if(v==="home") drawHome();
   if(v==="techs") drawTechs();
+  if(v!=="setup") calStop();
   if(v==="setup"){ drawSlots(); drawMode(); drawPause(); drawLang(); drawGate(); }
   window.scrollTo(0,0);
 }
@@ -1387,7 +1455,7 @@ function start(j){
 /* ---------- accurate speech to text: the browser detects when you stop,
      Whisper works out what you actually said ---------- */
 let turnRec=null, turnChunks=[], holding=false;
-let anaNode=null, anaBuf=null, anaTimer=null, turnPeak=0;
+let anaNode=null, anaBuf=null, anaTimer=null, turnPeak=0, turnLoudMs=0;
 let micGate = +(localStorage.getItem("oc_gate")||0.020);
 
 function startMeter(){
@@ -1404,6 +1472,7 @@ function startMeter(){
       var sum=0; for(var i=0;i<anaBuf.length;i++) sum+=anaBuf[i]*anaBuf[i];
       var rms=Math.sqrt(sum/anaBuf.length);
       if(rms>turnPeak) turnPeak=rms;
+      if(rms>micGate) turnLoudMs+=80;
     },80);
   }catch(e){ anaNode=null; }
 }
@@ -1411,7 +1480,7 @@ function stopMeter(){ clearInterval(anaTimer); anaTimer=null; anaNode=null; }
 let sttOn = localStorage.getItem("oc_stt")!=="0";
 
 function turnStart(){
-  turnPeak=0;
+  turnPeak=0; turnLoudMs=0;
   if(!sttOn || !micStream || !window.MediaRecorder || turnRec) return;
   try{
     turnChunks=[];
