@@ -2291,7 +2291,8 @@ function wireTechForm(){
     if(addr){
       msg.textContent="Locating the address…";
       try{ geo=await geoCall({op:"geocode",q:addr}); }
-      catch(e){ msg.textContent="Address not found — saving without it. ("+e.message+")"; }
+      catch(e){ msg.textContent="Could not locate that address — saving without it. "+e.message; }
+      if(geo && geo.approx) msg.textContent="Approximate match: "+geo.label+" — check the map pin.";
     }
     const movedJob = !t.id || (t.address||"") !== addr;
     const row={ name, job_type:document.getElementById("tfJob").value, address:addr,
@@ -2314,12 +2315,14 @@ async function findNearest(){
   out.innerHTML='<div class="note" style="margin-top:12px">Looking up the address and checking drive times…</div>';
   try{
     const job=await geoCall({op:"geocode",q});
+    const approxNote = job.approx
+      ? '<div class="note" style="color:var(--brass)">Approximate location, matched on "'+job.matched+'". Check the red pin.</div>' : "";
     const {results}=await geoCall({op:"eta",from:[job.lat,job.lng],to:withPos.map(t=>[t.lat,t.lng])});
     const ranked=withPos.map((t,i)=>({t,e:results[i]})).filter(x=>x.e).sort((a,b)=>a.e.minutes-b.e.minutes);
     if(!ranked.length){ out.innerHTML='<div class="note">Could not work out drive times just now.</div>'; return; }
     paintMap({job, nearestId:ranked[0].t.id});
     out.innerHTML=`<div class="panel" style="margin-top:12px">
-      <div class="lbl">New job at ${job.label}</div>`+
+      <div class="lbl">New job at ${job.label}</div>${approxNote}`+
       ranked.map((x,i)=>`<div class="diff" style="align-items:center">
         <span style="flex:1">
           <b style="color:var(--navy);font-weight:600">${i===0?"★ ":""}${x.t.name}</b>
