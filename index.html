@@ -993,7 +993,7 @@ function browserSpeak(t){
   if(pick){u.voice=pick;u.lang=pick.lang;}
   const natural=pick&&/natural|neural|online|google/i.test(pick.name);
   const jr=(Math.random()-.5)*.08, jp=(Math.random()-.5)*.06;
-  u.rate=job.rate+jr;
+  u.rate=job.rate+jr-(numberHeavy(t)?0.22:0);
   u.pitch=natural||(pick&&want.test(pick.name))
     ? job.pitch+jp
     : (curVoice==="f"?job.pitch+.25:job.pitch-.15)+jp;
@@ -1071,11 +1071,11 @@ function sayable(t){
   let x=" "+t+" ";
   // (813) 555-0134  /  813-555-0134  /  8135550134
   x=x.replace(/\(?(\d{3})\)?[\s.-]*(\d{3})[\s.-]*(\d{4})/g,
-    (m,a,b,c)=>` ${a.split("").join(" ")}, ${b.split("").join(" ")}, ${c.split("").join(" ")} `);
+    (m,a,b,c)=>` ${a.split("").join(", ")}... ${b.split("").join(", ")}... ${c.split("").join(", ")} `);
   // "ending with 4367" / "ending in 4367"
-  x=x.replace(/((?:ending|ends|end)\s+(?:with|in)\s+)(\d{4})/gi,(m,p,d)=>p+d.split("").join(" "));
+  x=x.replace(/((?:ending|ends|end)\s+(?:with|in)\s+)(\d{4})/gi,(m,p,d)=>p+d.split("").join(", "));
   // a bare 5-digit number is a zip
-  x=x.replace(/(^|[\s,.])(\d{5})(?=[\s,.!?]|$)/g,(m,pre,d)=>pre+d.split("").join(" "));
+  x=x.replace(/(^|[\s,.])(\d{5})(?=[\s,.!?]|$)/g,(m,pre,d)=>pre+d.split("").join(", "));
   return x.trim();
 }
 
@@ -1098,12 +1098,13 @@ async function serverSpeak(t){
   if(curAudio){ try{curAudio.pause();}catch(e){} }
   curAudio=new Audio(url);
   routeIntoRecording(curAudio);
-  curAudio.playbackRate=Math.min(1.4,Math.max(.7,job.rate));
+  curAudio.playbackRate=Math.min(1.4,Math.max(.62,job.rate-(numberHeavy(t)?0.22:0)));
   curAudio.onplay =()=>{speaking=true;drawCapt();};
   curAudio.onended=curAudio.onerror=()=>{speaking=false;drawCapt();URL.revokeObjectURL(url);micOn();};
   await curAudio.play();
 }
 
+function numberHeavy(t){ return /\d{4,}|\d[\s.,-]*\d[\s.,-]*\d[\s.,-]*\d/.test(t||""); }
 function speak(t){
   if(!voiceOn||!job) return;
   if(naturalOn && !ttsDead){
