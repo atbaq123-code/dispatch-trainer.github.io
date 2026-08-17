@@ -2053,72 +2053,6 @@ async function saveResult(blob, f){
     });
   }catch(e){ console.warn("save failed",e); }
 }
-function openRow(ix){
-  const r=(window.__rows||[])[ix], box=document.getElementById("det"+ix);
-  if(!r||!box) return;
-  if(!box.classList.contains("hide")){ box.classList.add("hide"); return; }
-  const tr=r.transcript||[];
-  const form=r.job_form||{};
-  const filled=Object.entries(form).filter(([,v])=>v);
-  box.innerHTML=`
-    <div class="panel" style="margin:0">
-      ${r.caller_name?`<div class="lbl">Caller was ${r.caller_name}</div>`:""}
-      <div class="lbl">Transcript</div>
-      ${tr.length?tr.map(m=>`<div class="msg ${m.w}" style="margin-bottom:9px">
-          <div class="who">${m.w==="you"?"Dispatcher":"Caller"}</div>
-          <div class="bub">${(m.t||"").replace(/</g,"&lt;")}</div></div>`).join("")
-        :'<div class="note">No transcript saved for this call — it predates transcript recording.</div>'}
-
-      <div class="lbl" style="margin-top:16px">What they typed into the job file</div>
-      ${filled.length?filled.map(([k,v])=>`<div class="diff"><span class="note">${k.replace(/_/g," ")}</span>
-          <b style="color:var(--navy);font-weight:600">${String(v).replace(/</g,"&lt;")}</b></div>`).join("")
-        :'<div class="note">Nothing was entered.</div>'}
-
-      ${(r.data_errors&&r.data_errors.length)?`<div class="lbl" style="margin-top:16px">Wrong or missing</div>
-        ${r.data_errors.map(d=>`<div class="diff"><span class="note">${d.f}</span>
-          <span style="text-align:right"><b style="color:var(--red)">${d.got||"(blank)"}</b>
-          <span class="note"> should be ${d.should}</span></span></div>`).join("")}`:""}
-
-      ${(r.scores&&r.scores.length)?`<div class="lbl" style="margin-top:16px">Scores</div>
-        ${r.scores.map(x=>`<div class="diff"><span>${x.c}</span>
-          <b style="color:var(--navy)">${x.s}${r.scenario_id==="typing"?"":"/5"}</b></div>`).join("")}`:""}
-
-      ${(r.fixes&&r.fixes.length)?`<div class="lbl" style="margin-top:16px">Told to fix</div>
-        <ul>${r.fixes.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
-
-      ${r.recording_path?`<div class="lbl" style="margin-top:16px">Recording</div>
-        <div id="aud${ix}"><button class="btn ghost" onclick="loadAudio(${ix})">Load recording</button></div>`:""}
-      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn ghost" onclick="copyCall(${ix})">Copy transcript</button>
-        ${isAdmin?`<button class="btn ghost" onclick="voidCall(${ix})">Zero this score</button>
-          <button class="btn ghost" style="border-color:var(--red);color:var(--red)"
-            onclick="deleteCall(${ix})">Delete</button>`:""}
-      </div>
-      <div class="note" id="act${ix}" style="margin-top:8px"></div>
-    </div>`;
-  box.classList.remove("hide");
-}
-async function voidCall(ix){
-  const r=(window.__rows||[])[ix]; if(!r||!isAdmin) return;
-  const out=document.getElementById("act"+ix);
-  if(!confirm("Set this score to zero? The transcript and recording are kept.")) return;
-  const { error } = await sb.from("results")
-    .update({ total:0, verdict:"VOIDED", scores:[] }).eq("id", r.id);
-  if(error){ out.textContent="Could not update: "+error.message; return; }
-  out.textContent="Score zeroed."; drawResults();
-}
-async function deleteCall(ix){
-  const r=(window.__rows||[])[ix]; if(!r||!isAdmin) return;
-  const out=document.getElementById("act"+ix);
-  if(!confirm("Delete this call permanently, including its recording? This cannot be undone.")) return;
-  if(r.recording_path){
-    const { error:se } = await sb.storage.from("recordings").remove([r.recording_path]);
-    if(se) console.warn("recording not removed:", se.message);
-  }
-  const { error } = await sb.from("results").delete().eq("id", r.id);
-  if(error){ out.textContent="Could not delete: "+error.message; return; }
-  drawResults();
-}
 async function loadAudio(ix){
   const r=(window.__rows||[])[ix], box=document.getElementById("aud"+ix);
   if(!r||!box||!r.recording_path) return;
@@ -2290,6 +2224,8 @@ async function drawHome(){
   }catch(e){ box.innerHTML=""; }
 }
 
+let resRows=[], resOpen=null, resSel=new Set(), resWho="all", resFold={};
+
 async function drawResults(){
   const wrap=$("#resWrap");
   wrap.innerHTML='<div class="note">Loading…</div>';
@@ -2299,13 +2235,12 @@ async function drawResults(){
     $("#resSub").textContent=""; return;
   }
   const run = sel => {
-    let q=sb.from("results").select(sel).order("created_at",{ascending:false}).limit(100);
+    let q=sb.from("results").select(sel).order("created_at",{ascending:false}).limit(500);
     if(!isAdmin) q=q.eq("user_id",me.id);
     return q;
   };
   let {data,error}=await run("*, profiles(full_name)");
   if(error){
-    // no foreign key between results and profiles yet — read them separately
     ({data,error}=await run("*"));
     if(error){ wrap.innerHTML='<div class="note">Could not load results: '+error.message+'</div>'; return; }
     if(isAdmin && data && data.length){
@@ -2315,33 +2250,202 @@ async function drawResults(){
       data.forEach(r=>{ r.profiles={full_name:byId[r.user_id]||""}; });
     }
   }
-  if(!data||!data.length){ wrap.innerHTML='<div class="note">No calls scored yet.</div>'; return; }
-  const calls=data.filter(r=>r.scenario_id!=="typing");
+  resRows=data||[];
+  paintResults();
+}
+
+const nameOf = r => (r.profiles && r.profiles.full_name) || "Unnamed";
+const isTypingRow = r => r.scenario_id==="typing";
+
+function paintResults(){
+  const wrap=$("#resWrap");
+  if(!resRows.length){ wrap.innerHTML='<div class="note">No calls scored yet.</div>';
+    $("#resSub").textContent=""; return; }
+
+  const calls=resRows.filter(r=>!isTypingRow(r));
   const avg=calls.length?Math.round(calls.reduce((a,b)=>a+(b.total||0),0)/calls.length*10)/10:0;
-  const pass=data.filter(r=>r.verdict==="PASS").length;
-  const typings=data.length-calls.length;
+  const pass=calls.filter(r=>r.verdict==="PASS").length;
+  const typings=resRows.length-calls.length;
   $("#resSub").textContent=calls.length+" calls · average "+avg+"/35 · "+pass+" passed"+
     (typings?" · "+typings+" typing tests":"");
-  window.__rows=data;
-  wrap.innerHTML=data.map((r,ix)=>{
-    const d=new Date(r.created_at);
-    const who=isAdmin&&r.profiles&&r.profiles.full_name?r.profiles.full_name+" — ":"";
-    const isTyping=r.scenario_id==="typing";
-    const wpm=isTyping?((r.scores||[])[0]||{}).s:null;
-    const errs=isTyping?(wpm+" wpm · "+r.total+"% captured")
-      :((r.data_errors&&r.data_errors.length)?r.data_errors.length+" field error"+(r.data_errors.length>1?"s":""):"clean ticket");
-    return `<div class="diff" style="align-items:flex-start;cursor:pointer" data-row="${ix}">
-      <span style="flex:1">
-        <b style="color:var(--navy);font-weight:600">${who}${r.scenario||""}</b><br>
-        <span class="note">${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} · ${errs}</span>
+
+  let head="";
+  if(isAdmin){
+    const people=[...new Set(resRows.map(nameOf))].sort();
+    head=`<div class="chips" style="margin-bottom:12px">
+      <button class="chip ${resWho==="all"?"on":""}" data-who="all">Everyone</button>
+      ${people.map(p=>`<button class="chip ${resWho===p?"on":""}" data-who="${p.replace(/"/g,"&quot;")}">${p}</button>`).join("")}
+    </div>`;
+  }
+  if(resSel.size){
+    head+=`<div class="panel" style="display:flex;justify-content:space-between;align-items:center;
+      gap:10px;flex-wrap:wrap;margin-bottom:12px;background:#FFFBEE">
+      <b style="color:var(--navy)">${resSel.size} selected</b>
+      <span style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost" id="selNone">Clear</button>
+        <button class="btn ghost" style="border-color:var(--red);color:var(--red)" id="selDel">Delete selected</button>
+      </span></div>`;
+  }
+
+  const shown = resWho==="all" ? resRows : resRows.filter(r=>nameOf(r)===resWho);
+  let body="";
+  if(isAdmin && resWho==="all"){
+    const groups={};
+    shown.forEach(r=>{ (groups[nameOf(r)]=groups[nameOf(r)]||[]).push(r); });
+    body=Object.keys(groups).sort().map(who=>{
+      const rows=groups[who];
+      const c=rows.filter(r=>!isTypingRow(r));
+      const a=c.length?Math.round(c.reduce((x,y)=>x+(y.total||0),0)/c.length):0;
+      const folded=resFold[who];
+      return `<div class="panel" style="padding:0;overflow:hidden;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;
+             padding:12px 14px;background:#F7F9FB;border-bottom:1px solid var(--line2);flex-wrap:wrap">
+          <span style="cursor:pointer;flex:1;min-width:160px" data-fold="${who.replace(/"/g,"&quot;")}">
+            <b style="color:var(--navy);font-size:16px">${folded?"▸":"▾"} ${who}</b>
+            <span class="note"> · ${c.length} calls · average ${a}/35</span>
+          </span>
+          <span style="display:flex;gap:6px">
+            <button class="btn ghost" data-selall="${who.replace(/"/g,"&quot;")}">Select all</button>
+            <button class="btn ghost" style="border-color:var(--red);color:var(--red)"
+              data-delall="${who.replace(/"/g,"&quot;")}">Delete all</button>
+          </span>
+        </div>
+        <div style="padding:0 14px 6px">${folded?"":rows.map(rowHtml).join("")}</div>
+      </div>`;
+    }).join("");
+  } else {
+    body=`<div class="panel">${shown.map(rowHtml).join("")}</div>`;
+  }
+
+  wrap.innerHTML=head+body;
+  wireResults();
+}
+
+function rowHtml(r){
+  const d=new Date(r.created_at);
+  const t=isTypingRow(r);
+  const wpm=t?((r.scores||[])[0]||{}).s:null;
+  const errs=t?(wpm+" wpm · "+r.total+"% captured")
+    :((r.data_errors&&r.data_errors.length)?r.data_errors.length+" field error"+(r.data_errors.length>1?"s":""):"clean ticket");
+  return `<div class="diff" style="align-items:flex-start">
+      ${isAdmin?`<input type="checkbox" data-pick="${r.id}" ${resSel.has(r.id)?"checked":""}
+        style="margin-top:4px;width:16px;height:16px;flex-shrink:0">`:""}
+      <span style="flex:1;cursor:pointer" data-open="${r.id}">
+        <b style="color:var(--navy);font-weight:600">${r.scenario||""}</b><br>
+        <span class="note">${d.toLocaleDateString()} ${d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · ${errs}</span>
       </span>
-      <span style="text-align:right;white-space:nowrap">
-        <b style="color:var(--navy);font-size:16px;font-weight:700">${r.total}</b><span class="note">${isTyping?"%":"/35"}</span><br>
+      <span style="text-align:right;white-space:nowrap;cursor:pointer" data-open="${r.id}">
+        <b style="color:var(--navy);font-size:16px;font-weight:700">${r.total}</b><span class="note">${t?"%":"/35"}</span><br>
         <span class="vd ${r.verdict==="PASS"?"ok":""}" style="font-size:10px;padding:2px 8px;${r.verdict==="VOIDED"?"background:#EEF1F4;color:#8493A2":""}">${r.verdict||""}</span>
       </span></div>
-      <div class="hide" id="det${ix}" style="padding:4px 0 16px"></div>`;
-  }).join("");
-  wrap.querySelectorAll("[data-row]").forEach(el=>el.onclick=()=>openRow(+el.dataset.row));
+    <div id="det${r.id}" class="${resOpen===r.id?"":"hide"}" style="padding:4px 0 16px">${resOpen===r.id?detailHtml(r):""}</div>`;
+}
+
+function wireResults(){
+  $$("[data-who]").forEach(b=>b.onclick=()=>{resWho=b.dataset.who;resOpen=null;paintResults();});
+  $$("[data-fold]").forEach(b=>b.onclick=()=>{const k=b.dataset.fold;resFold[k]=!resFold[k];paintResults();});
+  $$("[data-open]").forEach(b=>b.onclick=()=>{
+    const id=+b.dataset.open; resOpen = resOpen===id ? null : id; paintResults();
+  });
+  $$("[data-pick]").forEach(cb=>cb.onchange=()=>{
+    const id=+cb.dataset.pick;
+    cb.checked ? resSel.add(id) : resSel.delete(id);
+    paintResults();
+  });
+  const sn=document.getElementById("selNone"); if(sn) sn.onclick=()=>{resSel.clear();paintResults();};
+  const sd=document.getElementById("selDel"); if(sd) sd.onclick=()=>removeRows([...resSel]);
+  $$("[data-selall]").forEach(b=>b.onclick=()=>{
+    resRows.filter(r=>nameOf(r)===b.dataset.selall).forEach(r=>resSel.add(r.id)); paintResults();
+  });
+  $$("[data-delall]").forEach(b=>b.onclick=()=>{
+    const who=b.dataset.delall;
+    const ids=resRows.filter(r=>nameOf(r)===who).map(r=>r.id);
+    if(confirm("Delete all "+ids.length+" records for "+who+", including recordings? This cannot be undone."))
+      removeRows(ids);
+  });
+}
+
+async function removeRows(ids){
+  if(!isAdmin || !ids.length) return;
+  if(ids.length>1 && !confirm("Delete "+ids.length+" records permanently, including recordings?")) return;
+  if(ids.length===1 && !confirm("Delete this record permanently, including its recording?")) return;
+  const paths=resRows.filter(r=>ids.includes(r.id)&&r.recording_path).map(r=>r.recording_path);
+  if(paths.length){ const {error}=await sb.storage.from("recordings").remove(paths);
+    if(error) console.warn("recordings not removed:",error.message); }
+  const {error}=await sb.from("results").delete().in("id",ids);
+  if(error){ alert("Could not delete: "+error.message); return; }
+  resRows=resRows.filter(r=>!ids.includes(r.id));
+  ids.forEach(i=>resSel.delete(i));
+  if(ids.includes(resOpen)) resOpen=null;
+  paintResults();
+}
+
+async function voidRow(id){
+  if(!isAdmin) return;
+  if(!confirm("Set this score to zero? The transcript and recording are kept.")) return;
+  const {error}=await sb.from("results").update({total:0,verdict:"VOIDED",scores:[]}).eq("id",id);
+  if(error){ alert("Could not update: "+error.message); return; }
+  const r=resRows.find(x=>x.id===id);
+  if(r){ r.total=0; r.verdict="VOIDED"; r.scores=[]; }
+  paintResults();
+}
+
+function detailHtml(r){
+  const tr=r.transcript||[], form=r.job_form||{};
+  const filled=Object.entries(form).filter(([,v])=>v);
+  return `<div class="panel" style="margin:0">
+    ${r.caller_name?`<div class="lbl">Caller was ${r.caller_name}</div>`:""}
+    <div class="lbl">Transcript</div>
+    ${tr.length?tr.map(m=>`<div class="msg ${m.w}" style="margin-bottom:9px">
+        <div class="who">${m.w==="you"?"Dispatcher":"Caller"}</div>
+        <div class="bub">${(m.t||"").replace(/</g,"&lt;")}</div></div>`).join("")
+      :'<div class="note">No transcript saved for this call.</div>'}
+
+    <div class="lbl" style="margin-top:16px">What they typed into the job file</div>
+    ${filled.length?filled.map(([k,v])=>`<div class="diff"><span class="note">${k.replace(/_/g," ")}</span>
+        <b style="color:var(--navy);font-weight:600">${String(v).replace(/</g,"&lt;")}</b></div>`).join("")
+      :'<div class="note">Nothing was entered.</div>'}
+
+    ${(r.data_errors&&r.data_errors.length)?`<div class="lbl" style="margin-top:16px">Wrong or missing</div>
+      ${r.data_errors.map(d=>`<div class="diff"><span class="note">${d.f}</span>
+        <span style="text-align:right"><b style="color:var(--red)">${d.got||"(blank)"}</b>
+        <span class="note"> should be ${d.should}</span></span></div>`).join("")}`:""}
+
+    ${(r.scores&&r.scores.length)?`<div class="lbl" style="margin-top:16px">Scores</div>
+      ${r.scores.map(x=>`<div class="diff"><span>${x.c}</span>
+        <b style="color:var(--navy)">${x.s}${isTypingRow(r)?"":"/5"}</b></div>`).join("")}`:""}
+
+    ${(r.fixes&&r.fixes.length)?`<div class="lbl" style="margin-top:16px">Told to fix</div>
+      <ul>${r.fixes.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
+
+    ${r.recording_path?`<div class="lbl" style="margin-top:16px">Recording</div>
+      <div id="aud${r.id}"><button class="btn ghost" onclick="loadAudio(${r.id})">Load recording</button></div>`:""}
+
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost" onclick="copyCall(${r.id})">Copy transcript</button>
+      ${isAdmin?`<button class="btn ghost" onclick="voidRow(${r.id})">Zero this score</button>
+        <button class="btn ghost" style="border-color:var(--red);color:var(--red)"
+          onclick="removeRows([${r.id}])">Delete</button>`:""}
+    </div></div>`;
+}
+
+async function loadAudio(id){
+  const r=resRows.find(x=>x.id===id), box=document.getElementById("aud"+id);
+  if(!r||!box||!r.recording_path) return;
+  box.innerHTML='<span class="note">Loading…</span>';
+  const {data,error}=await sb.storage.from("recordings").createSignedUrl(r.recording_path,3600);
+  if(error||!data){ box.innerHTML='<span class="note">Could not load: '+((error&&error.message)||"unknown")+'</span>'; return; }
+  box.innerHTML='<audio controls preload="none" style="width:100%" src="'+data.signedUrl+'"></audio>'+
+    '<a class="note" href="'+data.signedUrl+'" download style="display:inline-block;margin-top:6px">Download</a>';
+}
+
+function copyCall(id){
+  const r=resRows.find(x=>x.id===id); if(!r) return;
+  const head=r.scenario+" — "+new Date(r.created_at).toLocaleString()+"\n"+
+    (r.profiles&&r.profiles.full_name?"Dispatcher: "+r.profiles.full_name+"\n":"")+
+    "Score: "+r.total+(isTypingRow(r)?"%":"/35")+" "+(r.verdict||"")+"\n\n";
+  const body=(r.transcript||[]).map(m=>(m.w==="you"?"DISPATCHER: ":"CALLER: ")+m.t).join("\n");
+  navigator.clipboard.writeText(head+body).catch(()=>{});
 }
 
 /* ============================ init ============================ */
