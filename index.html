@@ -269,9 +269,9 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
         <h1 style="margin-top:34px">How long the caller waits</h1>
         <div class="panel">
           <div class="chips" id="pauseRow" style="margin-bottom:0"></div>
-          <div class="note" style="margin-top:10px">Extra grace after the browser decides you've
-            stopped talking. Instant replies fastest; Patient gives a trainee room to pause
-            mid-sentence without the caller jumping in.</div>
+          <div class="note" style="margin-top:10px">How long a silence has to last before the caller
+            answers. Longer is safer &mdash; you can pause between sentences without being cut
+            off, and press <b>Send now</b> (or Enter) the moment you have finished.</div>
         </div>
 
         <h1 style="margin-top:34px">Microphone sensitivity</h1>
@@ -491,6 +491,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   <button class="mic" id="micBtn">Talk</button>
   <div class="capt" id="capt"></div>
   <input class="type" id="typeIn" placeholder="or type your line">
+  <button class="barbtn hide" id="sendNowBtn" style="background:var(--teal);border-color:var(--teal)">Send now</button>
   <button class="barbtn hide" id="muteBtn">Mute</button>
   <button class="barbtn" id="repeatBtn">Repeat</button>
   <button class="barbtn end" id="endBtn">End &amp; score</button>
@@ -1030,7 +1031,7 @@ function drawLang(){
 }
 function drawPause(){
   const el=document.getElementById("pauseRow"); if(!el) return;
-  const opts=[["Quick",450],["Normal",800],["Patient",1400]];
+  const opts=[["Quick",900],["Normal",1600],["Patient",2600]];
   el.innerHTML=opts.map(([l,v])=>`<button class="chip ${pauseMs==v?"on":""}" data-pz="${v}">${l}</button>`).join("");
   el.querySelectorAll("[data-pz]").forEach(b=>b.onclick=()=>{
     pauseMs=+b.dataset.pz; localStorage.setItem("oc_pause",pauseMs); drawPause();
@@ -1080,7 +1081,7 @@ function sayable(t){
 
 let curAudio=null, ttsDead=false, ttsWarned=false;
 let callLive=false, silenceT=null, muted=false;
-let pauseMs = +(localStorage.getItem("oc_pause")||800);
+let pauseMs = +(localStorage.getItem("oc_pause")||1600);
 let naturalOn = localStorage.getItem("oc_natural")!=="0";
 
 async function serverSpeak(t){
@@ -1311,7 +1312,7 @@ function drawCapt(){
   if(busy)     { c.innerHTML='<small>&nbsp;</small>…'; return; }
   if(speaking) { c.innerHTML='<small>&nbsp;</small>Caller speaking'; return; }
   if(muted)    { c.innerHTML='<small>&nbsp;</small>Muted'; return; }
-  c.innerHTML='<small>&nbsp;</small>Listening';
+  c.innerHTML='<small>Listening</small>Pause when done, or press Send now';
   return;
   /* old caption below, unused */
   const last=[...log].reverse().find(m=>m.w==="caller");
@@ -1327,6 +1328,8 @@ function drawMic(){
   m.disabled = !SR && !callLive;
   const mu=document.getElementById("muteBtn");
   if(mu){ mu.classList.toggle("hide",!callLive); mu.textContent = muted?"Unmute":"Mute"; }
+  const sn=document.getElementById("sendNowBtn");
+  if(sn) sn.classList.toggle("hide",!callLive);
 }
 function drawCount(){
   const f=formData(); const n=Object.values(f).filter(v=>v).length;
@@ -2321,6 +2324,13 @@ function init(){
   $("#micBtn").onclick=micTap;
   $("#findBtn").onclick=findNearest;
   $("#jobAddr").onkeydown=e=>{ if(e.key==="Enter") findNearest(); };
+  $("#sendNowBtn").onclick=()=>{ clearTimeout(silenceT); commit(); };
+  document.addEventListener("keydown",e=>{
+    if(!callLive) return;
+    const t=e.target && e.target.tagName;
+    if(t==="INPUT"||t==="TEXTAREA"||t==="SELECT") return;
+    if(e.key==="Enter"){ e.preventDefault(); clearTimeout(silenceT); commit(); }
+  });
   $("#muteBtn").onclick=toggleMute;
   $("#endBtn").onclick=()=>{callLive=false;micOff();hush();createJob();};
   $("#createBtn").onclick=createJob;
