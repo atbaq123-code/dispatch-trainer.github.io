@@ -168,6 +168,21 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
     linear-gradient(180deg, #FFFFFF 0%, #F4F7FA 55%, rgba(244,247,250,0) 100%);}
 .hero{padding:34px 0 14px;}
 .hero h1{font-size:32px;letter-spacing:-.01em;}
+.dispatchband{margin-top:22px;border-radius:14px;padding:22px 24px;width:100%;text-align:left;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;position:relative;overflow:hidden;
+  background:linear-gradient(115deg,#212B3B 0%,#2B3950 55%,#3A4A63 100%);
+  box-shadow:0 10px 26px rgba(33,43,59,.28);
+  transition:transform .18s cubic-bezier(.2,.7,.3,1),box-shadow .18s;}
+.dispatchband:hover{transform:translateY(-3px);box-shadow:0 16px 34px rgba(33,43,59,.34);}
+.dispatchband:after{content:"";position:absolute;right:-60px;top:-70px;width:230px;height:230px;
+  border-radius:50%;background:radial-gradient(circle,rgba(245,198,61,.22),transparent 68%);}
+.dispatchband .db-ic{width:52px;height:52px;border-radius:14px;background:rgba(245,198,61,.16);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.dispatchband h3{margin:0 0 4px;color:#fff;font-size:19px;font-weight:600;}
+.dispatchband p{margin:0;color:#A9B6C4;font-size:13.5px;max-width:52ch;line-height:1.45;}
+.dispatchband .db-go{margin-left:auto;background:var(--gold);color:var(--navy);font-weight:700;
+  font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:11px 20px;border-radius:24px;
+  white-space:nowrap;}
 .stat{background:rgba(255,255,255,.85);backdrop-filter:blur(6px);border-color:#DFE7EE;}
 .tile{background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border-color:#E1E8EF;}
 .tile-ic{width:44px;height:44px;border-radius:12px;}
@@ -465,6 +480,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
         <p class="sub" id="homeSub">Everything you need is below.</p>
       </div>
       <div class="tiles" id="homeTiles"></div>
+      <div id="homeDispatch"></div>
     </section>
 
     <!-- LEARN -->
@@ -2775,8 +2791,6 @@ async function drawHome(){
   ];
   if(isOwner) tiles.push({go:"users", ic:ICONS.users, bg:"#F2EDFA", h:"Users",
     p:"Who has an account, and who is a supervisor."});
-  tiles.push({go:"techs", ic:ICONS.techs, bg:"#FCEDE8", h:"Dispatch board",
-    p:"Where every technician is, and who is closest to a new job."});
   tiles.splice(2,0,{go:"results", who:"me", ic:ICONS.mine, bg:"#E9F7EF", h:"My results",
     p:"Your own calls — scores, what you missed, transcripts and recordings."});
   if(isAdmin) tiles.splice(3,0,{go:"results", who:"all", ic:ICONS.team, bg:"#EAF0FA", h:"Team results",
@@ -2789,6 +2803,19 @@ async function drawHome(){
       ${t.bar!==undefined?`<div class="tile-bar"><i style="width:${t.bar}%"></i></div>
         <span class="tile-go">${t.note}</span>`:`<span class="tile-go">Open →</span>`}
     </button>`).join("");
+  $("#homeDispatch").innerHTML=`
+    <button class="dispatchband" data-tile="techs">
+      <span class="db-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#F5C63D"
+        stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg></span>
+      <span>
+        <h3>Dispatch board</h3>
+        <p>Live map of where every technician is working, how long they have been there, and who is
+           closest to a new job. Needs the dispatch code.</p>
+      </span>
+      <span class="db-go">Open board</span>
+    </button>`;
+
   $$("[data-tile]").forEach(b=>b.onclick=()=>{
     if(b.dataset.who){ resWho=b.dataset.who; resOpen=null; }
     go(b.dataset.tile);
