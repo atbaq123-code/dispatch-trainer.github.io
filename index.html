@@ -361,8 +361,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
     <section id="v-users" class="hide">
       <div class="crumb">Owner # Accounts</div>
       <h1>Users</h1>
-      <p class="sub">Everyone who has registered. Supervisors can see the whole team's results
-        and manage the dispatch board; trainees see only their own.</p>
+      <p class="sub" id="usersSub"></p>
       <div id="userList"><div class="note">Loading…</div></div>
     </section>
 
@@ -1390,7 +1389,7 @@ function go(v){
   if(v==="learn") drawLearn();
   if(v==="home") drawHome();
   if(v==="techs") drawTechs();
-  if(v==="users"){ if(!isOwner){ go("home"); return; } drawUsers(); }
+  if(v==="users"){ if(!isAdmin){ go("home"); return; } drawUsers(); }
   if(v!=="setup") calStop();
   if(v==="setup"){ drawSlots(); drawMode(); drawPause(); drawLang(); drawGate(); }
   window.scrollTo(0,0);
@@ -2136,7 +2135,7 @@ async function loadMe(session){
     ? "Nothing is saved under your name. Sign out and register to have your scores tracked."
     : isOwner ? "Owner — you manage who is a supervisor and who is a trainee."
     : (isAdmin?"Supervisor — you can see everyone's results.":"Trainee — you see your own results.");
-  $("#navUsers").classList.toggle("hide", !isOwner);
+  $("#navUsers").classList.toggle("hide", !isAdmin);
   $("#resTitle").textContent=isAdmin?"Team results":"My results";
   const bt=document.getElementById("buildTag"); if(bt) bt.textContent=BUILD;
   $("#outBtn").textContent=isGuest?"Exit guest":"Sign out";
@@ -2192,6 +2191,9 @@ async function drawUsers(){
   const rows=(data||[]).filter(u=>u.email);
   if(!rows.length){ wrap.innerHTML='<div class="note">Nobody has registered yet.</div>'; return; }
   const sup=rows.filter(u=>u.is_admin).length;
+  $("#usersSub").textContent = isOwner
+    ? "Everyone who has registered. Tap a role to change it."
+    : "Everyone who has registered. Only the owner can change roles.";
   wrap.innerHTML=`<div class="note" style="margin-bottom:12px">${rows.length} accounts · ${sup} supervisor${sup===1?"":"s"}</div>`+
     rows.map(u=>{
       const owner=(u.email||"").toLowerCase()===OWNER_EMAIL;
@@ -2203,11 +2205,12 @@ async function drawUsers(){
           <div class="note">${u.email}</div>
           <div class="note">joined ${new Date(u.created_at).toLocaleDateString()}</div>
         </div>
-        ${owner?'<span class="note">always a supervisor</span>':
-        `<div class="chips" style="margin:0">
-          <button class="chip ${u.is_admin?"on":""}" data-role="1" data-uid="${u.id}">Supervisor</button>
-          <button class="chip ${u.is_admin?"":"on"}" data-role="0" data-uid="${u.id}">Trainee</button>
-        </div>`}
+        ${owner?'<span class="note">always a supervisor</span>'
+        : isOwner ? `<div class="chips" style="margin:0">
+            <button class="chip ${u.is_admin?"on":""}" data-role="1" data-uid="${u.id}">Supervisor</button>
+            <button class="chip ${u.is_admin?"":"on"}" data-role="0" data-uid="${u.id}">Trainee</button>
+          </div>`
+        : `<span class="chip on" style="cursor:default">${u.is_admin?"Supervisor":"Trainee"}</span>`}
       </div>`;
     }).join("");
   $$("[data-uid]").forEach(b=>b.onclick=async()=>{
@@ -2515,20 +2518,22 @@ async function drawHome(){
     p:"Who has an account, and who is a supervisor."});
   tiles.push({go:"techs", ic:"📍", bg:"#FFF1EC", h:"Dispatch board",
     p:"Where every technician is, and who is closest to a new job."});
-  tiles.splice(2,0, isAdmin
-    ? {go:"results", ic:"📊", bg:"#EAF9F1", h:"Team results",
-       p:"Every call your dispatchers have taken, with transcripts and recordings."}
-    : {go:"results", ic:"📊", bg:"#EAF9F1", h:"My results",
-       p:"Every call you have taken — your scores, what you missed, and the recordings."});
+  tiles.splice(2,0,{go:"results", who:"me", ic:"📊", bg:"#EAF9F1", h:"My results",
+    p:"Your own calls — scores, what you missed, transcripts and recordings."});
+  if(isAdmin) tiles.splice(3,0,{go:"results", who:"all", ic:"👥", bg:"#EEF3FA", h:"Team results",
+    p:"Every call your dispatchers have taken, grouped by person."});
 
   $("#homeTiles").innerHTML = tiles.map(t=>`
-    <button class="tile" data-tile="${t.go}">
+    <button class="tile" data-tile="${t.go}" data-who="${t.who||''}">
       <div class="tile-ic" style="background:${t.bg}">${t.ic}</div>
       <h3>${t.h}</h3><p>${t.p}</p>
       ${t.bar!==undefined?`<div class="tile-bar"><i style="width:${t.bar}%"></i></div>
         <span class="tile-go">${t.note}</span>`:`<span class="tile-go">Open →</span>`}
     </button>`).join("");
-  $$("[data-tile]").forEach(b=>b.onclick=()=>go(b.dataset.tile));
+  $$("[data-tile]").forEach(b=>b.onclick=()=>{
+    if(b.dataset.who){ resWho=b.dataset.who; resOpen=null; }
+    go(b.dataset.tile);
+  });
 
   const box=$("#homeStats");
   if(isGuest||!me){ box.innerHTML=""; return; }
@@ -2544,7 +2549,7 @@ async function drawHome(){
   }catch(e){ box.innerHTML=""; }
 }
 
-let resRows=[], resOpen=null, resSel=new Set(), resWho="all", resFold={};
+let resRows=[], resOpen=null, resSel=new Set(), resWho="me", resFold={};
 
 async function drawResults(){
   const wrap=$("#resWrap");
@@ -2581,11 +2586,16 @@ function paintResults(){
   const wrap=$("#resWrap");
   if(!resRows.length){ wrap.innerHTML='<div class="note">No calls scored yet.</div>';
     $("#resSub").textContent=""; return; }
+  $("#resTitle").textContent = resWho==="me" ? "My results"
+    : resWho==="all" ? (isAdmin?"Team results":"My results") : resWho;
 
-  const calls=resRows.filter(r=>!isTypingRow(r));
+  const scope = resWho==="all" ? resRows
+    : resWho==="me" ? resRows.filter(r=>r.user_id===me.id)
+    : resRows.filter(r=>nameOf(r)===resWho);
+  const calls=scope.filter(r=>!isTypingRow(r));
   const avg=calls.length?Math.round(calls.reduce((a,b)=>a+(b.total||0),0)/calls.length*10)/10:0;
   const pass=calls.filter(r=>r.verdict==="PASS").length;
-  const typings=resRows.length-calls.length;
+  const typings=scope.length-calls.length;
   $("#resSub").textContent=calls.length+" calls · average "+avg+"/30 · "+pass+" passed"+
     (typings?" · "+typings+" typing tests":"");
 
@@ -2593,6 +2603,7 @@ function paintResults(){
   if(isAdmin){
     const people=[...new Set(resRows.map(nameOf))].sort();
     head=`<div class="chips" style="margin-bottom:12px">
+      <button class="chip ${resWho==="me"?"on":""}" data-who="me">My calls</button>
       <button class="chip ${resWho==="all"?"on":""}" data-who="all">Everyone</button>
       ${people.map(p=>`<button class="chip ${resWho===p?"on":""}" data-who="${p.replace(/"/g,"&quot;")}">${p}</button>`).join("")}
     </div>`;
@@ -2607,7 +2618,9 @@ function paintResults(){
       </span></div>`;
   }
 
-  const shown = resWho==="all" ? resRows : resRows.filter(r=>nameOf(r)===resWho);
+  const shown = resWho==="all" ? resRows
+    : resWho==="me" ? resRows.filter(r=>r.user_id===me.id)
+    : resRows.filter(r=>nameOf(r)===resWho);
   let body="";
   if(isAdmin && resWho==="all"){
     const groups={};
