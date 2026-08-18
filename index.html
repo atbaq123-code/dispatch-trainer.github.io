@@ -198,6 +198,13 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .tiles>*:nth-child(1){animation-delay:.03s}.tiles>*:nth-child(2){animation-delay:.07s}
 .tiles>*:nth-child(3){animation-delay:.11s}.tiles>*:nth-child(4){animation-delay:.15s}
 .tiles>*:nth-child(5){animation-delay:.19s}.tiles>*:nth-child(6){animation-delay:.23s}
+.navdispatch{background:var(--gold);color:var(--navy) !important;border-radius:5px;
+  font-weight:700;letter-spacing:.07em;}
+.navdispatch:hover{filter:brightness(1.06);}
+.navdispatch[data-on="1"]{background:#fff;}
+.pinwrap{max-width:380px;margin:60px auto;text-align:center;}
+.pinbox{width:100%;text-align:center;font-family:Inter,monospace;font-size:30px;letter-spacing:.5em;
+  padding:14px;border:1px solid var(--line);border-radius:8px;background:#fff;}
 .brandbtn{cursor:pointer;display:flex;align-items:center;gap:10px}
 .brandmark{display:flex;align-items:center;flex-shrink:0}
 .brandmark img{height:30px;width:auto;border-radius:6px;display:none}
@@ -283,10 +290,11 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
     <button class="nav on" data-go="board">Calls</button>
     <button class="nav hide" id="navCall" data-go="call">New job</button>
     <button class="nav hide" id="navRev" data-go="review">Review</button>
-    <button class="nav" data-go="techs">Dispatch</button>
     <button class="nav hide" id="navUsers" data-go="users">Users</button>
     <button class="nav" id="navResults" data-go="results">Results</button>
     <button class="nav" data-go="setup">Settings</button>
+    <span style="width:1px;height:20px;background:rgba(255,255,255,.2);margin:0 4px"></span>
+    <button class="nav navdispatch" data-go="techs">◆ Dispatch</button>
     <button class="nav" id="outBtn" style="border:1px solid rgba(255,255,255,.25)">Sign out</button>
     <span class="nav" id="whoTop" style="color:#8FA0B2;cursor:default"></span>
   </div>
@@ -406,6 +414,23 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
     <!-- TECHS -->
     <section id="v-techs" class="hide">
+      <div id="techLock" class="hide">
+        <div class="pinwrap">
+          <div class="tile-ic" style="background:#FFF6E2;margin:0 auto 16px;width:52px;height:52px">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#9A7317" stroke-width="1.7"
+              stroke-linecap="round"><rect x="4" y="10" width="16" height="10" rx="2"/>
+              <path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          </div>
+          <h1>Dispatch board</h1>
+          <p class="sub" style="margin:0 auto 18px">This is the live board. Enter the dispatch code
+            to open it.</p>
+          <input class="pinbox" id="pinIn" inputmode="numeric" maxlength="4" placeholder="••••">
+          <div class="note" id="pinMsg" style="margin:10px 0 14px;min-height:18px"></div>
+          <button class="btn" id="pinGo" style="width:100%">Open the board</button>
+        </div>
+      </div>
+
+      <div id="techBody">
       <div class="crumb">Dispatch # Technician board</div>
       <h1>Dispatch board</h1>
       <p class="sub">Where everyone is right now, how long they have been there, and who is
@@ -429,6 +454,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
       </div>
       <div id="newTechForm"></div>
       <div id="techList" class="techgrid"><div class="note">Loading…</div></div>
+      </div>
     </section>
 
     <!-- HOME -->
@@ -438,7 +464,6 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
         <h1 id="homeHi">Welcome</h1>
         <p class="sub" id="homeSub">Everything you need is below.</p>
       </div>
-      <div class="cols" style="grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px" id="homeStats"></div>
       <div class="tiles" id="homeTiles"></div>
     </section>
 
@@ -1504,7 +1529,7 @@ function go(v){
   if(v==="results") drawResults();
   if(v==="learn") drawLearn();
   if(v==="home") drawHome();
-  if(v==="techs") drawTechs();
+  if(v==="techs") openDispatch();
   if(v==="users"){ if(!isAdmin){ go("home"); return; } drawUsers(); }
   if(v!=="setup") calStop();
   if(v==="setup"){ drawSlots(); drawMode(); drawPause(); drawLang(); drawGate(); }
@@ -2433,6 +2458,27 @@ async function removeUser(id){
 }
 
 /* ---------------- technician board ---------------- */
+const DISPATCH_PIN="2026";
+let dispatchOK = sessionStorage.getItem("oc_dispatch")==="1";
+
+function openDispatch(){
+  const lock=$("#techLock"), body=$("#techBody");
+  lock.classList.toggle("hide", dispatchOK);
+  body.classList.toggle("hide", !dispatchOK);
+  if(dispatchOK){ drawTechs(); return; }
+  const inp=$("#pinIn"); inp.value=""; $("#pinMsg").textContent="";
+  setTimeout(()=>inp.focus(),80);
+  const tryPin=()=>{
+    if(inp.value.trim()===DISPATCH_PIN){
+      dispatchOK=true; sessionStorage.setItem("oc_dispatch","1"); openDispatch();
+    } else { $("#pinMsg").textContent="That code is not right."; inp.value=""; inp.focus(); }
+  };
+  $("#pinGo").onclick=tryPin;
+  inp.onkeydown=e=>{ if(e.key==="Enter") tryPin(); };
+  inp.oninput=()=>{ if(inp.value.length===4) tryPin(); };
+}
+
+
 let techs=[], techEdit=null, techMap=null, techLayer=null, sinceTimer=null, lastFind=null;
 
 const PALETTE=["#2C5FA8","#B3462F","#3E7D4F","#8C5BB0","#B07C1E","#1F7D86","#A8386B","#556070"];
@@ -2524,7 +2570,7 @@ function paintMap(extra){
 }
 
 async function drawTechs(){
-  $("#addTechBtn").classList.toggle("hide", !isAdmin);
+  $("#addTechBtn").classList.toggle("hide", !dispatchOK);
   $("#addTechBtn").onclick=()=>{ techEdit={new:true, stops:[{}]}; paintTechs(); };
   const {data,error}=await sb.from("techs").select("*").order("name");
   if(error){ $("#techList").innerHTML='<div class="note">Could not load: '+error.message+'</div>'; return; }
@@ -2566,7 +2612,7 @@ function paintTechs(){
   $("#newTechForm").innerHTML = (techEdit && techEdit.new) ? techFormHtml(techEdit) : "";
   if(!techs.length && !(techEdit&&techEdit.new)){
     $("#techList").innerHTML='<div class="note">No technicians yet'+
-      (isAdmin?' — add your first one above.':'. A supervisor needs to add them.')+'</div>';
+      (dispatchOK?' — add your first one above.':'. A supervisor needs to add them.')+'</div>';
     wireTechForm(); return;
   }
   $("#techList").innerHTML=techs.map(t=>{
@@ -2578,7 +2624,7 @@ function paintTechs(){
           <div style="font-weight:600;color:var(--navy);font-size:16px">${t.name}</div>
           ${t.status?`<div class="note">${t.status}</div>`:""}
         </div>
-        ${isAdmin?`<div style="display:flex;gap:6px">
+        ${dispatchOK?`<div style="display:flex;gap:6px">
           <button class="btn ghost" data-ed="${t.id}" style="padding:6px 10px;font-size:11px">Edit</button>
           <button class="btn ghost" style="border-color:var(--red);color:var(--red);padding:6px 10px;font-size:11px"
             data-del="${t.id}">Remove</button></div>`:""}
@@ -2687,7 +2733,7 @@ async function findNearest(){
         <span style="text-align:right;white-space:nowrap">
           <b style="font-size:18px;color:${i===0?"var(--green)":"var(--navy)"}">${x.e.minutes}</b>
           <span class="note"> min · ${x.e.km} km</span><br>
-          ${isAdmin?`<button class="btn ghost" data-assign="${x.t.id}"
+          ${dispatchOK?`<button class="btn ghost" data-assign="${x.t.id}"
             style="padding:5px 10px;font-size:11px;margin-top:4px">Assign</button>`:""}
         </span></div>`).join("")+`</div>`;
     $$("[data-assign]").forEach(b=>b.onclick=()=>assignJob(+b.dataset.assign, job, q));
@@ -2748,18 +2794,6 @@ async function drawHome(){
     go(b.dataset.tile);
   });
 
-  const box=$("#homeStats");
-  if(isGuest||!me){ box.innerHTML=""; return; }
-  try{
-    let q=sb.from("results").select("total,verdict,scenario_id").order("created_at",{ascending:false}).limit(200);
-    if(!isAdmin) q=q.eq("user_id",me.id);
-    const {data}=await q;
-    const calls=(data||[]).filter(r=>r.scenario_id!=="typing");
-    const avg=calls.length?Math.round(calls.reduce((a,b)=>a+(b.total||0),0)/calls.length):0;
-    const pass=calls.filter(r=>r.verdict==="PASS").length;
-    box.innerHTML=[[calls.length,"Calls taken"],[avg+"/30","Average score"],[pass,"Passed"]]
-      .map(([v,l])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join("");
-  }catch(e){ box.innerHTML=""; }
 }
 
 let resRows=[], resOpen=null, resSel=new Set(), resWho="me", resFold={};
@@ -3075,7 +3109,10 @@ function init(){
   if(!SR){ const e=$("#boardErr"); e.textContent="This browser has no speech recognition. Use Chrome or Edge for voice — typing still works."; e.classList.remove("hide"); }
 
   document.addEventListener("input",onFormInput);
-  $$("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
+  $$("[data-go]").forEach(b=>b.onclick=()=>{
+    if(b.dataset.go==="results"){ resWho="me"; resOpen=null; resSel.clear(); }
+    go(b.dataset.go);
+  });
   $("#micBtn").onclick=micTap;
   $("#findBtn").onclick=findNearest;
   $("#jobAddr").onkeydown=e=>{ if(e.key==="Enter") findNearest(); };
