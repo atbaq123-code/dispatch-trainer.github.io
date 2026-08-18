@@ -245,6 +245,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
     <button class="nav hide" id="navCall" data-go="call">New job</button>
     <button class="nav hide" id="navRev" data-go="review">Review</button>
     <button class="nav" data-go="techs">Dispatch</button>
+    <button class="nav hide" id="navUsers" data-go="users">Users</button>
     <button class="nav" id="navResults" data-go="results">Results</button>
     <button class="nav" data-go="setup">Settings</button>
     <button class="nav" id="outBtn" style="border:1px solid rgba(255,255,255,.25)">Sign out</button>
@@ -354,6 +355,15 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
       <h1 id="resTitle">My results</h1>
       <p class="sub" id="resSub"></p>
       <div class="panel" id="resWrap"><div class="note">Loading…</div></div>
+    </section>
+
+    <!-- USERS -->
+    <section id="v-users" class="hide">
+      <div class="crumb">Owner # Accounts</div>
+      <h1>Users</h1>
+      <p class="sub">Everyone who has registered. Supervisors can see the whole team's results
+        and manage the dispatch board; trainees see only their own.</p>
+      <div id="userList"><div class="note">Loading…</div></div>
     </section>
 
     <!-- TECHS -->
@@ -969,7 +979,8 @@ const JOBS=[
 ];
 
 /* ============================ state ============================ */
-let me=null, isAdmin=false, isGuest=false, authMode="in", booted=false;
+const OWNER_EMAIL="obada.arag89@gmail.com";
+let me=null, isAdmin=false, isOwner=false, isGuest=false, authMode="in", booted=false;
 let job=null, log=[], chips={}, secs=0, timer=null, busy=false, report=null;
 let listening=false, speaking=false, voiceOn=true, heard="", finalTx="", rec=null, voices=[], primed=false;
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1367,7 +1378,7 @@ function onFormInput(e){
 /* ============================ render ============================ */
 function go(v){
   hush(); if(listening){try{rec.stop();}catch(e){}listening=false;}
-  ["home","setup","board","call","review","results","learn","techs"].forEach(x=>$("#v-"+x).classList.toggle("hide",x!==v));
+  ["home","setup","board","call","review","results","learn","techs","users"].forEach(x=>$("#v-"+x).classList.toggle("hide",x!==v));
   $$(".nav").forEach(b=>b.classList.toggle("on",b.dataset.go===v));
   $("#callBar").classList.toggle("hide",v!=="call"||!job);
   document.getElementById("shell").classList.toggle("solo", v!=="call");
@@ -1379,6 +1390,7 @@ function go(v){
   if(v==="learn") drawLearn();
   if(v==="home") drawHome();
   if(v==="techs") drawTechs();
+  if(v==="users"){ if(!isOwner){ go("home"); return; } drawUsers(); }
   if(v!=="setup") calStop();
   if(v==="setup"){ drawSlots(); drawMode(); drawPause(); drawLang(); drawGate(); }
   window.scrollTo(0,0);
@@ -2116,12 +2128,15 @@ async function loadMe(session){
   me=session.user;
   isGuest = !!me.is_anonymous || !me.email;
   const {data}=await sb.from("profiles").select("full_name,is_admin").eq("id",me.id).single();
-  isAdmin=!isGuest && !!(data&&data.is_admin);
+  isOwner = !isGuest && (me.email||"").toLowerCase()===OWNER_EMAIL;
+  isAdmin = !isGuest && (isOwner || !!(data&&data.is_admin));
   $("#whoami").textContent = isGuest ? "Guest session"
     : (data&&data.full_name?data.full_name+" · ":"")+me.email;
   $("#roleNote").textContent = isGuest
     ? "Nothing is saved under your name. Sign out and register to have your scores tracked."
+    : isOwner ? "Owner — you manage who is a supervisor and who is a trainee."
     : (isAdmin?"Supervisor — you can see everyone's results.":"Trainee — you see your own results.");
+  $("#navUsers").classList.toggle("hide", !isOwner);
   $("#resTitle").textContent=isAdmin?"Team results":"My results";
   const bt=document.getElementById("buildTag"); if(bt) bt.textContent=BUILD;
   $("#outBtn").textContent=isGuest?"Exit guest":"Sign out";
@@ -2167,6 +2182,42 @@ function copyCall(ix){
   const body=(r.transcript||[]).map(m=>(m.w==="you"?"DISPATCHER: ":"CALLER: ")+m.t).join("\n");
   navigator.clipboard.writeText(head+body).catch(()=>{});
 }
+/* ---------------- users (owner only) ---------------- */
+async function drawUsers(){
+  const wrap=$("#userList");
+  wrap.innerHTML='<div class="note">Loading…</div>';
+  const {data,error}=await sb.from("profiles").select("id,full_name,email,is_admin,created_at")
+    .order("created_at",{ascending:false});
+  if(error){ wrap.innerHTML='<div class="note">Could not load: '+error.message+'</div>'; return; }
+  const rows=(data||[]).filter(u=>u.email);
+  if(!rows.length){ wrap.innerHTML='<div class="note">Nobody has registered yet.</div>'; return; }
+  const sup=rows.filter(u=>u.is_admin).length;
+  wrap.innerHTML=`<div class="note" style="margin-bottom:12px">${rows.length} accounts · ${sup} supervisor${sup===1?"":"s"}</div>`+
+    rows.map(u=>{
+      const owner=(u.email||"").toLowerCase()===OWNER_EMAIL;
+      return `<div class="panel" style="display:flex;justify-content:space-between;gap:12px;
+              flex-wrap:wrap;align-items:center">
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:600;color:var(--navy)">${u.full_name||"(no name)"}
+            ${owner?'<span class="vd" style="font-size:10px;padding:2px 8px;margin-left:6px">OWNER</span>':""}</div>
+          <div class="note">${u.email}</div>
+          <div class="note">joined ${new Date(u.created_at).toLocaleDateString()}</div>
+        </div>
+        ${owner?'<span class="note">always a supervisor</span>':
+        `<div class="chips" style="margin:0">
+          <button class="chip ${u.is_admin?"on":""}" data-role="1" data-uid="${u.id}">Supervisor</button>
+          <button class="chip ${u.is_admin?"":"on"}" data-role="0" data-uid="${u.id}">Trainee</button>
+        </div>`}
+      </div>`;
+    }).join("");
+  $$("[data-uid]").forEach(b=>b.onclick=async()=>{
+    const want=b.dataset.role==="1";
+    const {error}=await sb.from("profiles").update({is_admin:want}).eq("id",b.dataset.uid);
+    if(error){ alert("Could not change that: "+error.message); return; }
+    drawUsers();
+  });
+}
+
 /* ---------------- technician board ---------------- */
 let techs=[], techEdit=null, techMap=null, techLayer=null, sinceTimer=null, lastFind=null;
 
@@ -2460,6 +2511,8 @@ async function drawHome(){
     {go:"board", ic:"📞", bg:"#E8F7F9", h:"Take a call", p:"Ten live scenarios with a real caller. You answer, you fill the job file, you get scored."},
     {go:"setup", ic:"⚙️", bg:"#EEF1F4", h:"Settings", p:"Caller voices, how long the caller waits before replying, speech recognition."}
   ];
+  if(isOwner) tiles.push({go:"users", ic:"👥", bg:"#F3EEFA", h:"Users",
+    p:"Who has an account, and who is a supervisor."});
   tiles.push({go:"techs", ic:"📍", bg:"#FFF1EC", h:"Dispatch board",
     p:"Where every technician is, and who is closest to a new job."});
   tiles.splice(2,0, isAdmin
