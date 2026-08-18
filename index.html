@@ -99,9 +99,15 @@ textarea.in{min-height:78px; resize:vertical;}
 .capt{flex:1; min-width:170px; text-align:center; color:var(--capt); font-size:19px; font-weight:500;}
 .capt.me{color:#fff; opacity:.75; font-size:16px;}
 .capt small{display:block; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:#7C8B9B;}
-.mic{width:62px;height:62px;border-radius:50%;background:var(--teal);color:#fff;font-size:11px;
-  font-weight:600;text-transform:uppercase;flex-shrink:0;}
-.mic.live{background:var(--red); animation:ring 1.5s ease-out infinite;}
+.mic{width:66px;height:66px;border-radius:50%;background:#2FA45C;color:#fff;font-size:9px;
+  font-weight:700;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  box-shadow:0 4px 14px rgba(47,164,92,.45);animation:ringing 1.6s ease-in-out infinite;}
+.mic svg{width:24px;height:24px;fill:currentColor;}
+.mic.live{background:var(--red);animation:ring 1.5s ease-out infinite;
+  box-shadow:0 4px 14px rgba(221,82,64,.45);}
+.mic.live svg{transform:rotate(134deg);}
+@keyframes ringing{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 .mic:disabled{opacity:.4;cursor:not-allowed;animation:none;}
 @keyframes ring{0%{box-shadow:0 0 0 0 rgba(221,82,64,.55);}100%{box-shadow:0 0 0 18px rgba(221,82,64,0);}}
 .barbtn{border:1px solid rgba(255,255,255,.3);border-radius:4px;padding:8px 11px;font-size:11px;
@@ -536,7 +542,9 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
           <div class="panel">
             <h2 class="sect">Job Details</h2>
             <div class="f"><input class="in" data-k="job_name" placeholder="Job name"></div>
-            <div class="f"><select class="in" data-k="job_type" id="jobType"></select></div>
+            <div class="f"><input class="in" data-k="job_type" id="jobType" list="jobTypeList"
+              placeholder="Job type — start typing, e.g. car, resi, comm, mail" autocomplete="off">
+              <datalist id="jobTypeList"></datalist></div>
             <div class="f"><select class="in" data-k="job_source" id="jobSource"></select></div>
             <div class="f"><textarea class="in" data-k="job_description"
               placeholder="Job description — year, make, model, color, push-to-start or metal key, gate code"></textarea></div>
@@ -652,7 +660,10 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 </div>
 
 <div class="bar hide" id="callBar">
-  <button class="mic" id="micBtn">Talk</button>
+  <button class="mic" id="micBtn">
+    <svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .58 3.6 1 1 0 0 1-.25 1Z"/></svg>
+    <span id="micLabel">Answer</span>
+  </button>
   <div class="capt" id="capt"></div>
   <input class="type" id="typeIn" placeholder="or type your line">
   <button class="barbtn hide" id="sendNowBtn" style="background:var(--teal);border-color:var(--teal);font-size:13px;padding:11px 18px">Send ⏎</button>
@@ -675,7 +686,23 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
 });
 
 const STATES=["FL","AL","GA","SC","NC","TN","TX","NY","NJ","CA"];
-const JOB_TYPES=["","Car lockout","House lockout","Business lockout","Car key replacement","Key programming","Broken key extraction","Rekey","Safe lockout","Lock repair"];
+const JOB_GROUPS=[
+  ["Automotive",["Car lockout","Car key replacement","Car key duplicate","Car Key programming","Key made","Key Duplicate","Auto Key Extraction","Ignition repair","Ignition Replacement","Car Door Lock Repair","Car Door Lock Replacement","Fob Battery Replacement","Trunk Lockout","Tailgate Lockout","Roof Box Lockout","Hitch Lockout","Steering Wheel Lockout","Motorcycle"]],
+  ["RV, trailer & semi",["Rv Lockout","Rv Key Made","Rv Locks Change","Trailer Lockout","Trailer Lock Change","Semi Lockout","Semi Key Made","Semi Key Duplicate","Camper Lockout","Mobile Home Lockout"]],
+  ["Residential",["Residential Lockout","Residential lock Rekey","Lock re-key","Lock Replacement","Residential lock repair","Residential lock replacement","Residential lock installation","Residential Fresh Installation","Residential Key Duplicate","Residential Key Extraction","Sliding Door Lock Rekey /Replacement","Room lockout","Bathroom Lockout","Closet Lockout","Closet Rekey","Patio Lockout","Shed Lockout","Keypad Programming","Lockout"]],
+  ["Commercial",["Commercial Lockout","Lockout commercial","Office Lockout","Commercial lock Rekey","Commercial lock Master Rekey","Commercial lock repair","Commercial lock replacement","Commercial lock installation","Commercial fresh installation","Commercial key duplicate","Commercial Key Extraction","Commercial Exit Device Replacement","Door Closer Replacement","Magnetic Lock Installation","Storage Lockout","Vending Machine Lockout"]],
+  ["Mailbox",["Mailbox Lockout","Mail box lock","Mailbox Lockout/ Replacement"]],
+  ["Safes, padlocks & boxes",["Safe Lockout","Safe Installation","Lockbox Lockout","Padlock Lockout","Padlock Cutoff","Cabinet Lockout","Cabinet Locks Change","Toolbox Lockout","Toolbox Key Made","Bike Lock Cut off"]],
+  ["Other",["Callback"]]
+];
+const JOB_TYPES=[""].concat(JOB_GROUPS.reduce(function(a,g){return a.concat(g[1]);},[]));
+function jobOptions(sel){
+  return '<option value="">Job type</option>'+JOB_GROUPS.map(function(g){
+    return '<optgroup label="'+g[0]+'">'+g[1].map(function(j){
+      return '<option value="'+j+'"'+(sel===j?" selected":"")+'>'+j+"</option>";
+    }).join("")+"</optgroup>";
+  }).join("");
+}
 const SOURCES=["","Google","Google Ads","Repeat client","Referral","Yelp","Website","Other"];
 
 const CHIPS=[["emergency","Emergency check"],["educate","Educated first"],["price","Price handled"],["close","Booked & confirmed"]];
@@ -1646,7 +1673,8 @@ function drawCapt(){
 function drawMic(){
   const m=$("#micBtn");
   m.classList.toggle("live",callLive);
-  m.textContent = callLive ? "Hang up" : "Answer";
+  const lab=document.getElementById("micLabel");
+  if(lab) lab.textContent = callLive ? "Hang up" : "Answer";
   m.disabled = !SR && !callLive;
   const mu=document.getElementById("muteBtn");
   if(mu){ mu.classList.toggle("hide",!callLive); mu.textContent = muted?"Unmute":"Mute"; }
@@ -2680,8 +2708,7 @@ function stopRowHtml(st,i){
     </div>
     <div class="f" style="margin-bottom:6px"><input class="in sAddr" placeholder="Address"
       value="${(st.address||"").replace(/"/g,"&quot;")}"></div>
-    <select class="in sJob">${JOB_TYPES.map(j=>
-      `<option value="${j}"${(st.job_type||"")===j?" selected":""}>${j||"Job type"}</option>`).join("")}</select>
+    <select class="in sJob">${jobOptions(st.job_type||"")}</select>
   </div>`;
 }
 
@@ -3224,7 +3251,7 @@ function copyCall(id){
 /* ============================ init ============================ */
 function init(){
   $("#stateSel").innerHTML=`<option value="">State</option>`+STATES.map(s=>`<option>${s}</option>`).join("");
-  $("#jobType").innerHTML=JOB_TYPES.map(t=>`<option value="${t}">${t||"Job type"}</option>`).join("");
+  $("#jobTypeList").innerHTML=JOB_TYPES.filter(Boolean).map(t=>`<option value="${t}">`).join("");
   $("#jobSource").innerHTML=SOURCES.map(t=>`<option value="${t}">${t||"Job source"}</option>`).join("");
   drawJobs(); drawChips(); drawSteps(); drawCount();
   if(!SR){ const e=$("#boardErr"); e.textContent="This browser has no speech recognition. Use Chrome or Edge for voice — typing still works."; e.classList.remove("hide"); }
