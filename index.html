@@ -486,7 +486,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
         <div class="panel">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
             <div><div class="lbl" style="margin-bottom:2px">Total</div>
-              <div class="tot"><span id="revTot">0</span><span style="font-size:20px;color:var(--muted)">/35</span></div></div>
+              <div class="tot"><span id="revTot">0</span><span style="font-size:20px;color:var(--muted)">/30</span></div></div>
             <span class="vd" id="revVd">—</span>
           </div>
           <div id="revScores"></div>
@@ -546,8 +546,8 @@ const CHIPS=[["emergency","Emergency check"],["educate","Educated first"],["pric
 /* Universal Call Flow — Dispatcher Academy Handbook v2.0 */
 const STEPS=[
  {t:"Greeting",key:"greet",
-  say:"Thank you for calling OnCall Locksmith, this is ______. How may I help you today?",
-  note:"The approved greeting, every time. Company, your name, offer to help. Calm and confident — your tone sets theirs."},
+  say:"This is The Locksmith, how can I help you?",
+  note:"Word for word, every single call. Clear, friendly, unhurried — then stop talking and let them explain."},
  {t:"Identify the service",key:"job_type",
   say:{def:"Of course. Let me make sure I understand — what exactly is happening with the lock?",
    auto:"Of course. What's the year, make and model? — Is it a push-to-start or a regular metal key? — And what happened to the original key?",
@@ -582,7 +582,7 @@ const STEPS=[
 ];
 
 /* QA scoring — handbook weights */
-const CATS=["Greeting & Tone (10%)","Info Gathering (20%)","Customer Education (20%)","Objection Handling (15%)","Emergency Recognition (15%)","Closing & Booking (15%)","Documentation (5%)"];
+const CATS=["Greeting & Tone (10%)","Info Gathering (25%)","Customer Education (20%)","Objection Handling (15%)","Emergency Recognition (15%)","Closing & Booking (15%)"];
 
 /* Five emotional states */
 const STATES_EMO=[
@@ -609,7 +609,7 @@ const GUIDE_CARDS=[
  ["“That seems really expensive for a key.”","“This isn't just cutting a key — it's identifying your exact security system, generating key data, cutting to precise specification, and programming it to communicate with your immobilizer.”"],
  ["“It's just a remote, why so much?”","“The fob is actually your vehicle's security key — it communicates encrypted data with your immobilizer, which requires specialised equipment to program.”"],
  ["“Why do I need to prove this is my house?”","“This is a standard safety step we apply to every residential call, to protect both our customers and our technicians.”"],
- ["Never say these","“What's your budget?” · “It's simple.” · “The technician will just inspect it.” Use “Have you received another quote?” instead."],
+ ["Never say these","“Hello?” · “Yes?” · “What do you need?” as a greeting. And on the call: “I don't know”, “I'm not sure”, “I guess”, “It should be around…”, “I need your address first”, “Call us back tomorrow.”"],
  ["Child or pet in a hot vehicle","Top priority. Tell them to call 911 as well if there's any sign of distress, then dispatch. Never end that call with only a tech on the way."]
 ];
 
@@ -877,7 +877,9 @@ const EXAM=[
  {q:"A child is reported locked in a hot vehicle. First thing you do?",
   o:["Take payment details","Advise them to call 911 as well, then dispatch as top priority","Ask year, make and model","Put them on hold to check the price"],a:1},
  {q:"A caller is confused about rekey versus replace. Correct response?",
-  o:["Quote both immediately","Explain plainly in one sentence","Transfer to a technician","Ask which they'd prefer"],a:1}
+  o:["Quote both immediately","Explain plainly in one sentence","Transfer to a technician","Ask which they'd prefer"],a:1},
+ {q:"How do you answer every single call?",
+  o:["“Hello?”","“This is The Locksmith, how can I help you?”","“Locksmith, what do you need?”","Whatever feels natural at the time"],a:1}
 ];
 
 /* ---- Locked fact sheets. The caller may never contradict these; the review
@@ -1667,14 +1669,13 @@ CHECKLIST THEY TICKED: ${ticked}
 
 HANDBOOK STANDARDS — judge against these, not generic call-centre theory:
 - GOLDEN RULE: educate before pricing. Quoting or discussing a number before explaining what the work involves is the single most common failure. Mark Customer Education down hard for it.
-- Approved greeting: "Thank you for calling OnCall Locksmith / The Locksmith Crew, this is ___. How may I help you today?" A greeting with no company name loses marks. A warm, confident tone matters as much as the words.
+- Approved greeting, word for word: "This is The Locksmith, how can I help you?" It is the same every call — no variations, no improvising, no "hello", no "what's up". Mark down anything that does not identify the company this way. A warm, confident tone matters as much as the words.
 - Identify the service, never assume it. Duplication, all-keys-lost and programming are different jobs. On a vehicle: year/make/model, push-to-start versus metal key, and what happened to the original key. On a residential lockout: proof of residency. On all-keys-lost: ownership via title or registration.
-- Information gathering also means vehicle colour, exact address or cross-streets, and the callback number. The address and zip must be read back; if what was typed differs from the ground truth, that is a serious Documentation and Info Gathering failure even if the caller confirmed the wrong version.
+- Information gathering also means vehicle colour, exact address or cross-streets, and the callback number. The address and zip must be read back; if what was typed differs from the ground truth, that is a serious Info Gathering failure even if the caller confirmed the wrong version.
 - Objection handling uses approved wording: "I completely understand — different vehicles and locks vary significantly in complexity" and "Every company operates differently. Our goal is professional service with accurate expectations."
 - FORBIDDEN phrases — mark down whenever they appear: "What's your budget?", "It's simple", "The technician will just inspect it", "I have no idea", "I'm not sure". The approved alternative is "Have you received another quote?"
 - Emergency recognition: a child or pet in a vehicle, a panic bar that won't allow egress, or an active break-in must be recognised and the caller told to call 911 or police in parallel. Missing this is an automatic fail on that category.
 - Closing means a clear next step and timing: a technician is on the way and will call to say how far he is. No invented ETA.
-- Documentation means the job file matches the call.
 
 HOW TO JUDGE THE JOB FILE — read it the way a technician would, not like a school exercise:
 - Judge information, never length. "19 Volvo XC40 PTS lost key" is a complete and good description. Three words can be enough. Never mark someone down for being brief, and never ask for full sentences.
@@ -1687,8 +1688,8 @@ HOW TO JUDGE THE JOB FILE — read it the way a technician would, not like a sch
 
 Also flag any checklist item ticked without actually doing it.
 
-Score each category 0-5. Reply with ONLY valid JSON, no markdown. Inside string values use single quotes, never double quotes, and never a line break.
-{"scores":[{"c":"Greeting & Tone (10%)","s":0,"n":"max 12 words"}, ... one object for each of the 7 categories in this exact order: ${CATS.join(", ")}],"data":[{"f":"field","got":"what they typed","should":"what is actually correct"}],"strengths":["2 items, max 15 words"],"fixes":["3 items, max 18 words"],"rewrite":{"said":"one weak line they actually said","better":"a stronger version using approved wording"},"verdict":"PASS or NEEDS WORK"}
+Score each of the six categories 0-5. Reply with ONLY valid JSON, no markdown. Inside string values use single quotes, never double quotes, and never a line break.
+{"scores":[{"c":"Greeting & Tone (10%)","s":0,"n":"max 12 words"}, ... one object for each of the 6 categories in this exact order: ${CATS.join(", ")}],"data":[{"f":"field","got":"what they typed","should":"what is actually correct"}],"strengths":["2 items, max 15 words"],"fixes":["3 items, max 18 words"],"rewrite":{"said":"one weak line they actually said","better":"a stronger version using approved wording"},"verdict":"PASS or NEEDS WORK"}
 Leave "data" empty if every field matches.`;
 
   try{
@@ -1837,8 +1838,7 @@ function drawLearn(){
         understanding of the situation before quoting a number.</div></div>
 
       <div class="panel"><div class="lbl">The approved greeting</div>
-        <div class="say" style="font-size:15px">“Thank you for calling OnCall Locksmith / The Locksmith
-        Crew, this is ______. How may I help you today?”</div>
+        <div class="say" style="font-size:15px">“This is The Locksmith, how can I help you?”</div>
         <button class="btn ghost" id="hearGreet" style="margin-top:10px">Hear it</button></div>
 
       <div class="panel"><div class="lbl">Universal call flow</div>
@@ -1870,7 +1870,7 @@ function drawLearn(){
       <button class="btn" id="toSvc">Continue to services</button>`;
     $$("[data-emo],[data-obj]").forEach(x=>x.onclick=()=>x.querySelector(".say").classList.toggle("hide"));
     $("#hearGreet").onclick=()=>{ if(!canSpeak) return; speechSynthesis.cancel();
-      const u=new SpeechSynthesisUtterance("Thank you for calling OnCall Locksmith, this is Sara. How may I help you today?");
+      const u=new SpeechSynthesisUtterance("This is The Locksmith, how can I help you?");
       const p=pickVoice("f"); if(p){u.voice=p;u.lang=p.lang;} u.rate=.98; speechSynthesis.speak(u); };
     $("#toSvc").onclick=()=>{aTab="svc";drawLearn();};
     return;
@@ -2156,7 +2156,7 @@ function copyCall(ix){
   const r=(window.__rows||[])[ix]; if(!r) return;
   const head=`${r.scenario} — ${new Date(r.created_at).toLocaleString()}\n`+
     (r.profiles&&r.profiles.full_name?`Dispatcher: ${r.profiles.full_name}\n`:"")+
-    `Score: ${r.total}${r.scenario_id==="typing"?"%":"/35"} ${r.verdict||""}\n\n`;
+    `Score: ${r.total}${r.scenario_id==="typing"?"%":"/30"} ${r.verdict||""}\n\n`;
   const body=(r.transcript||[]).map(m=>(m.w==="you"?"DISPATCHER: ":"CALLER: ")+m.t).join("\n");
   navigator.clipboard.writeText(head+body).catch(()=>{});
 }
@@ -2380,7 +2380,7 @@ async function drawHome(){
     const calls=(data||[]).filter(r=>r.scenario_id!=="typing");
     const avg=calls.length?Math.round(calls.reduce((a,b)=>a+(b.total||0),0)/calls.length):0;
     const pass=calls.filter(r=>r.verdict==="PASS").length;
-    box.innerHTML=[[calls.length,"Calls taken"],[avg+"/35","Average score"],[pass,"Passed"]]
+    box.innerHTML=[[calls.length,"Calls taken"],[avg+"/30","Average score"],[pass,"Passed"]]
       .map(([v,l])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join("");
   }catch(e){ box.innerHTML=""; }
 }
@@ -2427,7 +2427,7 @@ function paintResults(){
   const avg=calls.length?Math.round(calls.reduce((a,b)=>a+(b.total||0),0)/calls.length*10)/10:0;
   const pass=calls.filter(r=>r.verdict==="PASS").length;
   const typings=resRows.length-calls.length;
-  $("#resSub").textContent=calls.length+" calls · average "+avg+"/35 · "+pass+" passed"+
+  $("#resSub").textContent=calls.length+" calls · average "+avg+"/30 · "+pass+" passed"+
     (typings?" · "+typings+" typing tests":"");
 
   let head="";
@@ -2463,7 +2463,7 @@ function paintResults(){
              padding:12px 14px;background:#F7F9FB;border-bottom:1px solid var(--line2);flex-wrap:wrap">
           <span style="cursor:pointer;flex:1;min-width:160px" data-fold="${who.replace(/"/g,"&quot;")}">
             <b style="color:var(--navy);font-size:16px">${folded?"▸":"▾"} ${who}</b>
-            <span class="note"> · ${c.length} calls · average ${a}/35</span>
+            <span class="note"> · ${c.length} calls · average ${a}/30</span>
           </span>
           <span style="display:flex;gap:6px">
             <button class="btn ghost" data-selall="${who.replace(/"/g,"&quot;")}">Select all</button>
@@ -2496,7 +2496,7 @@ function rowHtml(r){
         <span class="note">${d.toLocaleDateString()} ${d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · ${errs}</span>
       </span>
       <span style="text-align:right;white-space:nowrap;cursor:pointer" data-open="${r.id}">
-        <b style="color:var(--navy);font-size:16px;font-weight:700">${r.total}</b><span class="note">${t?"%":"/35"}</span><br>
+        <b style="color:var(--navy);font-size:16px;font-weight:700">${r.total}</b><span class="note">${t?"%":"/30"}</span><br>
         <span class="vd ${r.verdict==="PASS"?"ok":""}" style="font-size:10px;padding:2px 8px;${r.verdict==="VOIDED"?"background:#EEF1F4;color:#8493A2":""}">${r.verdict||""}</span>
       </span></div>
     <div id="det${r.id}" class="${resOpen===r.id?"":"hide"}" style="padding:4px 0 16px">${resOpen===r.id?detailHtml(r):""}</div>`;
@@ -2604,7 +2604,7 @@ function copyCall(id){
   const r=resRows.find(x=>x.id===id); if(!r) return;
   const head=r.scenario+" — "+new Date(r.created_at).toLocaleString()+"\n"+
     (r.profiles&&r.profiles.full_name?"Dispatcher: "+r.profiles.full_name+"\n":"")+
-    "Score: "+r.total+(isTypingRow(r)?"%":"/35")+" "+(r.verdict||"")+"\n\n";
+    "Score: "+r.total+(isTypingRow(r)?"%":"/30")+" "+(r.verdict||"")+"\n\n";
   const body=(r.transcript||[]).map(m=>(m.w==="you"?"DISPATCHER: ":"CALLER: ")+m.t).join("\n");
   navigator.clipboard.writeText(head+body).catch(()=>{});
 }
