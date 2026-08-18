@@ -1550,6 +1550,7 @@ function go(v){
   if(v==="results") drawResults();
   if(v==="learn") drawLearn();
   if(v==="home") drawHome();
+  if(v!=="techs" && dispatchOK){ dispatchOK=false; }
   if(v==="techs") openDispatch();
   if(v==="users"){ if(!isAdmin){ go("home"); return; } drawUsers(); }
   if(v!=="setup") calStop();
@@ -2480,7 +2481,7 @@ async function removeUser(id){
 
 /* ---------------- technician board ---------------- */
 const DISPATCH_PIN="2026";
-let dispatchOK = sessionStorage.getItem("oc_dispatch")==="1";
+let dispatchOK = false;   // the code is asked for every single time
 
 function openDispatch(){
   const lock=$("#techLock"), body=$("#techBody");
@@ -2491,7 +2492,7 @@ function openDispatch(){
   setTimeout(()=>inp.focus(),80);
   const tryPin=()=>{
     if(inp.value.trim()===DISPATCH_PIN){
-      dispatchOK=true; sessionStorage.setItem("oc_dispatch","1"); openDispatch();
+      dispatchOK=true; openDispatch();
     } else { $("#pinMsg").textContent="That code is not right."; inp.value=""; inp.focus(); }
   };
   $("#pinGo").onclick=tryPin;
@@ -2780,6 +2781,7 @@ const ICONS={"learn": "<svg viewBox=\"0 0 24 24\" stroke=\"#9A7317\"><path d=\"M
 function paintBandPin(){
   const box=document.getElementById("dbPin"); if(!box) return;
   if(dispatchOK){ box.innerHTML='<span class="db-go">Open board</span>'; return; }
+  /* otherwise ask for the code, every time */
   box.innerHTML='<input id="dbPinIn" inputmode="numeric" maxlength="4" placeholder="••••" '+
                 'aria-label="Dispatch code">'+
                 '<span class="db-go" id="dbPinGo">Enter</span>'+
@@ -2787,7 +2789,7 @@ function paintBandPin(){
   const inp=document.getElementById("dbPinIn");
   const tryIt=()=>{
     if(inp.value.trim()===DISPATCH_PIN){
-      dispatchOK=true; sessionStorage.setItem("oc_dispatch","1");
+      dispatchOK=true;
       paintBandPin(); go("techs");
     } else {
       document.getElementById("dbPinErr").textContent="Wrong code";
