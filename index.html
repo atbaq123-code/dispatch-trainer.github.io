@@ -191,8 +191,10 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .stopline{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px dotted var(--line2);}
 .stopno{width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
-.pin{background:var(--navy);color:#fff;font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;
-  white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff;}
+.pin{background:var(--navy);color:#fff;font-size:11px;font-weight:700;padding:5px 9px;border-radius:14px;
+  white-space:nowrap;box-shadow:0 3px 10px rgba(20,30,45,.35);border:2px solid #fff;letter-spacing:.01em;}
+.leaflet-container{font-family:'Poppins',system-ui,sans-serif;border-radius:10px;}
+.leaflet-control-attribution{font-size:9px;opacity:.75;}
 .pin.job{background:var(--red);}
 .pin.near{background:var(--green);}
 .since{font-size:11px;font-weight:600;color:var(--brassish,#8C6D2F);}
@@ -369,6 +371,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
         </div>
       </div>
 
+      <div class="chips" id="mapStyles" style="margin:14px 0 8px"></div>
       <div id="techMap"></div>
       <div id="findOut"></div>
 
@@ -2189,12 +2192,42 @@ function sinceText(iso){
   return Math.floor(mins/60)+"h "+(mins%60?mins%60+"m":"");
 }
 
+const MAP_STYLES={
+  clean:   {name:"Clean",   url:"https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+            attr:"© OpenStreetMap, © CARTO", sub:"abcd", max:20},
+  streets: {name:"Streets", url:"https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+            attr:"© OpenStreetMap, © CARTO", sub:"abcd", max:20},
+  dark:    {name:"Dark",    url:"https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+            attr:"© OpenStreetMap, © CARTO", sub:"abcd", max:20},
+  satellite:{name:"Satellite",
+            url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            attr:"Esri, Maxar, Earthstar Geographics", sub:"abc", max:19}
+};
+let mapStyle=localStorage.getItem("oc_mapstyle")||"clean", tileLayer=null;
+
+function applyStyle(){
+  if(!techMap) return;
+  const st=MAP_STYLES[mapStyle]||MAP_STYLES.clean;
+  if(tileLayer) techMap.removeLayer(tileLayer);
+  tileLayer=L.tileLayer(st.url,{maxZoom:st.max,subdomains:st.sub,attribution:st.attr}).addTo(techMap);
+  if(tileLayer.bringToBack) tileLayer.bringToBack();
+}
+function drawMapStyles(){
+  const el=document.getElementById("mapStyles"); if(!el) return;
+  el.innerHTML=Object.keys(MAP_STYLES).map(k=>
+    `<button class="chip ${mapStyle===k?"on":""}" data-ms="${k}">${MAP_STYLES[k].name}</button>`).join("");
+  el.querySelectorAll("[data-ms]").forEach(b=>b.onclick=()=>{
+    mapStyle=b.dataset.ms; localStorage.setItem("oc_mapstyle",mapStyle);
+    applyStyle(); drawMapStyles();
+  });
+}
+
 function ensureMap(){
   if(techMap || !window.L) return;
-  techMap=L.map("techMap",{scrollWheelZoom:false}).setView([28.05,-82.45],10);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    {maxZoom:19, attribution:"© OpenStreetMap"}).addTo(techMap);
+  techMap=L.map("techMap",{scrollWheelZoom:false,zoomControl:true}).setView([28.05,-82.45],10);
+  applyStyle();
   techLayer=L.layerGroup().addTo(techMap);
+  drawMapStyles();
 }
 
 function paintMap(extra){
