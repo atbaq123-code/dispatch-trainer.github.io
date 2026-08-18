@@ -159,6 +159,19 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .big-say{font-size:17px;line-height:1.5;color:var(--navy);background:#F4FBFC;
   border-left:3px solid var(--teal);padding:13px 15px;border-radius:0 5px 5px 0;margin:12px 0;}
 /* home */
+#v-home{position:relative;}
+#v-home:before{content:"";position:absolute;left:-24px;right:-24px;top:-30px;height:520px;z-index:-1;
+  border-radius:0 0 40px 40px;
+  background:
+    radial-gradient(680px 300px at 12% -10%, rgba(245,198,61,.20), transparent 60%),
+    radial-gradient(620px 320px at 88% 0%, rgba(43,175,189,.18), transparent 62%),
+    linear-gradient(180deg, #FFFFFF 0%, #F4F7FA 55%, rgba(244,247,250,0) 100%);}
+.hero{padding:34px 0 14px;}
+.hero h1{font-size:32px;letter-spacing:-.01em;}
+.stat{background:rgba(255,255,255,.85);backdrop-filter:blur(6px);border-color:#DFE7EE;}
+.tile{background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border-color:#E1E8EF;}
+.tile-ic{width:44px;height:44px;border-radius:12px;}
+.tile-ic svg{width:22px;height:22px;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;}
 .hero{padding:26px 0 8px;}
 .hero h1{font-size:30px;margin:0 0 4px;}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:6px;}
@@ -640,7 +653,26 @@ const STATES_EMO=[
  {s:"Panicked",eg:"Child in car, business breach, emergency",r:"Follow the emergency protocol immediately"}
 ];
 
-const MISTAKES=["Interrupting the customer","Assuming the service instead of confirming it","Failing to explain before quoting","Sounding uncertain","Quoting too early (skipping education)","Treating every vehicle or every lock as the same"];
+const MISTAKES=[
+ {m:"Interrupting the customer",
+  c:"They stop telling you things. You end up asking for details they were about to give you anyway.",
+  d:"Let them finish. Take notes while they talk so they never have to say it twice."},
+ {m:"Assuming the service instead of confirming it",
+  c:"A duplicate, an all-keys-lost and a programming job need different equipment. Assume wrong and the technician arrives unable to work.",
+  d:"Summarise it back: “Understood — your keys are locked inside the vehicle.” One sentence, and they correct you if you have it wrong."},
+ {m:"Failing to explain before quoting",
+  c:"Any number sounds high when they do not know what it covers. That is the call you lose.",
+  d:"Educate first, always. What the technician checks, why it varies, then the price."},
+ {m:"Sounding uncertain",
+  c:"“I don't know” or “I'm not sure” tells the caller you do not know your own business. They ring the next company.",
+  d:"“I want to make sure I give you accurate information, so let me check with my lead technician.”"},
+ {m:"Quoting too early",
+  c:"A number in the first ten seconds becomes a promise. The technician has to honour it whatever he finds.",
+  d:"Qualify the job first. You cannot price what you have not identified."},
+ {m:"Treating every vehicle or every lock as the same",
+  c:"A 2012 car can be harder than a 2023 one. A mortise lock is not a deadbolt. Wrong assumption, wrong tools, wasted trip.",
+  d:"Year, make and model. Push-to-start or metal key. Lock type on a door. Every single call."}
+];
 
 const EMERGENCIES=[
  ["Child or pet locked in a vehicle","Top priority. Advise the customer to also call 911 if there's any sign of distress."],
@@ -1793,6 +1825,20 @@ HOW TO JUDGE THE JOB FILE — read it the way a technician would, not like a sch
 
 Also flag any checklist item ticked without actually doing it.
 
+HOW TO SCORE — you are coaching a trainee, not marking an exam. Be generous where they did the thing, specific where they did not.
+- Start every category at 4 and move from there. Do not start at 5 and deduct for imperfection.
+- 5 = did it well. It does not have to be flawless or word perfect — competent is a 5.
+- 4 = did it, slightly rough. This should be the most common score you give.
+- 3 = partly did it, or did it late. Still a pass for that category.
+- 2 = attempted but weak.
+- 1 = barely touched it. 0 = did not do it at all, and only when it genuinely never happened.
+- A category that does not apply to this call scores 4, not 0. A cancellation has no information to gather; an inbound routine call has no objection to handle. Never punish a trainee for the absence of something the call never contained.
+- Count each mistake once, in the category it belongs to. Do not let one wrong zip drag down three different categories.
+- Wording does not have to match the script. If they achieved the same thing in their own words, that is full marks.
+- Nerves, hesitation, a repeated question, a moment of silence — none of these lose marks. Only what reached the customer matters.
+- VERDICT: PASS unless the call was genuinely poor. Pass anything scoring 17 or above out of 30. Below that, or where an emergency was missed entirely, is NEEDS WORK. Most trainee calls should pass — the fixes are where the teaching happens, not the verdict.
+- In "fixes", give the one or two things that would most improve the next call, phrased as advice rather than criticism. In "strengths", always find two genuine things, even on a weak call.
+
 Score each of the six categories 0-5. Reply with ONLY valid JSON, no markdown. Inside string values use single quotes, never double quotes, and never a line break.
 {"scores":[{"c":"Greeting & Tone (10%)","s":0,"n":"max 12 words"}, ... one object for each of the 6 categories in this exact order: ${CATS.join(", ")}],"data":[{"f":"field","got":"what they typed","should":"what is actually correct"}],"strengths":["2 items, max 15 words"],"fixes":["3 items, max 18 words"],"rewrite":{"said":"one weak line they actually said","better":"a stronger version using approved wording"},"verdict":"PASS or NEEDS WORK"}
 Leave "data" empty if every field matches.`;
@@ -1990,8 +2036,19 @@ function drawLearn(){
           <b style="flex:1;color:var(--navy);font-weight:600">${t}</b>
           <span style="flex:2;text-align:right" class="note">${d}</span></div>`).join("")}</div>
 
-      <div class="panel"><div class="lbl">Common dispatcher mistakes</div>
-        <ul>${MISTAKES.map(m=>`<li>${m}</li>`).join("")}</ul></div>
+      <div class="lbl" style="margin-top:24px">The six that cost you calls</div>
+      <p class="note" style="margin:0 0 12px">Tap each one to see what it costs and what to do instead.</p>
+      <div class="tiles" style="margin-bottom:18px">
+        ${MISTAKES.map((x,i)=>`<button class="tile" data-mis="${i}" style="border-left:4px solid var(--red)">
+          <div class="tile-ic" style="background:#FDECE9;color:#B33F2C;font-size:15px">${i+1}</div>
+          <h3 style="font-size:15px">${x.m}</h3>
+          <div class="hide">
+            <p style="margin-top:8px"><b style="color:var(--red)">What it costs:</b> ${x.c}</p>
+            <div class="say" style="margin-top:8px"><b>Do this instead:</b> ${x.d}</div>
+          </div>
+          <span class="tile-go">Tap to open →</span>
+        </button>`).join("")}
+      </div>
 
       <div class="panel"><div class="lbl">Objection handling — tap to reveal</div>
         ${GUIDE_CARDS.map((g,i)=>`<button class="opt" data-obj="${i}"><b>${g[0]}</b>
@@ -2003,6 +2060,15 @@ function drawLearn(){
 
       <button class="btn" id="toSvc">Continue to services</button>`;
     $$("[data-emo],[data-obj]").forEach(x=>x.onclick=()=>x.querySelector(".say").classList.toggle("hide"));
+    $$("[data-mis]").forEach(x=>x.onclick=()=>{
+      const body=x.querySelector("div.hide")||x.querySelector("div[data-open]");
+      const hidden=x.querySelector("div.hide");
+      if(hidden){ hidden.classList.remove("hide"); hidden.setAttribute("data-open","1");
+                  x.querySelector(".tile-go").textContent="Tap to close"; }
+      else { const open=x.querySelector("div[data-open]");
+             if(open){ open.classList.add("hide"); open.removeAttribute("data-open");
+                       x.querySelector(".tile-go").textContent="Tap to open →"; } }
+    });
     $("#hearGreet").onclick=()=>{ if(!canSpeak) return; speechSynthesis.cancel();
       const u=new SpeechSynthesisUtterance("This is The Locksmith, how can I help you?");
       const p=pickVoice("f"); if(p){u.voice=p;u.lang=p.lang;} u.rate=.98; speechSynthesis.speak(u); };
@@ -2637,6 +2703,8 @@ async function assignJob(techId, job, rawAddr){
   await drawTechs();
 }
 
+const ICONS={"learn": "<svg viewBox=\"0 0 24 24\" stroke=\"#9A7317\"><path d=\"M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H5.5A1.5 1.5 0 0 1 4 15.5Z\"/><path d=\"M20 5.5A1.5 1.5 0 0 0 18.5 4H14a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h4.5a1.5 1.5 0 0 0 1.5-1.5Z\"/></svg>", "board": "<svg viewBox=\"0 0 24 24\" stroke=\"#1E7C88\"><path d=\"M4 13v-1a8 8 0 0 1 16 0v1\"/><path d=\"M4 13h2.5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z\"/><path d=\"M20 13h-2.5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1H19a1 1 0 0 0 1-1Z\"/><path d=\"M20 19v.5a2.5 2.5 0 0 1-2.5 2.5H13\"/></svg>", "mine": "<svg viewBox=\"0 0 24 24\" stroke=\"#1F7A4C\"><path d=\"M4 20h16\"/><rect x=\"5\" y=\"12\" width=\"3.4\" height=\"6\" rx=\"1\"/><rect x=\"10.3\" y=\"8\" width=\"3.4\" height=\"10\" rx=\"1\"/><rect x=\"15.6\" y=\"4.5\" width=\"3.4\" height=\"13.5\" rx=\"1\"/></svg>", "team": "<svg viewBox=\"0 0 24 24\" stroke=\"#2C5FA8\"><circle cx=\"9\" cy=\"8\" r=\"3.2\"/><path d=\"M3.5 19a5.5 5.5 0 0 1 11 0\"/><path d=\"M16 5.6a3.2 3.2 0 0 1 0 6.3\"/><path d=\"M17.2 14.2A5.5 5.5 0 0 1 20.5 19\"/></svg>", "techs": "<svg viewBox=\"0 0 24 24\" stroke=\"#B3462F\"><path d=\"M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z\"/><circle cx=\"12\" cy=\"10\" r=\"2.6\"/></svg>", "setup": "<svg viewBox=\"0 0 24 24\" stroke=\"#5D6C7B\"><path d=\"M4 7h9\"/><path d=\"M17 7h3\"/><circle cx=\"15\" cy=\"7\" r=\"2\"/><path d=\"M4 17h3\"/><path d=\"M11 17h9\"/><circle cx=\"9\" cy=\"17\" r=\"2\"/></svg>", "users": "<svg viewBox=\"0 0 24 24\" stroke=\"#6B4C9A\"><path d=\"M12 3 5 6v5.5c0 4.2 2.9 7.6 7 9.5 4.1-1.9 7-5.3 7-9.5V6Z\"/><path d=\"m9.2 12.2 2 2 3.6-3.8\"/></svg>"};
+
 async function drawHome(){
   const first=((($("#whoTop").textContent)||"").split(" ")[0])||"";
   $("#homeHi").textContent = first ? "Hello, "+first : "Dispatcher Academy";
@@ -2647,20 +2715,20 @@ async function drawHome(){
 
   const trained = localStorage.getItem(trainedKey())==="done";
   const tiles=[
-    {go:"learn", ic:"📘", bg:"#FFF6E2", h:"Training",
+    {go:"learn", ic:ICONS.learn, bg:"#FFF6E2", h:"Training",
      p: trained ? "The handbook, all 25 services, the typing test and the certification exam."
                 : "Start here. The handbook, all 25 services, the typing test and the certification exam.",
      bar: trained?100:0, note: trained?"Completed →":"Not started yet →"},
-    {go:"board", ic:"📞", bg:"#E8F7F9", h:"Take a call", p:"Ten live scenarios with a real caller. You answer, you fill the job file, you get scored."},
-    {go:"setup", ic:"⚙️", bg:"#EEF1F4", h:"Settings", p:"Caller voices, how long the caller waits before replying, speech recognition."}
+    {go:"board", ic:ICONS.board, bg:"#E4F4F6", h:"Take a call", p:"Ten live scenarios with a real caller. You answer, you fill the job file, you get scored."},
+    {go:"setup", ic:ICONS.setup, bg:"#EDF1F5", h:"Settings", p:"Caller voices, how long the caller waits before replying, speech recognition."}
   ];
-  if(isOwner) tiles.push({go:"users", ic:"👥", bg:"#F3EEFA", h:"Users",
+  if(isOwner) tiles.push({go:"users", ic:ICONS.users, bg:"#F2EDFA", h:"Users",
     p:"Who has an account, and who is a supervisor."});
-  tiles.push({go:"techs", ic:"📍", bg:"#FFF1EC", h:"Dispatch board",
+  tiles.push({go:"techs", ic:ICONS.techs, bg:"#FCEDE8", h:"Dispatch board",
     p:"Where every technician is, and who is closest to a new job."});
-  tiles.splice(2,0,{go:"results", who:"me", ic:"📊", bg:"#EAF9F1", h:"My results",
+  tiles.splice(2,0,{go:"results", who:"me", ic:ICONS.mine, bg:"#E9F7EF", h:"My results",
     p:"Your own calls — scores, what you missed, transcripts and recordings."});
-  if(isAdmin) tiles.splice(3,0,{go:"results", who:"all", ic:"👥", bg:"#EEF3FA", h:"Team results",
+  if(isAdmin) tiles.splice(3,0,{go:"results", who:"all", ic:ICONS.team, bg:"#EAF0FA", h:"Team results",
     p:"Every call your dispatchers have taken, grouped by person."});
 
   $("#homeTiles").innerHTML = tiles.map(t=>`
@@ -2787,11 +2855,83 @@ function paintResults(){
       </div>`;
     }).join("");
   } else {
-    body=`<div class="panel">${shown.map(rowHtml).join("")}</div>`;
+    const personal = (resWho==="me" || !isAdmin) ? personalPanel(shown) : "";
+    body = personal + `<div class="lbl" style="margin-bottom:8px">Every call, most recent first</div>
+      <div class="panel">${shown.map(rowHtml).join("")}</div>`;
   }
 
   wrap.innerHTML=head+body;
   wireResults();
+}
+
+function personalPanel(rows){
+  const calls=rows.filter(r=>!isTypingRow(r) && r.verdict!=="NOT SCORED");
+  const typing=rows.filter(isTypingRow);
+  if(!calls.length && !typing.length) return "";
+
+  // averages per category
+  const cat={};
+  calls.forEach(r=>(r.scores||[]).forEach(x=>{
+    if(!x||!x.c) return;
+    (cat[x.c]=cat[x.c]||[]).push(Number(x.s)||0);
+  }));
+  const catAvg=Object.entries(cat).map(([c,v])=>
+    ({c, a: v.reduce((x,y)=>x+y,0)/v.length})).sort((a,b)=>b.a-a.a);
+
+  // which fields keep going wrong
+  const errs={};
+  calls.forEach(r=>(r.data_errors||[]).forEach(d=>{
+    if(d&&d.f) errs[d.f]=(errs[d.f]||0)+1; }));
+  const topErrs=Object.entries(errs).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  // are they getting better? oldest rows are last in the list
+  const chron=[...calls].reverse();
+  const half=Math.floor(chron.length/2);
+  const early=chron.slice(0,half), late=chron.slice(-half);
+  const mean=a=>a.length?a.reduce((x,y)=>x+(y.total||0),0)/a.length:0;
+  const trend = chron.length>=4 ? Math.round((mean(late)-mean(early))*10)/10 : null;
+
+  const best=calls.reduce((a,b)=>(b.total||0)>(a.total||0)?b:a, calls[0]||{});
+  const passRate=calls.length?Math.round(calls.filter(r=>r.verdict==="PASS").length/calls.length*100):0;
+  const bestWpm=typing.length?Math.max(...typing.map(t=>((t.scores||[])[0]||{}).s||0)):null;
+
+  return `<div class="panel" style="margin-bottom:14px">
+    <div class="lbl">How you are doing</div>
+    <div class="cols" style="grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 4px">
+      <div class="stat"><b>${calls.length}</b><span>calls scored</span></div>
+      <div class="stat"><b>${passRate}%</b><span>passed</span></div>
+      <div class="stat"><b>${trend===null?"—":(trend>0?"+"+trend:trend)}</b><span>recent change</span></div>
+    </div>
+    ${trend!==null?`<div class="note" style="text-align:center">${
+      trend>1 ? "Your recent calls are scoring higher than your early ones — it is working."
+      : trend<-1 ? "Your recent calls are scoring lower than your early ones. Worth slowing down and working the script."
+      : "Your scores are holding steady."}</div>`:""}
+
+    ${catAvg.length?`<div class="lbl" style="margin-top:18px">Where you are strong and where you are not</div>
+      ${catAvg.map(x=>`<div class="diff" style="align-items:center">
+        <span style="flex:1;font-size:13.5px">${x.c.replace(/ \(.*/,"")}</span>
+        <span style="display:flex;align-items:center;gap:8px;min-width:150px">
+          <span style="flex:1;height:7px;background:#E6ECF1;border-radius:4px;overflow:hidden">
+            <i style="display:block;height:100%;width:${Math.round(x.a/5*100)}%;
+              background:${x.a>=4?"var(--green)":x.a>=3?"var(--gold)":"var(--red)"}"></i></span>
+          <b style="color:var(--navy);min-width:34px;text-align:right">${x.a.toFixed(1)}</b>
+        </span></div>`).join("")}
+      <div class="note" style="margin-top:8px">Strongest: <b>${catAvg[0].c.replace(/ \(.*/,"")}</b>.
+        Weakest: <b>${catAvg[catAvg.length-1].c.replace(/ \(.*/,"")}</b> — that is the one to work on next.</div>`:""}
+
+    ${topErrs.length?`<div class="lbl" style="margin-top:18px">What you keep getting wrong on the job file</div>
+      ${topErrs.map(([f,n])=>`<div class="diff"><span>${f.replace(/_/g," ")}</span>
+        <b style="color:${n>2?"var(--red)":"var(--navy)"}">${n} time${n>1?"s":""}</b></div>`).join("")}
+      <div class="note" style="margin-top:8px">Read these back to the caller out loud before you create the job.</div>`
+      :`<div class="note" style="margin-top:18px;color:var(--green)">No repeated errors on your job files. Good.</div>`}
+
+    ${typing.length?`<div class="lbl" style="margin-top:18px">Typing tests</div>
+      <div class="diff"><span>Best speed</span><b style="color:var(--navy)">${bestWpm} wpm</b></div>
+      <div class="diff"><span>Tests taken</span><b style="color:var(--navy)">${typing.length}</b></div>`:""}
+
+    ${best&&best.scenario?`<div class="note" style="margin-top:16px">Your best call so far:
+      <b>${best.scenario}</b> at ${best.total}/30.</div>`:""}
+  </div>`;
 }
 
 function rowHtml(r){
