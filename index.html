@@ -569,9 +569,13 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
           </div>
           <div class="panel">
             <h2 class="sect">Scheduled</h2>
+            <div class="f"><span class="tag">Date</span>
+              <input class="in" type="date" data-k="job_date"></div>
             <div class="gh">
-              <div class="f"><span class="tag">Starts at</span><input class="in" data-k="starts_at" placeholder="e.g. 3:30 PM"></div>
-              <div class="f"><span class="tag">Ends at</span><input class="in" data-k="ends_at" placeholder="e.g. 4:30 PM"></div>
+              <div class="f"><span class="tag">Starts at</span>
+                <select class="in" data-k="starts_at" id="startsSel"></select></div>
+              <div class="f"><span class="tag">Ends at</span>
+                <select class="in" data-k="ends_at" id="endsSel"></select></div>
             </div>
             <div class="f"><input class="in" data-k="tech" placeholder="Assign team member"></div>
           </div>
@@ -1681,9 +1685,36 @@ function drawMic(){
   const sn=document.getElementById("sendNowBtn");
   if(sn) sn.classList.toggle("hide",!callLive);
 }
+function timeOptions(){
+  const out=[""];
+  for(let m=0;m<24*60;m+=15){
+    const h=Math.floor(m/60), mm=m%60;
+    const ampm=h<12?"AM":"PM", h12=h%12===0?12:h%12;
+    out.push(h12+":"+String(mm).padStart(2,"0")+" "+ampm);
+  }
+  return out;
+}
+function fillSchedule(){
+  const opts=timeOptions();
+  ["startsSel","endsSel"].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.innerHTML=opts.map(t=>'<option value="'+t+'">'+(t||(id==="startsSel"?"Start time":"End time"))+'</option>').join("");
+  });
+  const d=document.querySelector('[data-k="job_date"]');
+  if(d) d.value=new Date().toISOString().slice(0,10);
+  const st=document.getElementById("startsSel"), en=document.getElementById("endsSel");
+  if(st) st.onchange=()=>{
+    const i=opts.indexOf(st.value);
+    if(i>0 && en && !en.value) en.value=opts[Math.min(opts.length-1,i+4)];   // an hour later
+    st.classList.toggle("ok",!!st.value);
+    if(en) en.classList.toggle("ok",!!en.value);
+    drawSteps(); drawCount();
+  };
+}
 function drawCount(){
   const f=formData(); const n=Object.values(f).filter(v=>v).length;
-  $("#fillCount").textContent = n+"/17 fields filled · creating the job ends the call and scores it";
+  const total=$$("[data-k]").length;
+  $("#fillCount").textContent = n+"/"+total+" fields filled · creating the job ends the call and scores it";
 }
 function tick(){ secs++; const m=String(Math.floor(secs/60)).padStart(2,"0"), s=String(secs%60).padStart(2,"0");
   $("#clock").textContent=m+":"+s; }
@@ -1695,7 +1726,8 @@ function start(j){
   curName  = ((ALT_NAMES[j.id]||{})[curVoice]) || "";
   curVariant = Math.floor(Math.random()*3);
   job=j; log=[]; chips={}; secs=0; report=null; heard=""; finalTx=""; busy=false;
-  setForm({phone:j.cid});
+  setForm({phone:(FACTS[j.id]||{}).phone || j.cid || ""});
+  fillSchedule();
   $("#navCall").classList.remove("hide");
   clearInterval(timer); timer=setInterval(tick,1000); $("#clock").textContent="00:00";
   drawChips(); drawSteps(); drawLog(); drawCapt(); drawMic(); drawCount(); hideErr();
