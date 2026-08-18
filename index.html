@@ -187,6 +187,10 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .brandbtn{cursor:pointer}
 #techMap{height:380px;border-radius:10px;border:1px solid var(--line2);z-index:0;}
 @media(max-width:700px){#techMap{height:280px}}
+.techgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
+.stopline{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px dotted var(--line2);}
+.stopno{width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
 .pin{background:var(--navy);color:#fff;font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;
   white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff;}
 .pin.job{background:var(--red);}
@@ -373,7 +377,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
         <button class="btn ghost hide" id="addTechBtn">+ Add technician</button>
       </div>
       <div id="newTechForm"></div>
-      <div id="techList"><div class="note">Loading…</div></div>
+      <div id="techList" class="techgrid"><div class="note">Loading…</div></div>
     </section>
 
     <!-- HOME -->
@@ -2161,7 +2165,11 @@ function copyCall(ix){
   navigator.clipboard.writeText(head+body).catch(()=>{});
 }
 /* ---------------- technician board ---------------- */
-let techs=[], techEdit=null, techMap=null, techLayer=null, sinceTimer=null;
+let techs=[], techEdit=null, techMap=null, techLayer=null, sinceTimer=null, lastFind=null;
+
+const PALETTE=["#2C5FA8","#B3462F","#3E7D4F","#8C5BB0","#B07C1E","#1F7D86","#A8386B","#556070"];
+const colourOf = t => PALETTE[Math.abs(String(t.id).split("").reduce((a,c)=>a+c.charCodeAt(0),0))%PALETTE.length];
+const stopsOf  = t => Array.isArray(t.stops) ? t.stops : [];
 
 async function geoCall(body){
   const { data:{ session } } = await sb.auth.getSession();
@@ -2177,9 +2185,8 @@ async function geoCall(body){
 function sinceText(iso){
   if(!iso) return "";
   const mins=Math.max(0,Math.round((Date.now()-new Date(iso).getTime())/60000));
-  if(mins<60) return mins+" min on this job";
-  const h=Math.floor(mins/60), m=mins%60;
-  return h+"h "+(m?m+"m":"")+" on this job";
+  if(mins<60) return mins+" min";
+  return Math.floor(mins/60)+"h "+(mins%60?mins%60+"m":"");
 }
 
 function ensureMap(){
@@ -2195,13 +2202,17 @@ function paintMap(extra){
   if(!techMap) return;
   techLayer.clearLayers();
   const pts=[];
-  techs.filter(t=>t.lat!=null).forEach(t=>{
-    const cls = extra && extra.nearestId===t.id ? "pin near" : "pin";
-    L.marker([t.lat,t.lng],{icon:L.divIcon({className:"",html:'<div class="'+cls+'">'+t.name+'</div>',
-      iconSize:null})}).addTo(techLayer)
-      .bindPopup("<b>"+t.name+"</b><br>"+(t.job_type||"")+"<br>"+(t.label||t.address||"")+
-                 "<br><i>"+sinceText(t.job_started_at||t.updated_at)+"</i>");
-    pts.push([t.lat,t.lng]);
+  techs.forEach(t=>{
+    const col=colourOf(t), line=[];
+    stopsOf(t).forEach((st,i)=>{
+      if(st.lat==null) return;
+      const html='<div class="pin" style="background:'+col+'">'+t.name+(i?" ②③④⑤".trim()[i]||(" "+(i+1)):"")+'</div>';
+      L.marker([st.lat,st.lng],{icon:L.divIcon({className:"",html,iconSize:null})}).addTo(techLayer)
+       .bindPopup("<b>"+t.name+"</b> — stop "+(i+1)+"<br>"+(st.job_type||"")+"<br>"+
+                  (st.label||st.address||"")+(i===0?"<br><i>"+sinceText(st.started_at)+" on site</i>":"<br><i>next</i>"));
+      line.push([st.lat,st.lng]); pts.push([st.lat,st.lng]);
+    });
+    if(line.length>1) L.polyline(line,{color:col,weight:2,dashArray:"5,6",opacity:.7}).addTo(techLayer);
   });
   if(extra && extra.job){
     L.marker([extra.job.lat,extra.job.lng],{icon:L.divIcon({className:"",
@@ -2216,25 +2227,23 @@ function paintMap(extra){
 
 async function drawTechs(){
   $("#addTechBtn").classList.toggle("hide", !isAdmin);
-  $("#addTechBtn").onclick=()=>{ techEdit={new:true}; paintTechs(); };
+  $("#addTechBtn").onclick=()=>{ techEdit={new:true, stops:[{}]}; paintTechs(); };
   const {data,error}=await sb.from("techs").select("*").order("name");
   if(error){ $("#techList").innerHTML='<div class="note">Could not load: '+error.message+'</div>'; return; }
   techs=data||[];
-  paintTechs(); paintMap();
+  paintTechs(); paintMap(lastFind);
   clearInterval(sinceTimer);
   sinceTimer=setInterval(()=>{ if(!$("#v-techs").classList.contains("hide")) paintTechs(); },60000);
 }
 
 function techFormHtml(t){
+  const stops = (t.stops && t.stops.length) ? t.stops : [{}];
   return `<div class="panel" style="border-color:var(--teal)">
     <div class="lbl">${t.id?"Editing "+t.name:"New technician"}</div>
-    <div class="gh">
-      <div class="f"><input class="in" id="tfName" placeholder="Name" value="${(t.name||"").replace(/"/g,"&quot;")}"></div>
-      <div class="f"><select class="in" id="tfJob">${JOB_TYPES.map(j=>
-        `<option value="${j}"${(t.job_type||"")===j?" selected":""}>${j||"Job type he's on"}</option>`).join("")}</select></div>
-    </div>
-    <div class="f"><input class="in" id="tfAddr" placeholder="Address of the job he is on now"
-      value="${(t.address||"").replace(/"/g,"&quot;")}"></div>
+    <div class="f"><input class="in" id="tfName" placeholder="Name" value="${(t.name||"").replace(/"/g,"&quot;")}"></div>
+    <div class="lbl" style="margin-top:6px">Jobs, in the order he works them</div>
+    <div id="stopRows">${stops.map((st,i)=>stopRowHtml(st,i)).join("")}</div>
+    <button class="btn ghost" id="tfAddStop" style="margin-bottom:12px">+ Add next job</button>
     <div class="f"><input class="in" id="tfStatus" placeholder="Note, e.g. finishing about 3pm"
       value="${(t.status||"").replace(/"/g,"&quot;")}"></div>
     <button class="btn" id="tfSave">Save</button>
@@ -2242,32 +2251,53 @@ function techFormHtml(t){
     <div class="note" id="tfMsg" style="margin-top:10px"></div>
   </div>`;
 }
+function stopRowHtml(st,i){
+  return `<div class="panel" data-stop="${i}" style="padding:10px;margin-bottom:8px;background:#F7F9FB">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <b class="lbl" style="margin:0">${i===0?"Job 1 — on site now":"Job "+(i+1)+" — next"}</b>
+      ${i?`<button class="btn ghost" data-rmstop="${i}" style="padding:4px 8px;font-size:11px">Remove</button>`:""}
+    </div>
+    <div class="f" style="margin-bottom:6px"><input class="in sAddr" placeholder="Address"
+      value="${(st.address||"").replace(/"/g,"&quot;")}"></div>
+    <select class="in sJob">${JOB_TYPES.map(j=>
+      `<option value="${j}"${(st.job_type||"")===j?" selected":""}>${j||"Job type"}</option>`).join("")}</select>
+  </div>`;
+}
 
 function paintTechs(){
-  $("#newTechForm").innerHTML = (techEdit && techEdit.new) ? techFormHtml({}) : "";
+  $("#newTechForm").innerHTML = (techEdit && techEdit.new) ? techFormHtml(techEdit) : "";
   if(!techs.length && !(techEdit&&techEdit.new)){
     $("#techList").innerHTML='<div class="note">No technicians yet'+
       (isAdmin?' — add your first one above.':'. A supervisor needs to add them.')+'</div>';
     wireTechForm(); return;
   }
   $("#techList").innerHTML=techs.map(t=>{
-    if(techEdit && techEdit.id===t.id) return techFormHtml(t);
-    return `<div class="panel" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
-      <div style="flex:1;min-width:200px">
-        <div style="font-weight:600;color:var(--navy);font-size:16px">${t.name}</div>
-        <div class="note">${t.job_type||"no job type"}${t.status?" · "+t.status:""}</div>
-        <div class="note" style="margin-top:6px">${t.label||t.address||"no address set"}</div>
-        <div class="since" style="margin-top:6px;color:var(--teal)">${sinceText(t.job_started_at||t.updated_at)}</div>
-        ${t.lat?"":'<div class="note" style="color:var(--red)">Address not located — edit and try a fuller address.</div>'}
+    if(techEdit && techEdit.id===t.id) return techFormHtml(techEdit);
+    const col=colourOf(t), sts=stopsOf(t);
+    return `<div class="panel" style="border-left:4px solid ${col}">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+        <div>
+          <div style="font-weight:600;color:var(--navy);font-size:16px">${t.name}</div>
+          ${t.status?`<div class="note">${t.status}</div>`:""}
+        </div>
+        ${isAdmin?`<div style="display:flex;gap:6px">
+          <button class="btn ghost" data-ed="${t.id}" style="padding:6px 10px;font-size:11px">Edit</button>
+          <button class="btn ghost" style="border-color:var(--red);color:var(--red);padding:6px 10px;font-size:11px"
+            data-del="${t.id}">Remove</button></div>`:""}
       </div>
-      ${isAdmin?`<div style="display:flex;gap:6px">
-        <button class="btn ghost" data-ed="${t.id}">Edit</button>
-        <button class="btn ghost" style="border-color:var(--red);color:var(--red)" data-del="${t.id}">Remove</button>
-      </div>`:""}
+      ${sts.length?sts.map((st,i)=>`<div class="stopline">
+          <span class="stopno" style="background:${i?"#AEB9C4":col}">${i+1}</span>
+          <span style="flex:1">
+            <div style="font-size:13px;color:var(--navy)">${st.job_type||"job"}</div>
+            <div class="note">${st.label||st.address||"no address"}</div>
+            <div class="note" style="color:${i?"var(--muted)":"var(--teal)"}">
+              ${i===0?sinceText(st.started_at)+" on site":"queued"}</div>
+          </span></div>`).join("")
+        :'<div class="note" style="margin-top:8px">No jobs assigned.</div>'}
     </div>`;
   }).join("");
   $$("[data-ed]").forEach(b=>b.onclick=()=>{
-    techEdit={...techs.find(x=>x.id==b.dataset.ed)}; paintTechs(); });
+    techEdit=JSON.parse(JSON.stringify(techs.find(x=>x.id==b.dataset.ed))); paintTechs(); });
   $$("[data-del]").forEach(b=>b.onclick=async()=>{
     const t=techs.find(x=>x.id==b.dataset.del);
     if(!confirm("Remove "+t.name+" from the board?")) return;
@@ -2276,30 +2306,48 @@ function paintTechs(){
   wireTechForm();
 }
 
+function readStops(){
+  const rows=[...document.querySelectorAll("[data-stop]")];
+  return rows.map(r=>({ address:r.querySelector(".sAddr").value.trim(),
+                        job_type:r.querySelector(".sJob").value }));
+}
 function wireTechForm(){
   const cancel=document.getElementById("tfCancel");
   if(cancel) cancel.onclick=()=>{ techEdit=null; paintTechs(); };
+  const add=document.getElementById("tfAddStop");
+  if(add) add.onclick=()=>{
+    techEdit.stops=readStops(); techEdit.stops.push({}); paintTechs();
+  };
+  document.querySelectorAll("[data-rmstop]").forEach(b=>b.onclick=()=>{
+    techEdit.stops=readStops(); techEdit.stops.splice(+b.dataset.rmstop,1); paintTechs();
+  });
   const save=document.getElementById("tfSave");
   if(!save) return;
   save.onclick=async()=>{
     const t=techEdit||{};
     const name=document.getElementById("tfName").value.trim();
-    const addr=document.getElementById("tfAddr").value.trim();
     const msg=document.getElementById("tfMsg");
     if(!name){ msg.textContent="A name is needed."; return; }
-    let geo=null;
-    if(addr){
-      msg.textContent="Locating the address…";
-      try{ geo=await geoCall({op:"geocode",q:addr}); }
-      catch(e){ msg.textContent="Could not locate that address — saving without it. "+e.message; }
-      if(geo && geo.approx) msg.textContent="Approximate match: "+geo.label+" — check the map pin.";
+    const wanted=readStops().filter(x=>x.address);
+    const old=(t.stops||[]);
+    const out=[];
+    for(let i=0;i<wanted.length;i++){
+      const w=wanted[i];
+      const prev=old.find(o=>o.address===w.address);
+      if(prev && prev.lat!=null){
+        out.push({...prev, job_type:w.job_type,
+          started_at: i===0 ? (prev.started_at||new Date().toISOString()) : null});
+        continue;
+      }
+      msg.textContent="Locating job "+(i+1)+"…";
+      let geo=null;
+      try{ geo=await geoCall({op:"geocode",q:w.address}); }catch(e){}
+      out.push({ address:w.address, job_type:w.job_type,
+        label:geo?geo.label:null, lat:geo?geo.lat:null, lng:geo?geo.lng:null,
+        started_at: i===0 ? new Date().toISOString() : null });
     }
-    const movedJob = !t.id || (t.address||"") !== addr;
-    const row={ name, job_type:document.getElementById("tfJob").value, address:addr,
-      label:geo?geo.label:null, lat:geo?geo.lat:null, lng:geo?geo.lng:null,
-      status:document.getElementById("tfStatus").value.trim(),
-      updated_at:new Date().toISOString(), updated_by:me.id };
-    if(movedJob) row.job_started_at=new Date().toISOString();   // clock starts when the address changes
+    const row={ name, stops:out, status:document.getElementById("tfStatus").value.trim(),
+                updated_at:new Date().toISOString(), updated_by:me.id };
     const res = t.id ? await sb.from("techs").update(row).eq("id",t.id)
                      : await sb.from("techs").insert(row);
     if(res.error){ msg.textContent="Could not save: "+res.error.message; return; }
@@ -2310,31 +2358,56 @@ function wireTechForm(){
 async function findNearest(){
   const out=$("#findOut"), q=$("#jobAddr").value.trim();
   if(!q){ out.innerHTML='<div class="note" style="margin-top:12px">Type the job address first.</div>'; return; }
-  const withPos=techs.filter(t=>t.lat!=null&&t.lng!=null);
-  if(!withPos.length){ out.innerHTML='<div class="note" style="margin-top:12px">No technician has a located address yet.</div>'; return; }
+  const flat=[];
+  techs.forEach(t=>stopsOf(t).forEach((st,i)=>{ if(st.lat!=null) flat.push({t,st,i}); }));
+  if(!flat.length){ out.innerHTML='<div class="note" style="margin-top:12px">No technician has a located job yet.</div>'; return; }
   out.innerHTML='<div class="note" style="margin-top:12px">Looking up the address and checking drive times…</div>';
   try{
     const job=await geoCall({op:"geocode",q});
+    const {results}=await geoCall({op:"eta",from:[job.lat,job.lng],to:flat.map(f=>[f.st.lat,f.st.lng])});
+    const best={};
+    flat.forEach((f,i)=>{
+      const e=results[i]; if(!e) return;
+      if(!best[f.t.id] || e.minutes<best[f.t.id].e.minutes) best[f.t.id]={...f,e};
+    });
+    const ranked=Object.values(best).sort((a,b)=>a.e.minutes-b.e.minutes);
+    if(!ranked.length){ out.innerHTML='<div class="note">Could not work out drive times just now.</div>'; return; }
+    lastFind={job, nearestId:ranked[0].t.id};
+    paintMap(lastFind);
     const approxNote = job.approx
       ? '<div class="note" style="color:var(--brass)">Approximate location, matched on "'+job.matched+'". Check the red pin.</div>' : "";
-    const {results}=await geoCall({op:"eta",from:[job.lat,job.lng],to:withPos.map(t=>[t.lat,t.lng])});
-    const ranked=withPos.map((t,i)=>({t,e:results[i]})).filter(x=>x.e).sort((a,b)=>a.e.minutes-b.e.minutes);
-    if(!ranked.length){ out.innerHTML='<div class="note">Could not work out drive times just now.</div>'; return; }
-    paintMap({job, nearestId:ranked[0].t.id});
     out.innerHTML=`<div class="panel" style="margin-top:12px">
       <div class="lbl">New job at ${job.label}</div>${approxNote}`+
       ranked.map((x,i)=>`<div class="diff" style="align-items:center">
         <span style="flex:1">
-          <b style="color:var(--navy);font-weight:600">${i===0?"★ ":""}${x.t.name}</b>
-          <span class="note"> · ${x.t.job_type||"no job type"}</span><br>
-          <span class="note">${x.t.label||x.t.address||""}</span><br>
-          <span class="note" style="color:var(--teal)">${sinceText(x.t.job_started_at||x.t.updated_at)}</span>
+          <b style="color:${colourOf(x.t)};font-weight:600">${i===0?"★ ":""}${x.t.name}</b>
+          <span class="note"> · ${x.st.job_type||"job"}</span><br>
+          <span class="note">${x.i===0
+            ? "from where he is now — "+sinceText(x.st.started_at)+" on site"
+            : "on his way to job "+(x.i+1)+", this is near that stop"}</span>
         </span>
         <span style="text-align:right;white-space:nowrap">
           <b style="font-size:18px;color:${i===0?"var(--green)":"var(--navy)"}">${x.e.minutes}</b>
-          <span class="note"> min</span><br><span class="note">${x.e.km} km</span>
+          <span class="note"> min · ${x.e.km} km</span><br>
+          ${isAdmin?`<button class="btn ghost" data-assign="${x.t.id}"
+            style="padding:5px 10px;font-size:11px;margin-top:4px">Assign</button>`:""}
         </span></div>`).join("")+`</div>`;
+    $$("[data-assign]").forEach(b=>b.onclick=()=>assignJob(+b.dataset.assign, job, q));
   }catch(e){ out.innerHTML='<div class="note" style="color:var(--red);margin-top:12px">'+e.message+'</div>'; }
+}
+
+async function assignJob(techId, job, rawAddr){
+  const t=techs.find(x=>x.id===techId); if(!t) return;
+  const stops=[...stopsOf(t), { address:rawAddr, label:job.label, lat:job.lat, lng:job.lng,
+    job_type:"", started_at:null }];
+  const {error}=await sb.from("techs").update({stops, updated_at:new Date().toISOString(),
+    updated_by:me.id}).eq("id",techId);
+  if(error){ alert("Could not assign: "+error.message); return; }
+  $("#jobAddr").value=""; $("#findOut").innerHTML=
+    '<div class="panel" style="margin-top:12px;border-color:var(--green)"><b style="color:var(--green)">'+
+    'Assigned to '+t.name+' as job '+stops.length+'.</b></div>';
+  lastFind=null;
+  await drawTechs();
 }
 
 async function drawHome(){
