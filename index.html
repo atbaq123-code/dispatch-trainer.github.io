@@ -198,6 +198,13 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
 .pin{background:var(--navy);color:#fff;font-size:11px;font-weight:700;padding:5px 9px;border-radius:14px;
   white-space:nowrap;box-shadow:0 3px 10px rgba(20,30,45,.35);border:2px solid #fff;letter-spacing:.01em;}
+.wrapup{position:fixed;inset:0;z-index:60;background:rgba(24,32,45,.55);
+  display:flex;align-items:center;justify-content:center;padding:20px;animation:rise .25s ease both}
+.wrapcard{background:#fff;border-radius:14px;max-width:440px;width:100%;padding:26px;
+  box-shadow:0 20px 50px rgba(0,0,0,.3);text-align:center}
+.wrapcard h2{margin:0 0 6px;color:var(--navy);font-size:22px;font-weight:600}
+.wrapmiss{text-align:left;margin:18px 0;padding:14px;background:#FFFBEE;border-radius:8px}
+.wrapmiss div{padding:5px 0;font-size:14px;color:var(--navy)}
 .leaflet-container{font-family:'Poppins',system-ui,sans-serif;border-radius:10px;}
 .leaflet-control-attribution{font-size:9px;opacity:.75;}
 .pin.job{background:var(--red);}
@@ -544,6 +551,16 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 </div>
 
 <!-- call bar -->
+<div id="wrapUp" class="wrapup hide">
+  <div class="wrapcard">
+    <div style="font-size:34px">📋</div>
+    <h2 id="wrapTitle">Call ended</h2>
+    <div class="note" id="wrapLead"></div>
+    <div id="wrapList"></div>
+    <button class="btn" id="wrapGo" style="margin-top:6px">Checking your call…</button>
+  </div>
+</div>
+
 <div class="bar hide" id="callBar">
   <button class="mic" id="micBtn">Talk</button>
   <div class="capt" id="capt"></div>
@@ -633,6 +650,12 @@ const EMERGENCIES=[
 ];
 
 const GUIDE_CARDS=[
+ ["Caller wants to cancel","Never argue. “No worries, we can definitely cancel.” Then leave them a number: “If you ever face the same situation, we can unlock it for a flat price — just call us.” Reps who do this get thanked and get the number saved."],
+ ["They used another company","Say it once, plainly: the technician drove 45 minutes. Then let it go. Most callers googled “locksmith” and think every result is the same company — explain there are hundreds of separate companies in Tampa Bay on separate systems. Finish with a flat price for next time."],
+ ["Nobody will be at the property","“If no one is going to be on site we will need some proof of ownership.” Paperwork with their name and the address, plus matching ID. A phone number for the owner proves nothing — anyone could give you any number. Offer the alternative: meet the technician there instead."],
+ ["“Can you copy these keys?”","Ask whether it is a master system or a separate key per door before quoting anything — on a 20 unit building those are completely different jobs. And ask where the keys actually are; the job may be at their house, not the property."],
+ ["A door that will not lock","Treat it as urgent even if they do not. A commercial unit that cannot be secured overnight is a security and sometimes a code problem. Say so, and get a technician moving."],
+ ["The line is breaking up","Do not just say “sorry?”. Rephrase and expand: “Is it a metal key ignition — the one where you turn the key in the ignition — or is it a push button?” Give them a second way to understand you."],
  ["“That's expensive.”","“I completely understand — different vehicles and locks vary significantly in complexity.” Then explain what the work actually involves."],
  ["“Another company quoted cheaper.”","“Every company operates differently. Our goal is professional service with accurate expectations.” Don't argue and don't match blind."],
  ["“That's expensive for unlocking a door.”","“What you're paying for is a licensed, insured technician who can access your vehicle without causing any damage, along with the equipment and travel to reach you quickly.”"],
@@ -915,6 +938,20 @@ const EXAM=[
 /* ---- Locked fact sheets. The caller may never contradict these; the review
        checks the job file against them field by field. ---- */
 const FACTS={
+ sonata:{caller_name:"Wayne Probst",phone:"(727) 555-3039",address:"9333 Park Boulevard, Lot 21A",city:"Seminole",state:"FL",zip:"33777",
+   job_type:"Car key replacement",detail:"2018 HYUNDAI Sonata (he says 'Honda' by mistake), push-to-start, all keys lost. Conrad Mobile Home Park. Lot 21A — not 218. He is in the back room: call, do not knock."},
+ accord:{caller_name:"Tyler Hodges",phone:"(813) 555-2699",address:"31283 Midnight Sun Way",city:"Wesley Chapel",state:"FL",zip:"33545",
+   job_type:"Car key replacement",detail:"2017 Honda Accord, metal key ignition, both keys lost"},
+ cancel:{caller_name:"Marcus Reed",phone:"(352) 555-0148",address:"Dade City",city:"Dade City",state:"FL",zip:"33525",
+   job_type:"",detail:"CANCELLATION — he opened it himself. No job. Lock still faulty but under Costco warranty."},
+ noshow:{caller_name:"Danielle Fox",phone:"(813) 555-7742",address:"apartment complex, Tampa",city:"Tampa",state:"FL",zip:"33612",
+   job_type:"",detail:"OUTBOUND. Job already done by another company; tech drove 45 minutes for nothing. Nothing to book."},
+ vacant:{caller_name:"Brianna Salas",company_name:"Salas Property Group LLC",phone:"(813) 555-9910",address:"Seminole Heights",city:"Tampa",state:"FL",zip:"33604",
+   job_type:"House lockout",detail:"Nobody on site. Manages, does not own — owner is Sam. Needs unlock then rekey or replace. Proof of ownership required: lease with her name and LLC plus matching ID. A phone number for the owner is NOT proof."},
+ copies:{caller_name:"Kyle Koehler",company_name:"Dan Koehler Properties LLC",phone:"(727) 555-6183",address:"2378 Anthony Avenue",city:"Clearwater",state:"FL",zip:"33759",
+   job_type:"Key duplication",detail:"Several rusty apartment keys, SEPARATE key per door, not a master system. Job is at his house — he has the keys with him."},
+ relock:{caller_name:"Kathy Colorado",company_name:"Colorado Health",phone:"(813) 555-4408",address:"3230 West Kennedy Boulevard",city:"Tampa",state:"FL",zip:"33609",
+   job_type:"Lock repair",detail:"Commercial lock opens but will not relock. Vacant unit between tenants — cannot be secured. She is on site."},
  volvo:{caller_name:"Megan Cole",phone:"(727) 555-3568",address:"7194 Keen Haven Road",city:"Seminole",state:"FL",zip:"33777",
    job_type:"Car key replacement",detail:"2019 Volvo XC40, push-to-start, original key lost"},
  gmc:{caller_name:"Jared Hicks",phone:"(813) 555-2210",address:"7215 Jackson Springs Road",city:"Tampa",state:"FL",zip:"33634",
@@ -939,6 +976,13 @@ const FACTS={
 /* Each caller can be a man or a woman — rolled fresh every call so nobody
    memorises "the Volvo one is Megan". */
 const ALT_NAMES={
+ sonata:{m:"Wayne Probst",f:"Wanda Probst"},
+ accord:{m:"Tyler Hodges",f:"Tara Hodges"},
+ cancel:{m:"Marcus Reed",f:"Marcy Reed"},
+ noshow:{m:"Daniel Fox",f:"Danielle Fox"},
+ vacant:{m:"Brian Salas",f:"Brianna Salas"},
+ copies:{m:"Kyle Koehler",f:"Kylie Koehler"},
+ relock:{m:"Keith Colorado",f:"Kathy Colorado"},
  volvo:{m:"Marcus Cole",f:"Megan Cole"},
  gmc:{m:"Jared Hicks",f:"Janelle Hicks"},
  mailbox:{m:"Ray Tanner",f:"Rae Tanner"},
@@ -959,6 +1003,27 @@ function factSheet(id){
 }
 
 const JOBS=[
+ {id:"sonata",kind:"auto",title:"Lost key, push-to-start",src:"Google · 10:20 AM",lv:"Difficult",
+  blurb:"Mobile home park. Says Honda, means Hyundai.",voice:"m",rate:.98,pitch:.9,
+  persona:"Wayne Probst, 58. Says word for word early on: 'I got a Honda 2018 Hyundai Sonata and I lost the key.' It is a Hyundai Sonata, not a Honda — if the dispatcher never questions the mismatch, do not correct them. Push-to-start. He is at 9333 Park Boulevard, Conrad Mobile Home Park, Lot 21A, Seminole FL 33777 — say the lot as 'twenty-one A'; if it is read back as 218 just say 'yeah'. Mumbles the street name the first time so it has to be asked again. Near the end mentions he is in the back room, so the tech should call rather than knock. Friendly, unhurried."},
+ {id:"accord",kind:"auto",title:"All keys lost, 2017 Accord",src:"Google Ads · 4:05 PM",lv:"Routine",
+  blurb:"Bad line. Asks the price first.",voice:"m",rate:1.02,pitch:.95,
+  persona:"Tyler Hodges, 33. Opens by asking how much a replacement key would be for a 2017 Honda Accord. Metal key ignition, and he has lost both — one at the airport, the other he has no idea. Car is at 31283 Midnight Sun Way, Wesley Chapel FL 33545. TWICE in the first minute say 'I'm sorry, you're breaking up' so the dispatcher has to repeat themselves — if they simply repeat the same words say it again; if they rephrase it or expand it, answer properly. Spells his surname H-O-D as in dog-G-E-S if asked. Asks what time range the technician will call in."},
+ {id:"cancel",title:"Caller wants to cancel",src:"Callback · 12:40 PM",lv:"Difficult",
+  blurb:"Got in by himself. No job to book.",voice:"m",rate:1.0,pitch:.92,
+  persona:"Marcus Reed, 45. Called earlier for a car lockout in Dade City and got the door open himself, so he is cancelling. Cheerful, slightly apologetic. Mentions the lock has been playing up and that he bought it at Costco with a three year warranty, so he would rather use that than pay. Asks whether the company covers Wesley Chapel and Dade City. There is no job here — the only thing worth winning is the next call. Ends warmly if handled well."},
+ {id:"noshow",title:"Outbound: technician drove for nothing",src:"You are calling out · 1:15 PM",lv:"Critical",
+  blurb:"She used another company and never cancelled.",voice:"f",rate:1.05,pitch:1.05,
+  persona:"Danielle Fox, 39. YOU are calling HER — open the call yourself, she just says hello. Her car was unlocked an hour ago by a different company; she never rang to cancel and your technician drove 45 minutes for nothing. She is defensive but not hostile: she googled 'locksmith', rang several numbers, and genuinely believed they were all the same company. If the dispatcher explains that there are hundreds of separate locksmith companies in Tampa Bay on separate systems, she is embarrassed and apologetic. If the dispatcher labours the complaint or repeats it, she gets short and ends the call."},
+ {id:"vacant",kind:"residential",title:"Nobody will be on site",src:"Callback · 9:05 AM",lv:"Critical",
+  blurb:"Property manager, an hour away. Ownership proof needed.",voice:"f",rate:1.05,pitch:1.05,
+  persona:"Brianna Salas, 41. Property manager. YOU are calling HER to confirm she wants the job done before 11am. The property is in Seminole Heights, zip 33604; she lives in Apollo Beach and cannot get there in morning traffic. She offers to pay by card over the phone and let the tech work with nobody present. She does not own it — her LLC manages it for the owner, Sam — and offers to give you Sam's phone number as proof. She has a previous lease with her name and the LLC on it, an MLS listing, and a real estate licence. The tenant was supposed to leave keys in the mailbox and did not, so it needs unlocking first, then rekey or replacement. She has never been asked for proof of ownership before and will ask what is needed."},
+ {id:"copies",kind:"residential",title:"Copies of apartment keys",src:"Google · 2:30 PM",lv:"Routine",
+  blurb:"Twenty units. Not a master system.",voice:"m",rate:1.0,pitch:.95,
+  persona:"Kyle Koehler, 52. Owns and manages a 20 unit apartment building and wants several keys copied. Crucially he has the keys ON HIM, so the job is at his house, not the building — only says this if asked for the property address. The keys are rusty and he asks whether they can still be copied. If the dispatcher assumes it is a master key system, correct them: it is a separate key per door. Address 2378 Anthony Avenue, Clearwater FL 33759. Business is Dan Koehler Properties LLC, spelled D-A-N K-O-E-H-L-E-R if asked. Calm, precise, a bit particular."},
+ {id:"relock",kind:"commercial",title:"Commercial lock won't relock",src:"Google · 8:50 AM",lv:"Difficult",
+  blurb:"Vacant unit, new tenant coming, door cannot be secured.",voice:"f",rate:1.0,pitch:1.05,
+  persona:"Kathy Colorado, 47. A commercial unit at 3230 West Kennedy Boulevard, Tampa, business name Colorado Health — say the business name with a pause in the middle so it is easy to mishear. The tenant is moving out and a new one is coming in; one lock opens but will not relock at all, so the unit cannot be secured overnight. She assumes she needs a whole new lock. She will be on site if asked. She does not raise the security risk herself — if the dispatcher never mentions it, the call ends pleasantly with nobody having addressed that the door cannot be locked."},
  {id:"volvo",kind:"auto",title:"Volvo XC40 — lost key",src:"Google Ads · 3:10 PM",lv:"Routine",cid:"(727) 555-3568",
   blurb:"Wants an estimate before anything else.",voice:"f",rate:1.0,pitch:1.05,
   persona:"Megan Cole. Opens by asking what an estimate would be for new keys for her Volvo XC40. It is a 2019, push-to-start, and she lost the original — but she only says each of those if asked directly. Car is at 7194 Keen Haven Road, Seminole, Florida, zip 33777. Polite and easy. Near the end she asks the dispatcher to have the tech call with the price before he comes."},
@@ -1645,8 +1710,8 @@ WITHHOLD EVERY ONE OF THOSE FACTS UNTIL IT IS DIRECTLY ASKED FOR. This is the wh
 - Never volunteer your name, phone number, address, city or zip. Not in your opening line, not while explaining the problem, not while complaining about the price, not ever.
 - Give a fact only when the dispatcher asks for that specific fact. If they ask for the address, give the street — the city and zip only if they ask for those too.
 - If they ask for several things in one breath, answer only what they asked.
-- If they try to close the call or promise a technician without having asked where you are, do NOT help them. Say something like "don't you need to know where I am?" or "you didn't take my address" — sounding doubtful, not instructive.
-- If they never ask for your number, never offer it, even at the end of the call.
+- If they never ask for your name, address or number, simply never give it. Do NOT remind them, hint, or ask "don't you need my address?" — a real customer assumes the person on the phone knows their job. Let the call end incomplete.
+- Ask about price at most twice. If the dispatcher explains that the technician prices it on site before doing any work, accept that and move on to whatever they ask next. Do not keep pressing.
 Opening lines describe the PROBLEM only: what broke, what you need, or what it costs.
 
 Speak natural American English on the phone, 1-3 short sentences per turn, with the small hesitations real callers have. Your reply is read aloud, so no asterisks, no stage directions, no emoji. React honestly: warm up if the dispatcher is calm, competent and specific; get impatient if they are vague, robotic or slow. Give information only when actually asked — your number already showed on their screen from caller ID.
@@ -1684,6 +1749,7 @@ If your character would genuinely end the call, put ##END at the very end of the
 async function createJob(){
   hush(); if(listening){try{rec.stop();}catch(e){}listening=false;drawMic();}
   if(log.length<2){ showErr("Work the call further before creating the job."); return; }
+  showWrapUp();
   busy=true; drawMic();
   const blob = await stopRecording();
   const f=formData();
@@ -1707,7 +1773,14 @@ HANDBOOK STANDARDS — judge against these, not generic call-centre theory:
 - Objection handling uses approved wording: "I completely understand — different vehicles and locks vary significantly in complexity" and "Every company operates differently. Our goal is professional service with accurate expectations."
 - FORBIDDEN phrases — mark down whenever they appear: "What's your budget?", "It's simple", "The technician will just inspect it", "I have no idea", "I'm not sure". The approved alternative is "Have you received another quote?"
 - Emergency recognition: a child or pet in a vehicle, a panic bar that won't allow egress, or an active break-in must be recognised and the caller told to call 911 or police in parallel. Missing this is an automatic fail on that category.
-- Closing means a clear next step and timing: a technician is on the way and will call to say how far he is. No invented ETA.
+- Closing means a clear next step and timing: a technician is on the way and will call to say how far he is. Promising a CALLBACK time is right — "he will call you in the next couple of minutes". Promising an ARRIVAL time is not.
+- READ BACK the street number, the unit or lot number, the zip and the business name. A lot number heard as 218 instead of 21A sends the technician to the wrong home. If the caller's details and the job file differ, that is a serious Info Gathering failure even when the caller confirmed the wrong version.
+- If the make and model do not go together — "a Honda Hyundai Sonata" — ask which it is. The wrong manufacturer means the wrong key and the wrong equipment.
+- Ask who will be on site before dispatching. If nobody will be there, proof of ownership is required: paperwork carrying their name and the property address, plus matching ID. Being given the owner's phone number is NOT proof and should be declined politely — anyone can supply a phone number.
+- Never assume the type of job. On an apartment building ask whether it is a master key system or a separate key per door. On a vacant unit ask whether the door can still be secured.
+- Free on-site estimate, no service call charge. Say it — it removes their biggest worry.
+- SAVING A CALL THAT ENDS WITHOUT WORK is part of the job and is scored under Closing & Booking. When a caller cancels, or the job has already been done by someone else, never argue and never labour the point. Acknowledge it once, then leave them a reason to call back — a flat price for that service next time. A call that ends with the customer thanking you and saving the number is a good call even though nothing was booked.
+- When the line is bad, rephrase and expand the question rather than repeating the same words. "Is it a metal key ignition — the one where you turn the key — or a push button?"
 
 HOW TO JUDGE THE JOB FILE — read it the way a technician would, not like a school exercise:
 - Judge information, never length. "19 Volvo XC40 PTS lost key" is a complete and good description. Three words can be enough. Never mark someone down for being brief, and never ask for full sentences.
@@ -1735,7 +1808,8 @@ Leave "data" empty if every field matches.`;
     }
     report.total=(report.scores||[]).reduce((a,b)=>a+(Number(b.s)||0),0);
     drawReview(); clearInterval(timer); await saveResult(blob, f);
-    $("#navRev").classList.remove("hide"); go("review");
+    $("#navRev").classList.remove("hide");
+    wrapReady(true);
   }catch(e){
     try{
       await sb.from("results").insert({
@@ -1748,8 +1822,36 @@ Leave "data" empty if every field matches.`;
       });
     }catch(e2){ console.warn(e2); }
     showErr("Scoring failed ("+e.message+") but the call was saved — the transcript and recording are in Results.");
+    wrapReady(false);
   }
   busy=false; drawMic();
+}
+
+function showWrapUp(){
+  const f=formData();
+  const missing=[];
+  if(!f.client_name) missing.push(["their name","You never asked who you were speaking to."]);
+  if(!f.phone)       missing.push(["a callback number","If the line drops, the job is gone."]);
+  if(!f.address)     missing.push(["the address","The technician has nowhere to go."]);
+  if(!f.job_type && !f.job_description) missing.push(["what the job is","No way to know what equipment to bring."]);
+
+  $("#wrapTitle").textContent = missing.length ? "Almost there" : "Nicely done";
+  $("#wrapLead").textContent = missing.length
+    ? "A few things never made it onto the job file. Nothing to worry about — just worth catching next time."
+    : "You got everything the technician needs. Your score is being worked out now.";
+  $("#wrapList").innerHTML = missing.length
+    ? '<div class="wrapmiss">'+missing.map(m=>
+        '<div><b>'+m[0]+'</b><br><span class="note">'+m[1]+'</span></div>').join("")+'</div>'
+    : "";
+  const btn=$("#wrapGo");
+  btn.textContent="Checking your call…"; btn.disabled=true;
+  $("#wrapUp").classList.remove("hide");
+}
+function wrapReady(ok){
+  const btn=$("#wrapGo");
+  btn.disabled=false;
+  btn.textContent = ok ? "See my score" : "Close";
+  btn.onclick=()=>{ $("#wrapUp").classList.add("hide"); if(ok) go("review"); };
 }
 
 function drawReview(){
