@@ -180,6 +180,13 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .dispatchband h3{margin:0 0 4px;color:#fff;font-size:19px;font-weight:600;}
 .dispatchband p{margin:0;color:#A9B6C4;font-size:13.5px;max-width:52ch;line-height:1.45;}
+.db-pin{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.db-pin input{width:130px;text-align:center;font-family:Inter,monospace;font-size:20px;
+  letter-spacing:.35em;padding:10px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.10);color:#fff;}
+.db-pin input::placeholder{color:#7C8B9B;letter-spacing:.35em;}
+.db-pin input:focus{outline:none;border-color:var(--gold);background:rgba(255,255,255,.16);}
+.db-err{color:#FFC9BE;font-size:12px;width:100%;text-align:right;}
 .dispatchband .db-go{margin-left:auto;background:var(--gold);color:var(--navy);font-weight:700;
   font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:11px 20px;border-radius:24px;
   white-space:nowrap;}
@@ -308,8 +315,6 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
     <button class="nav hide" id="navUsers" data-go="users">Users</button>
     <button class="nav" id="navResults" data-go="results">Results</button>
     <button class="nav" data-go="setup">Settings</button>
-    <span style="width:1px;height:20px;background:rgba(255,255,255,.2);margin:0 4px"></span>
-    <button class="nav navdispatch" data-go="techs">◆ Dispatch</button>
     <button class="nav" id="outBtn" style="border:1px solid rgba(255,255,255,.25)">Sign out</button>
     <span class="nav" id="whoTop" style="color:#8FA0B2;cursor:default"></span>
   </div>
@@ -2772,6 +2777,29 @@ async function assignJob(techId, job, rawAddr){
 
 const ICONS={"learn": "<svg viewBox=\"0 0 24 24\" stroke=\"#9A7317\"><path d=\"M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H5.5A1.5 1.5 0 0 1 4 15.5Z\"/><path d=\"M20 5.5A1.5 1.5 0 0 0 18.5 4H14a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h4.5a1.5 1.5 0 0 0 1.5-1.5Z\"/></svg>", "board": "<svg viewBox=\"0 0 24 24\" stroke=\"#1E7C88\"><path d=\"M4 13v-1a8 8 0 0 1 16 0v1\"/><path d=\"M4 13h2.5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z\"/><path d=\"M20 13h-2.5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1H19a1 1 0 0 0 1-1Z\"/><path d=\"M20 19v.5a2.5 2.5 0 0 1-2.5 2.5H13\"/></svg>", "mine": "<svg viewBox=\"0 0 24 24\" stroke=\"#1F7A4C\"><path d=\"M4 20h16\"/><rect x=\"5\" y=\"12\" width=\"3.4\" height=\"6\" rx=\"1\"/><rect x=\"10.3\" y=\"8\" width=\"3.4\" height=\"10\" rx=\"1\"/><rect x=\"15.6\" y=\"4.5\" width=\"3.4\" height=\"13.5\" rx=\"1\"/></svg>", "team": "<svg viewBox=\"0 0 24 24\" stroke=\"#2C5FA8\"><circle cx=\"9\" cy=\"8\" r=\"3.2\"/><path d=\"M3.5 19a5.5 5.5 0 0 1 11 0\"/><path d=\"M16 5.6a3.2 3.2 0 0 1 0 6.3\"/><path d=\"M17.2 14.2A5.5 5.5 0 0 1 20.5 19\"/></svg>", "techs": "<svg viewBox=\"0 0 24 24\" stroke=\"#B3462F\"><path d=\"M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z\"/><circle cx=\"12\" cy=\"10\" r=\"2.6\"/></svg>", "setup": "<svg viewBox=\"0 0 24 24\" stroke=\"#5D6C7B\"><path d=\"M4 7h9\"/><path d=\"M17 7h3\"/><circle cx=\"15\" cy=\"7\" r=\"2\"/><path d=\"M4 17h3\"/><path d=\"M11 17h9\"/><circle cx=\"9\" cy=\"17\" r=\"2\"/></svg>", "users": "<svg viewBox=\"0 0 24 24\" stroke=\"#6B4C9A\"><path d=\"M12 3 5 6v5.5c0 4.2 2.9 7.6 7 9.5 4.1-1.9 7-5.3 7-9.5V6Z\"/><path d=\"m9.2 12.2 2 2 3.6-3.8\"/></svg>"};
 
+function paintBandPin(){
+  const box=document.getElementById("dbPin"); if(!box) return;
+  if(dispatchOK){ box.innerHTML='<span class="db-go">Open board</span>'; return; }
+  box.innerHTML='<input id="dbPinIn" inputmode="numeric" maxlength="4" placeholder="••••" '+
+                'aria-label="Dispatch code">'+
+                '<span class="db-go" id="dbPinGo">Enter</span>'+
+                '<span class="db-err" id="dbPinErr"></span>';
+  const inp=document.getElementById("dbPinIn");
+  const tryIt=()=>{
+    if(inp.value.trim()===DISPATCH_PIN){
+      dispatchOK=true; sessionStorage.setItem("oc_dispatch","1");
+      paintBandPin(); go("techs");
+    } else {
+      document.getElementById("dbPinErr").textContent="Wrong code";
+      inp.value=""; inp.focus();
+    }
+  };
+  inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==="Enter") tryIt(); };
+  inp.oninput=()=>{ document.getElementById("dbPinErr").textContent="";
+                    if(inp.value.length===4) tryIt(); };
+  document.getElementById("dbPinGo").onclick=e=>{ e.stopPropagation(); tryIt(); };
+}
+
 async function drawHome(){
   const first=((($("#whoTop").textContent)||"").split(" ")[0])||"";
   $("#homeHi").textContent = first ? "Hello, "+first : "Dispatcher Academy";
@@ -2813,8 +2841,17 @@ async function drawHome(){
         <p>Live map of where every technician is working, how long they have been there, and who is
            closest to a new job. Needs the dispatch code.</p>
       </span>
-      <span class="db-go">Open board</span>
+      <span class="db-pin" id="dbPin"></span>
     </button>`;
+  paintBandPin();
+
+  const band=document.querySelector(".dispatchband");
+  if(band) band.onclick=e=>{
+    if(e.target.tagName==="INPUT") return;
+    if(dispatchOK){ go("techs"); return; }
+    const f=document.getElementById("dbPinIn");
+    if(f) f.focus();
+  };
 
   $$("[data-tile]").forEach(b=>b.onclick=()=>{
     if(b.dataset.who){ resWho=b.dataset.who; resOpen=null; }
