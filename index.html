@@ -224,6 +224,10 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   font-weight:700;letter-spacing:.07em;}
 .navdispatch:hover{filter:brightness(1.06);}
 .navdispatch[data-on="1"]{background:#fff;}
+.confirmwrap{position:fixed;inset:0;z-index:70;background:rgba(24,32,45,.55);display:flex;
+  align-items:center;justify-content:center;padding:20px;animation:rise .2s ease both}
+.confirmcard{background:#fff;border-radius:14px;max-width:400px;width:100%;padding:24px;
+  box-shadow:0 20px 50px rgba(0,0,0,.3);text-align:center}
 .pinwrap{max-width:380px;margin:60px auto;text-align:center;}
 .pinbox{width:100%;text-align:center;font-family:Inter,monospace;font-size:30px;letter-spacing:.5em;
   padding:14px;border:1px solid var(--line);border-radius:8px;background:#fff;}
@@ -470,7 +474,11 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">
         <h1 style="font-size:20px;margin-top:22px">Technicians</h1>
-        <button class="btn ghost hide" id="addTechBtn">+ Add technician</button>
+        <span style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn ghost hide" id="clearAllBtn"
+            style="border-color:var(--red);color:var(--red)">Clear every address</button>
+          <button class="btn ghost hide" id="addTechBtn">+ Add technician</button>
+        </span>
       </div>
       <div id="newTechForm"></div>
       <div id="techList" class="techgrid"><div class="note">Loading…</div></div>
@@ -615,6 +623,24 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 </div>
 
 <!-- call bar -->
+<div id="clearWrap" class="confirmwrap hide">
+  <div class="confirmcard">
+    <div class="tile-ic" style="background:#FDECE9;margin:0 auto 14px;width:48px;height:48px">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#B33F2C" stroke-width="1.7"
+        stroke-linecap="round"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M6 7l1 12h10l1-12"/></svg>
+    </div>
+    <h2 style="margin:0 0 6px;color:var(--navy);font-size:20px">Clear every address</h2>
+    <div class="note" id="clearLead"></div>
+    <input class="pinbox" id="clearPin" inputmode="numeric" maxlength="4" placeholder="••••"
+      style="margin:16px 0 4px;font-size:24px">
+    <div class="note" id="clearErr" style="min-height:18px;color:var(--red)"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn ghost" id="clearCancel" style="flex:1">Cancel</button>
+      <button class="btn" id="clearGo" style="flex:1;background:var(--red);color:#fff">Clear</button>
+    </div>
+  </div>
+</div>
+
 <div id="wrapUp" class="wrapup hide">
   <div class="wrapcard">
     <div style="font-size:34px">📋</div>
@@ -2591,8 +2617,37 @@ function paintMap(extra){
   setTimeout(()=>techMap.invalidateSize(),100);
 }
 
+function askClearAll(){
+  const jobs=techs.reduce((n,t)=>n+stopsOf(t).length,0);
+  $("#clearLead").textContent = jobs
+    ? "This removes all "+jobs+" job"+(jobs>1?"s":"")+" from all "+techs.length+
+      " technicians. The technicians stay on the board. Enter the dispatch code to confirm."
+    : "There are no addresses to clear.";
+  $("#clearPin").value=""; $("#clearErr").textContent="";
+  $("#clearWrap").classList.remove("hide");
+  setTimeout(()=>$("#clearPin").focus(),80);
+  $("#clearCancel").onclick=()=>$("#clearWrap").classList.add("hide");
+  const run=async()=>{
+    if($("#clearPin").value.trim()!==DISPATCH_PIN){
+      $("#clearErr").textContent="That code is not right."; $("#clearPin").value=""; return;
+    }
+    $("#clearGo").disabled=true; $("#clearGo").textContent="Clearing…";
+    const {error}=await sb.from("techs").update({stops:[],updated_at:new Date().toISOString()})
+      .not("id","is",null);
+    $("#clearGo").disabled=false; $("#clearGo").textContent="Clear";
+    if(error){ $("#clearErr").textContent=error.message; return; }
+    $("#clearWrap").classList.add("hide");
+    lastFind=null; $("#findOut").innerHTML=""; $("#jobAddr").value="";
+    await drawTechs();
+  };
+  $("#clearGo").onclick=run;
+  $("#clearPin").onkeydown=e=>{ if(e.key==="Enter") run(); };
+}
+
 async function drawTechs(){
   $("#addTechBtn").classList.toggle("hide", !dispatchOK);
+  $("#clearAllBtn").classList.toggle("hide", !dispatchOK);
+  $("#clearAllBtn").onclick=askClearAll;
   $("#addTechBtn").onclick=()=>{ techEdit={new:true, stops:[{}]}; paintTechs(); };
   const {data,error}=await sb.from("techs").select("*").order("name");
   if(error){ $("#techList").innerHTML='<div class="note">Could not load: '+error.message+'</div>'; return; }
