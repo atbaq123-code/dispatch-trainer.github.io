@@ -2211,14 +2211,38 @@ async function drawUsers(){
             <button class="chip ${u.is_admin?"":"on"}" data-role="0" data-uid="${u.id}">Trainee</button>
           </div>`
         : `<span class="chip on" style="cursor:default">${u.is_admin?"Supervisor":"Trainee"}</span>`}
+        ${(!owner && u.id!==me.id && (isOwner || !u.is_admin))
+          ? `<button class="btn ghost" data-rmuser="${u.id}"
+              style="border-color:var(--red);color:var(--red);padding:6px 10px;font-size:11px">Remove</button>`
+          : ""}
       </div>`;
     }).join("");
+  $$("[data-rmuser]").forEach(b=>b.onclick=()=>removeUser(b.dataset.rmuser));
   $$("[data-uid]").forEach(b=>b.onclick=async()=>{
     const want=b.dataset.role==="1";
     const {error}=await sb.from("profiles").update({is_admin:want}).eq("id",b.dataset.uid);
     if(error){ alert("Could not change that: "+error.message); return; }
     drawUsers();
   });
+}
+
+async function removeUser(id){
+  const row=[...document.querySelectorAll("[data-rmuser]")].find(x=>x.dataset.rmuser===id);
+  const card=row&&row.closest(".panel");
+  const who=card?card.querySelector("div").textContent.trim():"this account";
+  if(!confirm("Remove "+who+" permanently?\n\nTheir account, every call they have taken, their "+
+              "scores and their recordings are all deleted. This cannot be undone.")) return;
+  if(row){ row.disabled=true; row.textContent="Removing…"; }
+  try{
+    const { data:{ session } } = await sb.auth.getSession();
+    const r=await fetch(SUPABASE_URL+"/functions/v1/admin-users",{method:"POST",
+      headers:{"content-type":"application/json",apikey:SUPABASE_ANON,
+               Authorization:"Bearer "+session.access_token},
+      body:JSON.stringify({op:"deleteUser",targetId:id})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok){ alert(d.error||("Could not remove that account ("+r.status+")")); drawUsers(); return; }
+    drawUsers();
+  }catch(e){ alert("Could not remove that account: "+e.message); drawUsers(); }
 }
 
 /* ---------------- technician board ---------------- */
