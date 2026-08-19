@@ -248,6 +248,21 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .brandword small{display:block;font-size:9px;letter-spacing:.16em;color:var(--gold);font-weight:600}
 #techMap{height:min(68vh,640px);border-radius:12px;border:1px solid var(--line2);z-index:0;}
 @media(max-width:700px){#techMap{height:min(60vh,420px)}}
+.techhead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;
+  flex-wrap:wrap;margin:26px 0 14px;padding-bottom:12px;border-bottom:1px solid var(--line2);}
+.techacts{display:flex;gap:8px;flex-wrap:wrap;}
+.btn-soft,.btn-solid{display:inline-flex;align-items:center;gap:7px;border-radius:9px;
+  font-size:12.5px;font-weight:600;padding:10px 15px;line-height:1;transition:all .15s;}
+.btn-soft svg,.btn-solid svg{width:15px;height:15px;fill:none;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round;}
+.btn-soft{background:#fff;border:1px solid var(--line);color:#6B7A89;}
+.btn-soft svg{stroke:#8493A2;}
+.btn-soft:hover{border-color:#E4A79B;color:var(--red);background:#FFF7F5;}
+.btn-soft:hover svg{stroke:var(--red);}
+.btn-solid{background:var(--navy);border:1px solid var(--navy);color:#fff;
+  box-shadow:0 2px 8px rgba(33,43,59,.22);}
+.btn-solid svg{stroke:#fff;}
+.btn-solid:hover{background:#2B3950;transform:translateY(-1px);box-shadow:0 4px 12px rgba(33,43,59,.28);}
 .techgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
 .stopline{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px dotted var(--line2);}
 .stopno{width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;
@@ -500,13 +515,19 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
       <div id="techMap"></div>
       <div id="findOut"></div>
 
-      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">
-        <h1 style="font-size:20px;margin-top:22px">Technicians</h1>
-        <span style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn ghost hide" id="clearAllBtn"
-            style="border-color:var(--red);color:var(--red)">Clear every address</button>
-          <button class="btn ghost hide" id="addTechBtn">+ Add technician</button>
-        </span>
+      <div class="techhead">
+        <div>
+          <h1 style="font-size:20px;margin:0">Technicians</h1>
+          <div class="note" id="techCount"></div>
+        </div>
+        <div class="techacts">
+          <button class="btn-soft hide" id="clearAllBtn">
+            <svg viewBox="0 0 24 24"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M6 7l1 12h10l1-12"/></svg>
+            Clear addresses</button>
+          <button class="btn-solid hide" id="addTechBtn">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            Add technician</button>
+        </div>
       </div>
       <div id="newTechForm"></div>
       <div id="techList" class="techgrid"><div class="note">Loading…</div></div>
@@ -2865,6 +2886,11 @@ function paintTechs(){
       (dispatchOK?' — add your first one above.':'. A supervisor needs to add them.')+'</div>';
     wireTechForm(); return;
   }
+  const live=techs.filter(liveOf).length;
+  const jobs=techs.reduce((n,t)=>n+stopsOf(t).length,0);
+  const cnt=document.getElementById("techCount");
+  if(cnt) cnt.textContent = techs.length+" on the board · "+jobs+" job"+(jobs===1?"":"s")+
+    (live?" · "+live+" live":"");
   $("#techList").innerHTML=techs.map(t=>{
     if(techEdit && techEdit.id===t.id) return techFormHtml(techEdit);
     const col=colourOf(t), sts=stopsOf(t);
