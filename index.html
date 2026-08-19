@@ -3064,8 +3064,10 @@ async function drawHome(){
      p: trained ? "The handbook, all 25 services, the typing test and the certification exam."
                 : "Start here. The handbook, all 25 services, the typing test and the certification exam.",
      bar: trained?100:0, note: trained?"Completed →":"Not started yet →"},
-    {go:"board", ic:ICONS.board, bg:"#E4F4F6", h:"Take a call", p:"Ten live scenarios with a real caller. You answer, you fill the job file, you get scored."},
-    {go:"setup", ic:ICONS.setup, bg:"#EDF1F5", h:"Settings", p:"Caller voices, how long the caller waits before replying, speech recognition."}
+    {go:"board", ic:ICONS.board, bg:"#E4F4F6", h:"Take a call",
+     p:JOBS.length+" scenarios taken from real calls. You answer, you fill the job file, you get scored."},
+    {go:"setup", ic:ICONS.setup, bg:"#EDF1F5", h:"Settings",
+     p:"Caller voices, microphone sensitivity, when your turn gets sent, media slots."}
   ];
   if(isOwner) tiles.push({go:"users", ic:ICONS.users, bg:"#F2EDFA", h:"Users",
     p:"Who has an account, and who is a supervisor."});
