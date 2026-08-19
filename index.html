@@ -2952,8 +2952,8 @@ function paintTechs(){
     if(techEdit && techEdit.id===t.id) return techFormHtml(techEdit);
     const col=colourOf(t), sts=stopsOf(t);
     return `<div class="panel" style="border-left:4px solid ${col}">
-      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
-        <div>
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+        <div style="flex:1;min-width:0">
           <div style="font-weight:600;color:var(--navy);font-size:16px">${t.name}</div>
           ${t.status?`<div class="note">${t.status}</div>`:""}
         ${liveOf(t)
@@ -2963,7 +2963,7 @@ function paintTechs(){
           : t.clocked_in ? `<div class="note">Clocked in, no recent position</div>`
           : `<div class="note" style="color:var(--muted)">Not clocked in</div>`}
         </div>
-        ${dispatchOK?`<div style="display:flex;gap:6px">
+        ${dispatchOK?`<div style="display:flex;gap:6px;flex-shrink:0">
           <button class="btn ghost" data-link="${t.token||""}" data-name="${t.name}"
             style="padding:6px 10px;font-size:11px">Link</button>
           <button class="btn ghost" data-ed="${t.id}" style="padding:6px 10px;font-size:11px">Edit</button>
