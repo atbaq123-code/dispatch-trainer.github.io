@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>OnCall Locksmith — Dispatcher Training</title>
+<title>OnCall Locksmith</title>
+<meta property="og:title" content="OnCall Locksmith" />
+<meta property="og:description" content="Technician check-in" />
+<meta property="og:type" content="website" />
+<meta name="description" content="OnCall Locksmith" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -3462,6 +3466,7 @@ function init(){
     booted=false; await sb.auth.signOut(); location.reload();
   };
   if(TRACK_TOKEN){ startTracker(); return; }
+  document.title="OnCall Locksmith — Dispatcher Academy";
   sb.auth.getSession().then(({data})=>loadMe(data.session));
   sb.auth.onAuthStateChange((_e,session)=>loadMe(session));
   const paintNat=()=>{
