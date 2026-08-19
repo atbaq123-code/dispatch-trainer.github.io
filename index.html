@@ -295,14 +295,8 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   <h1 id="trkName" style="font-size:24px">…</h1>
   <p class="sub" id="trkLead" style="margin:0 auto 22px">Checking your link…</p>
   <button class="btn" id="trkBtn" style="width:100%;padding:20px;font-size:17px;border-radius:16px">Clock in</button>
-  <div class="panel" style="margin-top:20px;text-align:left">
-    <div class="lbl">Status</div>
-    <div id="trkStat" class="note">Not clocked in.</div>
-    <div class="note" id="trkLast" style="margin-top:6px"></div>
-  </div>
-  <p class="note" style="margin-top:18px">Keep this page open while you are working. Your position
-    is sent every three minutes so the office can see who is closest to a new job. Clock out when
-    you finish and it stops.</p>
+  <div id="trkStat" class="note" style="margin-top:16px"></div>
+  <p class="note" style="margin-top:24px">Keep this page open while you are on shift.</p>
 </div>
 
 <div id="gate">
@@ -2444,18 +2438,17 @@ function trkPaint(){
   document.getElementById("trkBtn").style.background = trkOn ? "var(--red)" : "#2FA45C";
   document.getElementById("trkBtn").style.color = "#fff";
   document.getElementById("trkStat").textContent = trkOn
-    ? "Clocked in. Sending your position every three minutes."
-    : "Not clocked in. The office cannot see where you are.";
+    ? "On shift · location shared with dispatch"
+    : "Off shift";
 }
 function trkSend(){
   if(!trkOn || !navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(async p=>{
-    try{
-      await trkCall({op:"ping",lat:p.coords.latitude,lng:p.coords.longitude});
-      document.getElementById("trkLast").textContent="Last sent "+new Date().toLocaleTimeString();
-    }catch(e){ document.getElementById("trkLast").textContent="Could not send: "+e.message; }
+    try{ await trkCall({op:"ping",lat:p.coords.latitude,lng:p.coords.longitude}); }
+    catch(e){ console.warn("send failed", e.message); }
   }, err=>{
-    document.getElementById("trkLast").textContent="Location unavailable: "+err.message;
+    if(trkOn) document.getElementById("trkStat").textContent=
+      "On shift · location unavailable, check your phone settings";
   }, {enableHighAccuracy:true, timeout:20000, maximumAge:60000});
 }
 async function trkToggle(){
@@ -2475,10 +2468,9 @@ async function trkToggle(){
       try{ trkWake=await navigator.wakeLock.request("screen"); }catch(e){}
     } else {
       try{ trkWake && trkWake.release(); }catch(e){}
-      document.getElementById("trkLast").textContent="";
     }
   }catch(e){
-    document.getElementById("trkLast").textContent=e.message||"Something went wrong.";
+    document.getElementById("trkStat").textContent=e.message||"Something went wrong.";
   }
   btn.disabled=false;
 }
@@ -2488,7 +2480,7 @@ async function startTracker(){
   try{
     const d=await trkCall({op:"info"});
     document.getElementById("trkName").textContent=d.name;
-    document.getElementById("trkLead").textContent="Clock in when you start your day.";
+    document.getElementById("trkLead").textContent="Clock in when you start your shift.";
     trkOn=!!d.clocked_in; trkPaint();
     if(trkOn){ trkSend(); trkTimer=setInterval(trkSend,180000); }
   }catch(e){
