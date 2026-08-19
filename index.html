@@ -318,16 +318,19 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   </div>
   <h1 id="trkName" style="font-size:24px">…</h1>
   <p class="sub" id="trkLead" style="margin:0 auto 22px">Checking your link…</p>
-  <button class="btn" id="trkBtn" style="width:100%;padding:20px;font-size:17px;border-radius:16px">Clock in</button>
-  <button class="btn ghost hide" id="trkRefresh"
-    style="width:100%;margin-top:10px;padding:14px;border-radius:12px;display:inline-flex;
-           align-items:center;justify-content:center;gap:8px">
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9"
-      stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>
-    <span id="trkRefreshLabel">Update my location now</span>
+  <button class="btn" id="trkBtn" style="width:100%;padding:22px;font-size:18px;border-radius:16px">
+    <span id="trkBtnLabel">Clock in</span>
   </button>
   <div id="trkStat" class="note" style="margin-top:18px"></div>
-  <p class="note" style="margin-top:24px">Keep this page open while you are on shift.</p>
+
+  <div id="trkOutWrap" class="hide" style="margin-top:74px;padding-top:22px;
+       border-top:1px solid var(--line2)">
+    <button class="btn ghost" id="trkOut"
+      style="width:100%;padding:12px;border-radius:10px;border-color:#E4C8C2;color:#A5675C;font-size:13px">
+      End shift &amp; clock out</button>
+    <div class="note" style="margin-top:8px;font-size:11.5px">
+      Only at the end of your day. The office stops seeing you.</div>
+  </div>
 </div>
 
 <div id="gate">
@@ -2474,13 +2477,14 @@ async function trkCall(body){
   return d;
 }
 function trkPaint(){
-  document.getElementById("trkBtn").textContent = trkOn ? "Clock out" : "Clock in";
-  document.getElementById("trkBtn").style.background = trkOn ? "var(--red)" : "#2FA45C";
-  document.getElementById("trkBtn").style.color = "#fff";
+  const b=document.getElementById("trkBtn");
+  document.getElementById("trkBtnLabel").textContent = trkOn ? "Update my location" : "Clock in";
+  b.style.background = trkOn ? "var(--navy)" : "#2FA45C";
+  b.style.color = "#fff";
+  document.getElementById("trkOutWrap").classList.toggle("hide", !trkOn);
   document.getElementById("trkStat").textContent = trkOn
     ? "On shift · location shared with dispatch"
     : "Off shift";
-  document.getElementById("trkRefresh").classList.toggle("hide", !trkOn);
 }
 function trkSend(){
   if(!trkOn || !navigator.geolocation) return;
@@ -2534,13 +2538,16 @@ async function startTracker(){
         : m;
     document.getElementById("trkBtn").classList.add("hide");
   }
-  document.getElementById("trkBtn").onclick=trkToggle;
-  document.getElementById("trkRefresh").onclick=()=>{
-    const lab=document.getElementById("trkRefreshLabel");
+  document.getElementById("trkBtn").onclick=()=>{
+    if(!trkOn){ trkToggle(); return; }
+    const lab=document.getElementById("trkBtnLabel");
     lab.textContent="Updating…";
     trkSend();
-    setTimeout(()=>{ lab.textContent="Updated"; 
-      setTimeout(()=>lab.textContent="Update my location now",1600); },1200);
+    setTimeout(()=>{ lab.textContent="Updated";
+      setTimeout(()=>lab.textContent="Update my location",1600); },1200);
+  };
+  document.getElementById("trkOut").onclick=()=>{
+    if(confirm("Clock out and end your shift?")) trkToggle();
   };
   document.addEventListener("visibilitychange",()=>{ if(!document.hidden) trkSend(); });
 }
