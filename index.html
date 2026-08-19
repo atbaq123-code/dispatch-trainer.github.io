@@ -248,6 +248,15 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .brandword small{display:block;font-size:9px;letter-spacing:.16em;color:var(--gold);font-weight:600}
 #techMap{height:min(68vh,640px);border-radius:12px;border:1px solid var(--line2);z-index:0;}
 @media(max-width:700px){#techMap{height:min(60vh,420px)}}
+.liveline{display:flex;align-items:center;gap:8px;margin-top:7px;min-width:0;}
+.livetag{background:#2FA45C;color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.07em;
+  padding:3px 7px;border-radius:5px;flex-shrink:0;position:relative;padding-left:16px;}
+.livetag:before{content:"";position:absolute;left:7px;top:50%;width:5px;height:5px;margin-top:-2.5px;
+  border-radius:50%;background:#fff;animation:livepulse2 1.8s infinite;}
+@keyframes livepulse2{0%,100%{opacity:1}50%{opacity:.3}}
+.liveaddr{font-size:12.5px;color:var(--navy);font-weight:600;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;flex:1;min-width:0;}
+.liveago{font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0;}
 .techhead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;
   flex-wrap:wrap;margin:26px 0 14px;padding-bottom:12px;border-bottom:1px solid var(--line2);}
 .techacts{display:flex;gap:8px;flex-wrap:wrap;}
@@ -2948,9 +2957,9 @@ function paintTechs(){
           <div style="font-weight:600;color:var(--navy);font-size:16px">${t.name}</div>
           ${t.status?`<div class="note">${t.status}</div>`:""}
         ${liveOf(t)
-          ? `<div class="note" style="color:#2FA45C;font-weight:600">● Live — ${
-               liveAddr(t) || "locating…"} <span style="color:var(--muted);font-weight:400">· ${
-               sinceText(liveOf(t).at)} ago</span></div>`
+          ? `<div class="liveline"><span class="livetag">LIVE</span>
+               <span class="liveaddr" title="${liveAddr(t)||""}">${liveAddr(t) || "locating…"}</span>
+               <span class="liveago">${sinceText(liveOf(t).at)} ago</span></div>`
           : t.clocked_in ? `<div class="note">Clocked in, no recent position</div>`
           : `<div class="note" style="color:var(--muted)">Not clocked in</div>`}
         </div>
