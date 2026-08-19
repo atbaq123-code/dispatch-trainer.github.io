@@ -528,6 +528,9 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
           <div class="note" id="techCount"></div>
         </div>
         <div class="techacts">
+          <button class="btn-soft" id="refreshBtn">
+            <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>
+            <span id="refreshLabel">Refresh</span></button>
           <button class="btn-soft hide" id="clearAllBtn">
             <svg viewBox="0 0 24 24"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M6 7l1 12h10l1-12"/></svg>
             Clear addresses</button>
@@ -2727,6 +2730,22 @@ let techs=[], techEdit=null, techMap=null, techLayer=null, sinceTimer=null, last
 const PALETTE=["#2C5FA8","#B3462F","#3E7D4F","#8C5BB0","#B07C1E","#1F7D86","#A8386B","#556070"];
 const colourOf = t => PALETTE[Math.abs(String(t.id).split("").reduce((a,c)=>a+c.charCodeAt(0),0))%PALETTE.length];
 const stopsOf  = t => Array.isArray(t.stops) ? t.stops : [];
+const revCache={};
+async function reverseFor(t){
+  const lv=liveOf(t); if(!lv) return;
+  const key=lv.lat.toFixed(4)+","+lv.lng.toFixed(4);
+  if(revCache[key]!==undefined) return;
+  revCache[key]=null;
+  try{
+    const d=await geoCall({op:"reverse",lat:lv.lat,lng:lv.lng});
+    revCache[key]=d.label||null;
+    paintTechs();
+  }catch(e){ revCache[key]=null; }
+}
+const liveAddr = t => {
+  const lv=liveOf(t); if(!lv) return null;
+  return revCache[lv.lat.toFixed(4)+","+lv.lng.toFixed(4)]||null;
+};
 const liveOf = t => (t.clocked_in && t.live_lat!=null && t.live_at &&
   (Date.now()-new Date(t.live_at).getTime()) < 20*60000)
   ? {lat:t.live_lat, lng:t.live_lng, at:t.live_at} : null;
@@ -2806,7 +2825,7 @@ function paintMap(extra){
     if(lv){
       L.marker([lv.lat,lv.lng],{icon:L.divIcon({className:"",
         html:'<div class="livedot" style="background:'+col+'"></div>',iconSize:[16,16],iconAnchor:[8,8]})})
-        .addTo(techLayer).bindPopup("<b>"+t.name+"</b><br>live position<br><i>"+sinceText(lv.at)+" ago</i>");
+        .addTo(techLayer).bindPopup("<b>"+t.name+"</b><br>"+(liveAddr(t)||"live position")+"<br><i>"+sinceText(lv.at)+" ago</i>");
       pts.push([lv.lat,lv.lng]);
       if(line.length) L.polyline([[lv.lat,lv.lng],line[0]],{color:col,weight:2,opacity:.55}).addTo(techLayer);
     }
@@ -2850,21 +2869,35 @@ function askClearAll(){
   $("#clearPin").onkeydown=e=>{ if(e.key==="Enter") run(); };
 }
 
+async function refreshBoard(quiet){
+  const lab=document.getElementById("refreshLabel");
+  if(!quiet && lab) lab.textContent="Refreshing…";
+  const {data}=await sb.from("techs").select("*").order("name");
+  if(data){
+    techs=data;
+    techs.forEach(reverseFor);
+    paintTechs(); paintMap(lastFind);
+  }
+  if(!quiet && lab){ lab.textContent="Updated";
+    setTimeout(()=>lab.textContent="Refresh",1500); }
+}
+
 async function drawTechs(){
   $("#addTechBtn").classList.toggle("hide", !dispatchOK);
   $("#clearAllBtn").classList.toggle("hide", !dispatchOK);
   $("#clearAllBtn").onclick=askClearAll;
+  $("#refreshBtn").onclick=()=>refreshBoard(false);
   $("#addTechBtn").onclick=()=>{ techEdit={new:true, stops:[{}]}; paintTechs(); };
   const {data,error}=await sb.from("techs").select("*").order("name");
   if(error){ $("#techList").innerHTML='<div class="note">Could not load: '+error.message+'</div>'; return; }
   techs=data||[];
   paintTechs(); paintMap(lastFind);
   clearInterval(sinceTimer);
-  sinceTimer=setInterval(async ()=>{
-    if($("#v-techs").classList.contains("hide")) return;
-    const {data}=await sb.from("techs").select("*").order("name");
-    if(data){ techs=data; paintTechs(); paintMap(lastFind); }
-  },60000);
+  techs.forEach(reverseFor);
+  clearInterval(sinceTimer);
+  sinceTimer=setInterval(()=>{
+    if(!$("#v-techs").classList.contains("hide")) refreshBoard(true);
+  },30000);
 }
 
 function techFormHtml(t){
@@ -2915,7 +2948,9 @@ function paintTechs(){
           <div style="font-weight:600;color:var(--navy);font-size:16px">${t.name}</div>
           ${t.status?`<div class="note">${t.status}</div>`:""}
         ${liveOf(t)
-          ? `<div class="note" style="color:#2FA45C;font-weight:600">● Live — moved ${sinceText(liveOf(t).at)} ago</div>`
+          ? `<div class="note" style="color:#2FA45C;font-weight:600">● Live — ${
+               liveAddr(t) || "locating…"} <span style="color:var(--muted);font-weight:400">· ${
+               sinceText(liveOf(t).at)} ago</span></div>`
           : t.clocked_in ? `<div class="note">Clocked in, no recent position</div>`
           : `<div class="note" style="color:var(--muted)">Not clocked in</div>`}
         </div>
