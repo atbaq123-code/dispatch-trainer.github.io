@@ -103,6 +103,11 @@ textarea.in{min-height:78px; resize:vertical;}
 .capt{flex:1; min-width:170px; text-align:center; color:var(--capt); font-size:19px; font-weight:500;}
 .capt.me{color:#fff; opacity:.75; font-size:16px;}
 .capt small{display:block; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:#7C8B9B;}
+.callerid{display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-radius:10px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);flex-shrink:0;}
+.callerid small{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#7C8B9B;}
+.callerid b{font-family:Inter,monospace;font-size:15px;color:#fff;letter-spacing:.02em;font-weight:600;}
+@media(max-width:620px){.callerid{display:none}}
 .mic{width:66px;height:66px;border-radius:50%;background:#2FA45C;color:#fff;font-size:9px;
   font-weight:700;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
@@ -734,6 +739,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 </div>
 
 <div class="bar hide" id="callBar">
+  <span class="callerid" id="callerId"></span>
   <button class="mic" id="micBtn">
     <svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .58 3.6 1 1 0 0 1-.25 1Z"/></svg>
     <span id="micLabel">Answer</span>
@@ -780,7 +786,7 @@ function jobOptions(sel){
 const SOURCES=["","Google","Google Ads","Repeat client","Referral","Yelp","Website","Other"];
 
 const CHIPS=[
-  {k:"phone", n:"Copy the phone number", auto:f=>!!f.phone && touched.has("phone")},
+  {k:"phone", n:"Copy the phone number", auto:f=>!!f.phone},
   {k:"info",  n:"Gather the details",    auto:f=>!!(f.job_type||f.job_description) && !!f.client_name},
   {k:"addr",  n:"Get the address",       auto:f=>!!f.address && !!f.zip},
   {k:"price", n:"Pricing",               auto:null},
@@ -1823,10 +1829,12 @@ function start(j){
   curName  = ((ALT_NAMES[j.id]||{})[curVoice]) || "";
   curVariant = Math.floor(Math.random()*3);
   job=j; log=[]; chips={}; secs=0; report=null; heard=""; finalTx=""; busy=false;
-  setForm({phone:(FACTS[j.id]||{}).phone || j.cid || ""});
+  setForm({});
   fillSchedule();
   $("#navCall").classList.remove("hide");
   clearInterval(timer); timer=setInterval(tick,1000); $("#clock").textContent="00:00";
+  const cid=(FACTS[j.id]||{}).phone || j.cid || "";
+  $("#callerId").innerHTML = cid ? "<small>Caller ID</small><b>"+cid+"</b>" : "";
   drawChips(); drawSteps(); drawLog(); drawCapt(); drawMic(); drawCount(); hideErr();
   go("call");
 }
@@ -2112,7 +2120,7 @@ function showWrapUp(){
   const f=formData();
   const missing=[];
   if(!f.client_name) missing.push(["their name","You never asked who you were speaking to."]);
-  if(!f.phone)       missing.push(["a callback number","If the line drops, the job is gone."]);
+  if(!f.phone)       missing.push(["the callback number","It was on your screen all call. If the line drops, the job is gone."]);
   if(!f.address)     missing.push(["the address","The technician has nowhere to go."]);
   if(!f.job_type && !f.job_description) missing.push(["what the job is","No way to know what equipment to bring."]);
 
