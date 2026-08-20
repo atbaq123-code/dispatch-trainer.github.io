@@ -560,7 +560,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
     <!-- USERS -->
     <section id="v-users" class="hide">
-      <div class="crumb">Owner # Accounts</div>
+      <div class="crumb">Super admin # Accounts</div>
       <h1>Users</h1>
       <p class="sub" id="usersSub"></p>
       <div id="userList"><div class="note">Loading…</div></div>
@@ -933,7 +933,7 @@ const EMERGENCIES=[
 const GUIDE_CARDS=[
  ["Caller wants to cancel","Never argue. “No worries, we can definitely cancel.” Then leave them a number: “If you ever face the same situation, we can unlock it for a flat price — just call us.” Reps who do this get thanked and get the number saved."],
  ["They used another company","Say it once, plainly: the technician drove 45 minutes. Then let it go. Most callers googled “locksmith” and think every result is the same company — explain there are hundreds of separate companies in Tampa Bay on separate systems. Finish with a flat price for next time."],
- ["Nobody will be at the property","“If no one is going to be on site we will need some proof of ownership.” Paperwork with their name and the address, plus matching ID. A phone number for the owner proves nothing — anyone could give you any number. Offer the alternative: meet the technician there instead."],
+ ["Nobody will be at the property","“If no one is going to be on site we will need some proof of ownership.” Paperwork with their name and the address, plus matching ID. A phone number for the super admin proves nothing — anyone could give you any number. Offer the alternative: meet the technician there instead."],
  ["“Can you copy these keys?”","Ask whether it is a master system or a separate key per door before quoting anything — on a 20 unit building those are completely different jobs. And ask where the keys actually are; the job may be at their house, not the property."],
  ["A door that will not lock","Treat it as urgent even if they do not. A commercial unit that cannot be secured overnight is a security and sometimes a code problem. Say so, and get a technician moving."],
  ["The line is breaking up","Do not just say “sorry?”. Rephrase and expand: “Is it a metal key ignition — the one where you turn the key in the ignition — or is it a push button?” Give them a second way to understand you."],
@@ -1079,7 +1079,7 @@ const SERVICES=[
   e:"Advise replacing safe batteries on a schedule — annually — to avoid lockouts entirely.",
   tools:["9V external battery leads","Safe manipulation tools","Manufacturer reset tools"]},
  {c:"Safes",n:"Dial (Combination) Safes",  w:"Mechanical dial combination safes, often higher-security or legacy.",
-  q:["Brand and model if known","Any record of the combination — paperwork, previous owner?","Residential or commercial grade?"],
+  q:["Brand and model if known","Any record of the combination — paperwork, previous isSA?","Residential or commercial grade?"],
   t:"30 min to several hours by lock grade.",
   p:["Lock grade and manipulation time","Whether drilling and parts become necessary"],
   e:"High-security dial locks resist manipulation by design — set time expectations honestly up front.",
@@ -1165,7 +1165,7 @@ const GLOSSARY=[
 const DICTATION=[
  {v:"m",t:"Yeah, hi, how you doing. So I've got kind of a situation here. I'm out at the Publix off Bruce B Downs, and I locked my keys inside my truck. It's a 2019 Ford F-150, dark blue, and it's parked around the back near the loading area. The address here is 2740 Bruce B Downs Boulevard, Wesley Chapel, and I think the zip is 33544. My name is Gregory Alvarez, that's A-L-V-A-R-E-Z. Best number to reach me is 813-555-0173. Now here's the thing, my wife has the spare key but she's at work until about six o'clock, and I've got my dog in the truck with me, well, in the truck, and it's pretty warm out today so I'd rather not wait that long. The doors are all locked, I checked every one of them, and the windows are up. I don't have any kind of roadside assistance, I cancelled that last year. I do have my license and the registration is in the glovebox, so if your guy needs to see something I can show him my ID at least. How soon do you think somebody could get out here? And I guess the other question is what am I looking at price-wise, roughly, because I've got maybe eighty dollars cash on me and I'd have to run to an ATM otherwise."},
  {v:"f",t:"Hi there, I hope you can help me. I'm a property manager and I've got a unit turning over tomorrow morning, so this is a little bit urgent. The property is at 4218 Woodmont Drive, that's in Land O' Lakes, 34638. It's building C, unit 212, and there's a gate code to get in, it's 4-9-3-1. What I need is the locks changed on the front door and the back sliding door, and I'd like them both keyed alike if that's possible, so the new tenant only carries one key. The current locks are those bronze Kwikset deadbolts, I think they're maybe ten years old, and honestly the back one sticks pretty badly so it might need replacing rather than just rekeying. My name is Patricia Nunez, and you can reach me on 727-555-0244. I'm not going to be on site, but my maintenance guy Danny will be there from eight in the morning, and his number is 727-555-0290. I'd need an invoice made out to Coastline Property Group for the accounting side. Can you tell me roughly what three locks would run, and whether your technician can be out first thing? The new tenant is picking up keys at noon so we're a little tight on time."},
- {v:"m",t:"Hey, so my key broke off. I was turning it in the front door of my shop this morning and it just snapped, and about half of it is still down inside the lock. The shop is Riverside Auto Detailing, we're at 9245 Fourth Street North in Saint Petersburg, zip 33704. My name's Colin Marsh, M-A-R-S-H, and my cell is 813-555-0318. Right now I've got two employees standing outside in the parking lot waiting on me and we open at nine, so I'm kind of stuck. The lock itself is one of those older mortise ones, it came with the building, and it's been getting harder to turn for probably a month now. I still have the other half of the key here in my hand if that helps. There's a back door but I don't have a key for that one at all, the previous owner never gave me one. What I'm wondering is whether your guy can get the broken piece out and save the lock, or whether I'm looking at replacing the whole thing. And if we're replacing it, I'd want something better than what's on there now. Can somebody get out here this morning? I can meet him out front."}
+ {v:"m",t:"Hey, so my key broke off. I was turning it in the front door of my shop this morning and it just snapped, and about half of it is still down inside the lock. The shop is Riverside Auto Detailing, we're at 9245 Fourth Street North in Saint Petersburg, zip 33704. My name's Colin Marsh, M-A-R-S-H, and my cell is 813-555-0318. Right now I've got two employees standing outside in the parking lot waiting on me and we open at nine, so I'm kind of stuck. The lock itself is one of those older mortise ones, it came with the building, and it's been getting harder to turn for probably a month now. I still have the other half of the key here in my hand if that helps. There's a back door but I don't have a key for that one at all, the previous super admin never gave me one. What I'm wondering is whether your guy can get the broken piece out and save the lock, or whether I'm looking at replacing the whole thing. And if we're replacing it, I'd want something better than what's on there now. Can somebody get out here this morning? I can meet him out front."}
 ];
 function lev(a,b){
   const m=a.length,n=b.length; if(!m)return n; if(!n)return m;
@@ -1223,7 +1223,7 @@ const EXAM_FOUND=[
   why:"Life safety first. Emergency services in parallel, then the technician."},
  {q:"Nobody will be at the property when the technician arrives. What do you need?",
   o:["Nothing, the tech handles it","Paperwork with their name and the address, plus matching ID",
-     "The owner's phone number","A card on file"],a:1,
+     "The super admin's phone number","A card on file"],a:1,
   why:"Anyone can hand you a phone number. Documents and ID are what actually prove anything."},
  {q:"A caller cancels because they got in by themselves. What is the right move?",
   o:["Explain the technician's wasted time","Accept it, then leave them a flat price for next time",
@@ -1265,7 +1265,7 @@ const FACTS={
  noshow:{caller_name:"Danielle Fox",phone:"(813) 555-7742",address:"apartment complex, Tampa",city:"Tampa",state:"FL",zip:"33612",
    job_type:"",detail:"OUTBOUND. Job already done by another company; tech drove 45 minutes for nothing. Nothing to book."},
  vacant:{caller_name:"Brianna Salas",company_name:"Salas Property Group LLC",phone:"(813) 555-9910",address:"Seminole Heights",city:"Tampa",state:"FL",zip:"33604",
-   job_type:"House lockout",detail:"Nobody on site. Manages, does not own — owner is Sam. Needs unlock then rekey or replace. Proof of ownership required: lease with her name and LLC plus matching ID. A phone number for the owner is NOT proof."},
+   job_type:"House lockout",detail:"Nobody on site. Manages, does not own — super admin is Sam. Needs unlock then rekey or replace. Proof of ownership required: lease with her name and LLC plus matching ID. A phone number for the super admin is NOT proof."},
  copies:{caller_name:"Kyle Koehler",company_name:"Dan Koehler Properties LLC",phone:"(727) 555-6183",address:"2378 Anthony Avenue",city:"Clearwater",state:"FL",zip:"33759",
    job_type:"Key duplication",detail:"Several rusty apartment keys, SEPARATE key per door, not a master system. Job is at his house — he has the keys with him."},
  relock:{caller_name:"Kathy Colorado",company_name:"Colorado Health",phone:"(813) 555-4408",address:"3230 West Kennedy Boulevard",city:"Tampa",state:"FL",zip:"33609",
@@ -1279,7 +1279,7 @@ const FACTS={
  newtenant:{caller_name:"Dale Fenton",phone:"(727) 555-7788",address:"4201 Gulf Boulevard",city:"St. Pete Beach",state:"FL",zip:"33706",
    job_type:"Lock replacement",detail:"Mailbox lockout, just moved in, no key. Street number is 4201 — he will absent-mindedly confirm a wrong readback."},
  panic:{caller_name:"Victor Hale",company_name:"Ironwood Grill",phone:"(813) 555-9042",address:"27227 State Road 56",city:"Wesley Chapel",state:"FL",zip:"33544",
-   job_type:"Lock repair",detail:"Panic bar on the back door dragging, owner off site, wants premises secured tonight"},
+   job_type:"Lock repair",detail:"Panic bar on the back door dragging, super admin off site, wants premises secured tonight"},
  altima:{caller_name:"Andre Marrero",phone:"(813) 555-6119",address:"8741 North 56th Street",city:"Temple Terrace",state:"FL",zip:"33617",
    job_type:"Key programming",detail:"2008 Nissan Altima, push-to-start, HAS a working fob that starts the car but the buttons don't work"},
  knob:{caller_name:"Stanley Burke",phone:"(727) 555-2054",address:"401 Shore Drive East",city:"Oldsmar",state:"FL",zip:"34677",
@@ -1335,7 +1335,7 @@ const JOBS=[
   persona:"Danielle Fox, 39. YOU are calling HER — open the call yourself, she just says hello. Her car was unlocked an hour ago by a different company; she never rang to cancel and your technician drove 45 minutes for nothing. She is defensive but not hostile: she googled 'locksmith', rang several numbers, and genuinely believed they were all the same company. If the dispatcher explains that there are hundreds of separate locksmith companies in Tampa Bay on separate systems, she is embarrassed and apologetic. If the dispatcher labours the complaint or repeats it, she gets short and ends the call."},
  {id:"vacant",kind:"residential",title:"Nobody will be on site",src:"Callback · 9:05 AM",lv:"Critical",
   blurb:"Property manager, an hour away. Ownership proof needed.",voice:"f",rate:1.05,pitch:1.05,
-  persona:"Brianna Salas, 41. Property manager. YOU are calling HER to confirm she wants the job done before 11am. The property is in Seminole Heights, zip 33604; she lives in Apollo Beach and cannot get there in morning traffic. She offers to pay by card over the phone and let the tech work with nobody present. She does not own it — her LLC manages it for the owner, Sam — and offers to give you Sam's phone number as proof. She has a previous lease with her name and the LLC on it, an MLS listing, and a real estate licence. The tenant was supposed to leave keys in the mailbox and did not, so it needs unlocking first, then rekey or replacement. She has never been asked for proof of ownership before and will ask what is needed."},
+  persona:"Brianna Salas, 41. Property manager. YOU are calling HER to confirm she wants the job done before 11am. The property is in Seminole Heights, zip 33604; she lives in Apollo Beach and cannot get there in morning traffic. She offers to pay by card over the phone and let the tech work with nobody present. She does not own it — her LLC manages it for the super admin, Sam — and offers to give you Sam's phone number as proof. She has a previous lease with her name and the LLC on it, an MLS listing, and a real estate licence. The tenant was supposed to leave keys in the mailbox and did not, so it needs unlocking first, then rekey or replacement. She has never been asked for proof of ownership before and will ask what is needed."},
  {id:"copies",kind:"residential",title:"Copies of apartment keys",src:"Google · 2:30 PM",lv:"Routine",
   blurb:"Twenty units. Not a master system.",voice:"m",rate:1.0,pitch:.95,
   persona:"Kyle Koehler, 52. Owns and manages a 20 unit apartment building and wants several keys copied. Crucially he has the keys ON HIM, so the job is at his house, not the building — only says this if asked for the property address. The keys are rusty and he asks whether they can still be copied. If the dispatcher assumes it is a master key system, correct them: it is a separate key per door. Address 2378 Anthony Avenue, Clearwater FL 33759. Business is Dan Koehler Properties LLC, spelled D-A-N K-O-E-H-L-E-R if asked. Calm, precise, a bit particular."},
@@ -1355,8 +1355,8 @@ const JOBS=[
   blurb:"Refuses to book without a number first.",voice:"m",rate:1.05,pitch:.9,
   persona:"Dale Fenton. Just moved in, has no mailbox key and is locked out. Address is 4201 Gulf Boulevard, St. Pete Beach, 33706 — say it clearly, but if the dispatcher reads it back slightly wrong, for example 4021 instead of 4201, just say yes without noticing, the way a distracted person does. He opens with 'how much do you charge for a mailbox lock' and will not accept 'the tech will price it on site' — he pushes twice and needs a real number before he books."},
  {id:"panic",kind:"commercial",title:"Restaurant panic bar dragging",src:"Referral · 6:15 PM",lv:"Difficult",cid:"(813) 555-9042",
-  blurb:"Owner isn't on site. Wants the place secured tonight.",voice:"m",rate:1.08,pitch:.95,
-  persona:"Victor Hale, owner of the Ironwood Grill restaurant. The panic bar on the back door keeps dragging and staff are struggling with it. Address 27227 State Road 56 in Wesley Chapel, zip 33544 — he gives the zip only if asked. He is not at the restaurant himself, his guys are, and his real worry is whether the premises will be secured tonight and whether it can be replaced the same evening. Needs reassurance more than a price."},
+  blurb:"Super admin isn't on site. Wants the place secured tonight.",voice:"m",rate:1.08,pitch:.95,
+  persona:"Victor Hale, super admin of the Ironwood Grill restaurant. The panic bar on the back door keeps dragging and staff are struggling with it. Address 27227 State Road 56 in Wesley Chapel, zip 33544 — he gives the zip only if asked. He is not at the restaurant himself, his guys are, and his real worry is whether the premises will be secured tonight and whether it can be replaced the same evening. Needs reassurance more than a price."},
  {id:"altima",kind:"auto",title:"Nissan Altima fob buttons dead",src:"Google Ads · 12:30 PM",lv:"Difficult",cid:"(813) 555-6119",
   blurb:"Borrowing the money. Needs a real number.",voice:"m",rate:1.0,pitch:1.0,
   persona:"Andre Marrero. 2008 Nissan Altima, push-to-start. He still has his fob and can start the car with it, but the lock and unlock buttons do nothing — if the dispatcher assumes he needs a spare programmed, correct them. He is at 8741 North 56th Street, Temple Terrace, zip 33617. He asks the price twice and explains he is borrowing the money from his mother, so he needs at least a rough estimate before he agrees. If the dispatcher puts him on hold and comes back with a range, he books immediately."},
@@ -1375,8 +1375,8 @@ const JOBS=[
 ];
 
 /* ============================ state ============================ */
-const OWNER_EMAIL="obada.arag89@gmail.com";
-let me=null, isAdmin=false, isOwner=false, isGuest=false, authMode="in", booted=false;
+const SUPER_ADMIN_EMAIL="obada.arag89@gmail.com";
+let me=null, isAdmin=false, isSuperAdmin=false, isGuest=false, authMode="in", booted=false;
 let job=null, log=[], chips={}, secs=0, timer=null, busy=false, report=null;
 let listening=false, speaking=false, voiceOn=true, heard="", finalTx="", rec=null, voices=[], primed=false;
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -2147,7 +2147,7 @@ HANDBOOK STANDARDS — judge against these, not generic call-centre theory:
 - Closing means a clear next step and timing: a technician is on the way and will call to say how far he is. Promising a CALLBACK time is right — "he will call you in the next couple of minutes". Promising an ARRIVAL time is not.
 - READ BACK the street number, the unit or lot number, the zip and the business name. A lot number heard as 218 instead of 21A sends the technician to the wrong home. If the caller's details and the job file differ, that is a serious Info Gathering failure even when the caller confirmed the wrong version.
 - If the make and model do not go together — "a Honda Hyundai Sonata" — ask which it is. The wrong manufacturer means the wrong key and the wrong equipment.
-- Ask who will be on site before dispatching. If nobody will be there, proof of ownership is required: paperwork carrying their name and the property address, plus matching ID. Being given the owner's phone number is NOT proof and should be declined politely — anyone can supply a phone number.
+- Ask who will be on site before dispatching. If nobody will be there, proof of ownership is required: paperwork carrying their name and the property address, plus matching ID. Being given the super admin's phone number is NOT proof and should be declined politely — anyone can supply a phone number.
 - Never assume the type of job. On an apartment building ask whether it is a master key system or a separate key per door. On a vacant unit ask whether the door can still be secured.
 - Free on-site estimate, no service call charge. Say it — it removes their biggest worry.
 - SAVING A CALL THAT ENDS WITHOUT WORK is part of the job and is scored under Closing & Booking. When a caller cancels, or the job has already been done by someone else, never argue and never labour the point. Acknowledge it once, then leave them a reason to call back — a flat price for that service next time. A call that ends with the customer thanking you and saving the number is a good call even though nothing was booked.
@@ -2949,13 +2949,13 @@ async function loadMe(session){
   me=session.user;
   isGuest = !!me.is_anonymous || !me.email;
   const {data}=await sb.from("profiles").select("full_name,is_admin").eq("id",me.id).single();
-  isOwner = !isGuest && (me.email||"").toLowerCase()===OWNER_EMAIL;
-  isAdmin = !isGuest && (isOwner || !!(data&&data.is_admin));
+  isSuperAdmin = !isGuest && (me.email||"").toLowerCase()===SUPER_ADMIN_EMAIL;
+  isAdmin = !isGuest && (isSuperAdmin || !!(data&&data.is_admin));
   $("#whoami").textContent = isGuest ? "Guest session"
     : (data&&data.full_name?data.full_name+" · ":"")+me.email;
   $("#roleNote").textContent = isGuest
     ? "Nothing is saved under your name. Sign out and register to have your scores tracked."
-    : isOwner ? "Owner — you manage who is a supervisor and who is a trainee."
+    : isSuperAdmin ? "Super admin — you manage who is a supervisor and who is a trainee."
     : (isAdmin?"Supervisor — you can see everyone's results.":"Trainee — you see your own results.");
   $("#navUsers").classList.toggle("hide", !isAdmin);
   $("#resTitle").textContent=isAdmin?"Team results":"My results";
@@ -3003,7 +3003,7 @@ function copyCall(ix){
   const body=(r.transcript||[]).map(m=>(m.w==="you"?"DISPATCHER: ":"CALLER: ")+m.t).join("\n");
   navigator.clipboard.writeText(head+body).catch(()=>{});
 }
-/* ---------------- users (owner only) ---------------- */
+/* ---------------- users (super admin only) ---------------- */
 async function drawUsers(){
   const wrap=$("#userList");
   wrap.innerHTML='<div class="note">Loading…</div>';
@@ -3013,27 +3013,27 @@ async function drawUsers(){
   const rows=(data||[]).filter(u=>u.email);
   if(!rows.length){ wrap.innerHTML='<div class="note">Nobody has registered yet.</div>'; return; }
   const sup=rows.filter(u=>u.is_admin).length;
-  $("#usersSub").textContent = isOwner
+  $("#usersSub").textContent = isSuperAdmin
     ? "Everyone who has registered. Tap a role to change it."
-    : "Everyone who has registered. Only the owner can change roles.";
+    : "Everyone who has registered. Only the super admin can change roles.";
   wrap.innerHTML=`<div class="note" style="margin-bottom:12px">${rows.length} accounts · ${sup} supervisor${sup===1?"":"s"}</div>`+
     rows.map(u=>{
-      const owner=(u.email||"").toLowerCase()===OWNER_EMAIL;
+      const isSA=(u.email||"").toLowerCase()===SUPER_ADMIN_EMAIL;
       return `<div class="panel" style="display:flex;justify-content:space-between;gap:12px;
               flex-wrap:wrap;align-items:center">
         <div style="flex:1;min-width:200px">
           <div style="font-weight:600;color:var(--navy)">${u.full_name||"(no name)"}
-            ${owner?'<span class="vd" style="font-size:10px;padding:2px 8px;margin-left:6px">OWNER</span>':""}</div>
+            ${isSA?'<span class="vd" style="font-size:10px;padding:2px 8px;margin-left:6px">SUPER ADMIN</span>':""}</div>
           <div class="note">${u.email}</div>
           <div class="note">joined ${new Date(u.created_at).toLocaleDateString()}</div>
         </div>
-        ${owner?'<span class="note">always a supervisor</span>'
-        : isOwner ? `<div class="chips" style="margin:0">
+        ${isSA?'<span class="note">always a supervisor</span>'
+        : isSuperAdmin ? `<div class="chips" style="margin:0">
             <button class="chip ${u.is_admin?"on":""}" data-role="1" data-uid="${u.id}">Supervisor</button>
             <button class="chip ${u.is_admin?"":"on"}" data-role="0" data-uid="${u.id}">Trainee</button>
           </div>`
         : `<span class="chip on" style="cursor:default">${u.is_admin?"Supervisor":"Trainee"}</span>`}
-        ${(!owner && u.id!==me.id && (isOwner || !u.is_admin))
+        ${(!isSA && u.id!==me.id && (isSuperAdmin || !u.is_admin))
           ? `<button class="btn ghost" data-rmuser="${u.id}"
               style="border-color:var(--red);color:var(--red);padding:6px 10px;font-size:11px">Remove</button>`
           : ""}
@@ -3532,7 +3532,7 @@ async function drawHome(){
     {go:"setup", ic:ICONS.setup, bg:"#EDF1F5", h:"Settings",
      p:"Caller voices, microphone sensitivity, when your turn gets sent, media slots."}
   ];
-  if(isOwner) tiles.push({go:"users", ic:ICONS.users, bg:"#F2EDFA", h:"Users",
+  if(isSuperAdmin) tiles.push({go:"users", ic:ICONS.users, bg:"#F2EDFA", h:"Users",
     p:"Who has an account, and who is a supervisor."});
   tiles.splice(2,0,{go:"results", who:"me", ic:ICONS.mine, bg:"#E9F7EF", h:"My results",
     p:"Your own calls — scores, what you missed, transcripts and recordings."});
