@@ -248,6 +248,11 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .brandword small{display:block;font-size:9px;letter-spacing:.16em;color:var(--gold);font-weight:600}
 #techMap{height:min(68vh,640px);border-radius:12px;border:1px solid var(--line2);z-index:0;}
 @media(max-width:700px){#techMap{height:min(60vh,420px)}}
+.stopacts{display:flex;gap:5px;flex-shrink:0;align-self:center;}
+.stopbtn{width:27px;height:27px;border-radius:7px;border:1px solid var(--line);background:#fff;
+  font-size:12px;font-weight:700;line-height:1;color:#8493A2;transition:all .13s;}
+.stopbtn.done:hover{background:#EAF9F1;border-color:var(--green);color:#1F7A4C;}
+.stopbtn.cancel:hover{background:#FDECE9;border-color:var(--red);color:#B33F2C;}
 .liveline{display:flex;align-items:center;gap:8px;margin-top:7px;min-width:0;}
 .livetag{background:#2FA45C;color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.07em;
   padding:3px 7px;border-radius:5px;flex-shrink:0;position:relative;padding-left:16px;}
@@ -2746,6 +2751,7 @@ let techs=[], techEdit=null, techMap=null, techLayer=null, sinceTimer=null, last
 const PALETTE=["#2C5FA8","#B3462F","#3E7D4F","#8C5BB0","#B07C1E","#1F7D86","#A8386B","#556070"];
 const colourOf = t => PALETTE[Math.abs(String(t.id).split("").reduce((a,c)=>a+c.charCodeAt(0),0))%PALETTE.length];
 const stopsOf  = t => Array.isArray(t.stops) ? t.stops : [];
+const sentText = st => { const a=st.assigned_at||st.started_at; return a ? ("sent "+sinceText(a)+" ago") : "sent"; };
 const revCache={};
 async function reverseFor(t){
   const lv=liveOf(t); if(!lv) return;
@@ -2763,7 +2769,7 @@ const liveAddr = t => {
   return revCache[lv.lat.toFixed(4)+","+lv.lng.toFixed(4)]||null;
 };
 const liveOf = t => (t.clocked_in && t.live_lat!=null && t.live_at &&
-  (Date.now()-new Date(t.live_at).getTime()) < 20*60000)
+  (Date.now()-new Date(t.live_at).getTime()) < 15*60000)
   ? {lat:t.live_lat, lng:t.live_lng, at:t.live_at} : null;
 
 async function geoCall(body){
@@ -2834,7 +2840,7 @@ function paintMap(extra){
       const html='<div class="pin" style="background:'+col+'">'+t.name+(i?" ②③④⑤".trim()[i]||(" "+(i+1)):"")+'</div>';
       L.marker([st.lat,st.lng],{icon:L.divIcon({className:"",html,iconSize:null})}).addTo(techLayer)
        .bindPopup("<b>"+t.name+"</b> — stop "+(i+1)+"<br>"+(st.job_type||"")+"<br>"+
-                  (st.label||st.address||"")+(i===0?"<br><i>"+sinceText(st.started_at)+" on site</i>":"<br><i>next</i>"));
+                  (st.label||st.address||"")+"<br><i>"+sentText(st)+(i?" &middot; queued":" &middot; current")+"</i>");
       line.push([st.lat,st.lng]); pts.push([st.lat,st.lng]);
     });
     const lv=liveOf(t);
@@ -2883,6 +2889,22 @@ function askClearAll(){
   };
   $("#clearGo").onclick=run;
   $("#clearPin").onkeydown=e=>{ if(e.key==="Enter") run(); };
+}
+
+async function closeStop(ref, how){
+  const parts=ref.split(":"), id=parts[0], ix=+parts[1];
+  const t=techs.find(x=>String(x.id)===id); if(!t) return;
+  const stops=stopsOf(t);
+  if(!stops[ix]) return;
+  if(how==="cancelled" && !confirm("Mark this job as cancelled and take it off the board?")) return;
+  const left=stops.filter(function(_,i){ return i!==ix; });
+  if(ix===0 && left.length) left[0].assigned_at = left[0].assigned_at || new Date().toISOString();
+  const res=await sb.from("techs")
+    .update({stops:left, updated_at:new Date().toISOString(), updated_by: me?me.id:null})
+    .eq("id",t.id);
+  if(res.error){ alert("Could not update: "+res.error.message); return; }
+  lastFind=null; $("#findOut").innerHTML="";
+  await refreshBoard(true);
 }
 
 async function refreshBoard(quiet){
@@ -2979,15 +3001,21 @@ function paintTechs(){
       </div>
       ${sts.length?sts.map((st,i)=>`<div class="stopline">
           <span class="stopno" style="background:${i?"#AEB9C4":col}">${i+1}</span>
-          <span style="flex:1">
+          <span style="flex:1;min-width:0">
             <div style="font-size:13px;color:var(--navy)">${st.job_type||"job"}</div>
             <div class="note">${st.label||st.address||"no address"}</div>
             <div class="note" style="color:${i?"var(--muted)":"var(--teal)"}">
-              ${i===0?sinceText(st.started_at)+" on site":"queued"}</div>
-          </span></div>`).join("")
+              ${sentText(st)}${i===0?(liveOf(t)?" · heading there":" · current job"):" · queued"}</div>
+          </span>
+          ${dispatchOK?`<span class="stopacts">
+            <button class="stopbtn done" data-done="${t.id}:${i}" title="Job finished">&#10003;</button>
+            <button class="stopbtn cancel" data-cancel="${t.id}:${i}" title="Job cancelled">&#10005;</button>
+          </span>`:""}</div>`).join("")
         :'<div class="note" style="margin-top:8px">No jobs assigned.</div>'}
     </div>`;
   }).join("");
+  $$("[data-done]").forEach(b=>b.onclick=()=>closeStop(b.dataset.done,"done"));
+  $$("[data-cancel]").forEach(b=>b.onclick=()=>closeStop(b.dataset.cancel,"cancelled"));
   $$("[data-link]").forEach(b=>b.onclick=()=>{
     const tok=b.dataset.link;
     if(!tok){ alert("This technician has no link yet — run the tracking migration."); return; }
@@ -3036,7 +3064,7 @@ function wireTechForm(){
       const prev=old.find(o=>o.address===w.address);
       if(prev && prev.lat!=null){
         out.push({...prev, job_type:w.job_type,
-          started_at: i===0 ? (prev.started_at||new Date().toISOString()) : null});
+          assigned_at: prev.assigned_at || prev.started_at || new Date().toISOString()});
         continue;
       }
       msg.textContent="Locating job "+(i+1)+"…";
@@ -3044,7 +3072,7 @@ function wireTechForm(){
       try{ geo=await geoCall({op:"geocode",q:w.address}); }catch(e){}
       out.push({ address:w.address, job_type:w.job_type,
         label:geo?geo.label:null, lat:geo?geo.lat:null, lng:geo?geo.lng:null,
-        started_at: i===0 ? new Date().toISOString() : null });
+        assigned_at:new Date().toISOString() });
     }
     const row={ name, stops:out, status:document.getElementById("tfStatus").value.trim(),
                 updated_at:new Date().toISOString(), updated_by:me.id };
@@ -3062,7 +3090,7 @@ async function findNearest(){
   techs.forEach(t=>{
     const lv=liveOf(t);
     if(lv) flat.push({t, st:{lat:lv.lat,lng:lv.lng,job_type:(stopsOf(t)[0]||{}).job_type,
-                             label:"live position", started_at:lv.at}, i:-1});
+                             label:"live position", assigned_at:lv.at}, i:-1});
     stopsOf(t).forEach((st,i)=>{ if(st.lat!=null) flat.push({t,st,i}); });
   });
   if(!flat.length){ out.innerHTML='<div class="note" style="margin-top:12px">No technician has a located job yet.</div>'; return; }
@@ -3088,9 +3116,9 @@ async function findNearest(){
           <b style="color:${colourOf(x.t)};font-weight:600">${i===0?"★ ":""}${x.t.name}</b>
           <span class="note"> · ${x.st.job_type||"job"}</span><br>
           <span class="note">${x.i===-1
-            ? "● from his live position, "+sinceText(x.st.started_at)+" ago"
-            : x.i===0 ? "from job 1 — "+sinceText(x.st.started_at)+" on site"
-            : "on his way to job "+(x.i+1)+", this is near that stop"}</span>
+            ? "from where he actually is, "+sinceText(x.st.assigned_at)+" ago"
+            : x.i===0 ? "from his current job — "+sentText(x.st)
+            : "near job "+(x.i+1)+" in his queue, so it is on his way"}</span>
         </span>
         <span style="text-align:right;white-space:nowrap">
           <b style="font-size:18px;color:${i===0?"var(--green)":"var(--navy)"}">${x.e.minutes}</b>
@@ -3105,7 +3133,7 @@ async function findNearest(){
 async function assignJob(techId, job, rawAddr){
   const t=techs.find(x=>x.id===techId); if(!t) return;
   const stops=[...stopsOf(t), { address:rawAddr, label:job.label, lat:job.lat, lng:job.lng,
-    job_type:"", started_at:null }];
+    job_type:"", assigned_at:new Date().toISOString() }];
   const {error}=await sb.from("techs").update({stops, updated_at:new Date().toISOString(),
     updated_by:me.id}).eq("id",techId);
   if(error){ alert("Could not assign: "+error.message); return; }
