@@ -282,6 +282,31 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   box-shadow:0 2px 8px rgba(33,43,59,.22);}
 .btn-solid svg{stroke:#fff;}
 .btn-solid:hover{background:#2B3950;transform:translateY(-1px);box-shadow:0 4px 12px rgba(33,43,59,.28);}
+.refgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px;}
+.reflink{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;
+  border:1px solid var(--line2);background:#fff;text-decoration:none;transition:all .15s;}
+.reflink:hover{border-color:var(--teal);transform:translateY(-2px);
+  box-shadow:0 6px 16px rgba(33,43,59,.10);}
+.reflink.vid:hover{border-color:#C0392B;}
+.refic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;background:#EAF0FA;}
+.reflink.vid .refic{background:#FDECE9;}
+.refic svg{width:17px;height:17px;fill:none;stroke:#2C5FA8;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;}
+.reflink.vid .refic svg{stroke:#C0392B;}
+.reftx{flex:1;min-width:0;}
+.reftx b{display:block;font-size:13px;color:var(--navy);font-weight:600;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;}
+.reftx small{font-size:10.5px;color:var(--muted);}
+.refgo{color:#C3CDD7;font-size:14px;flex-shrink:0;}
+.svchero{border-radius:14px;padding:22px 24px;margin-bottom:14px;color:#fff;position:relative;overflow:hidden;}
+.svchero:after{content:"";position:absolute;right:-50px;top:-60px;width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.14),transparent 70%);}
+.svchero .cat{font-size:10px;letter-spacing:.14em;text-transform:uppercase;opacity:.75;}
+.svchero h1{color:#fff;margin:6px 0 8px;font-size:26px;}
+.svchero p{margin:0;font-size:14px;line-height:1.5;opacity:.92;max-width:62ch;}
+.svcfacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.svcfact{background:rgba(255,255,255,.14);border-radius:8px;padding:7px 11px;font-size:11.5px;font-weight:600;}
 .techgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
 .stopline{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px dotted var(--line2);}
 .stopno{width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;
@@ -468,9 +493,9 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
             the next call.</div>
         </div>
 
-        <h1 style="margin-top:34px">Media slots</h1>
-        <p class="sub">Every service has a numbered slot. Send Claude a link as
-          “12: https://youtu.be/…” and it lands in the right place.</p>
+        <h1 style="margin-top:34px">Reference links</h1>
+        <p class="sub">Photo and video references attached to each service, opened from the
+          Training tab. Send Claude more as “12: https://…” to add them.</p>
         <div class="panel" id="slotList"></div>
 
         <h1 style="margin-top:34px">Caller voices</h1>
@@ -889,38 +914,8 @@ const GUIDE_CARDS=[
  ["Child or pet in a hot vehicle","Top priority. Tell them to call 911 as well if there's any sign of distress, then dispatch. Never end that call with only a tech on the way."]
 ];
 
-/* ============================================================
-   MEDIA SLOTS — paste your links here by number.
-   img: any direct image URL.   vid: a YouTube link (it embeds).
-   Send Claude e.g.  "7: https://youtu.be/xxxx"  and it goes in slot 7.
-   ============================================================ */
-const MEDIA = {
-   1: { img:"", vid:"" },               // Car Lockout
-   2: { img:"", vid:"" },             // Trunk Lockout
-   3: { img:"", vid:"" }, // Car Key Replacement (all keys lost)
-   4: { img:"", vid:"" },           // Key Duplication
-   5: { img:"", vid:"" },           // Key Programming
-   6: { img:"", vid:"" }, // Push-to-Start / Smart Fobs
-   7: { img:"", vid:"" },             // House Lockout
-   8: { img:"", vid:"" },          // Lock Replacement
-   9: { img:"", vid:"" },                     // Rekey
-  10: { img:"", vid:"" },               // Smart Locks
-  11: { img:"", vid:"" },           // Tenant Turnover
-  12: { img:"", vid:"" },       // Property Management
-  13: { img:"", vid:"" },         // Commercial Rekeys
-  14: { img:"", vid:"" },        // Master Key Systems
-  15: { img:"", vid:"" }, // Panic Bars (Exit Devices)
-  16: { img:"", vid:"" },             // Mortise Locks
-  17: { img:"", vid:"" },              // Door Closers
-  18: { img:"", vid:"" },                 // Mag Locks
-  19: { img:"", vid:"" },          // Electric Strikes
-  20: { img:"", vid:"" },    // Access Control Systems
-  21: { img:"", vid:"" },          // Electronic Safes
-  22: { img:"", vid:"" },  // Dial (Combination) Safes
-  23: { img:"", vid:"" },          // Commercial Safes
-  24: { img:"", vid:"" },                // Fire Safes
-  25: { img:"", vid:"" },                 // Gun Safes
-};
+/* ---- reference links per service, numbered to match the list below ---- */
+const LINKS={"1": [{"t": "Air Wedge Tool", "u": "https://www.google.com/search?tbm=isch&q=Air%20Wedge%20Tool%20locksmith", "k": "img"}, {"t": "Long Reach Tool", "u": "https://www.google.com/search?tbm=isch&q=Long%20Reach%20Tool%20locksmith", "k": "img"}, {"t": "Locksmith Van Setup", "u": "https://www.google.com/search?tbm=isch&q=Locksmith%20Van%20Setup%20locksmith", "k": "img"}, {"t": "Professional automotive lockout training footage", "u": "https://www.youtube.com/results?search_query=Professional%20automotive%20lockout%20training%20footage", "k": "vid"}], "2": [{"t": "Car Trunk Latch Mechanism", "u": "https://www.google.com/search?tbm=isch&q=Car%20Trunk%20Latch%20Mechanism%20locksmith", "k": "img"}, {"t": "Emergency Trunk Release Lever", "u": "https://www.google.com/search?tbm=isch&q=Emergency%20Trunk%20Release%20Lever%20locksmith", "k": "img"}, {"t": "Trunk lockout service training", "u": "https://www.youtube.com/results?search_query=Trunk%20lockout%20service%20training", "k": "vid"}], "3": [{"t": "Autel IM608", "u": "https://www.google.com/search?tbm=isch&q=Autel%20IM608%20locksmith", "k": "img"}, {"t": "XHorse Dolphin XP005", "u": "https://www.google.com/search?tbm=isch&q=XHorse%20Dolphin%20XP005%20locksmith", "k": "img"}, {"t": "Transponder Key", "u": "https://www.google.com/search?tbm=isch&q=Transponder%20Key%20locksmith", "k": "img"}, {"t": "Autel IM608 and XHorse Dolphin XP005 training, automotive key replacement procedures", "u": "https://www.youtube.com/results?search_query=Autel%20IM608%20and%20XHorse%20Dolphin%20XP005%20training%2C%20automotive%20key%20replacement%20procedures", "k": "vid"}], "4": [{"t": "Car Key Duplication", "u": "https://www.google.com/search?tbm=isch&q=Car%20Key%20Duplication%20locksmith", "k": "img"}, {"t": "Key Cutting Machine", "u": "https://www.google.com/search?tbm=isch&q=Key%20Cutting%20Machine%20locksmith", "k": "img"}, {"t": "Car key duplication training", "u": "https://www.youtube.com/results?search_query=Car%20key%20duplication%20training", "k": "vid"}], "5": [{"t": "OBD Key Programming", "u": "https://www.google.com/search?tbm=isch&q=OBD%20Key%20Programming%20locksmith", "k": "img"}, {"t": "XHorse Key Tool Plus", "u": "https://www.google.com/search?tbm=isch&q=XHorse%20Key%20Tool%20Plus%20locksmith", "k": "img"}, {"t": "Automotive key programming training", "u": "https://www.youtube.com/results?search_query=Automotive%20key%20programming%20training", "k": "vid"}], "6": [{"t": "Push to Start Key Fob", "u": "https://www.google.com/search?tbm=isch&q=Push%20to%20Start%20Key%20Fob%20locksmith", "k": "img"}, {"t": "Smart Key Fob", "u": "https://www.google.com/search?tbm=isch&q=Smart%20Key%20Fob%20locksmith", "k": "img"}, {"t": "Push to start fob programming training", "u": "https://www.youtube.com/results?search_query=Push%20to%20start%20fob%20programming%20training", "k": "vid"}], "7": [{"t": "Deadbolt", "u": "https://www.google.com/search?tbm=isch&q=Deadbolt%20locksmith", "k": "img"}, {"t": "Keyed Entry Knob", "u": "https://www.google.com/search?tbm=isch&q=Keyed%20Entry%20Knob%20locksmith", "k": "img"}, {"t": "Smart Door Lock", "u": "https://www.google.com/search?tbm=isch&q=Smart%20Door%20Lock%20locksmith", "k": "img"}, {"t": "Residential locksmith training", "u": "https://www.youtube.com/results?search_query=Residential%20locksmith%20training", "k": "vid"}], "8": [{"t": "Door Lock Replacement", "u": "https://www.google.com/search?tbm=isch&q=Door%20Lock%20Replacement%20locksmith", "k": "img"}, {"t": "Door lock installation training", "u": "https://www.youtube.com/results?search_query=Door%20lock%20installation%20training", "k": "vid"}], "9": [{"t": "Lock Cylinder", "u": "https://www.google.com/search?tbm=isch&q=Lock%20Cylinder%20locksmith", "k": "img"}, {"t": "Rekey Pins", "u": "https://www.google.com/search?tbm=isch&q=Rekey%20Pins%20locksmith", "k": "img"}, {"t": "Lock rekey training", "u": "https://www.youtube.com/results?search_query=Lock%20rekey%20training", "k": "vid"}], "10": [{"t": "Smart Door Lock", "u": "https://www.google.com/search?tbm=isch&q=Smart%20Door%20Lock%20locksmith", "k": "img"}, {"t": "Smart lock installation and troubleshooting", "u": "https://www.youtube.com/results?search_query=Smart%20lock%20installation%20and%20troubleshooting", "k": "vid"}], "11": [{"t": "Rekey Pins", "u": "https://www.google.com/search?tbm=isch&q=Rekey%20Pins%20locksmith", "k": "img"}, {"t": "Master Key System Diagram", "u": "https://www.google.com/search?tbm=isch&q=Master%20Key%20System%20Diagram%20locksmith", "k": "img"}, {"t": "Property management rekey training", "u": "https://www.youtube.com/results?search_query=Property%20management%20rekey%20training", "k": "vid"}], "12": [{"t": "Master Key System Diagram", "u": "https://www.google.com/search?tbm=isch&q=Master%20Key%20System%20Diagram%20locksmith", "k": "img"}, {"t": "Facility and property management locksmith services", "u": "https://www.youtube.com/results?search_query=Facility%20and%20property%20management%20locksmith%20services", "k": "vid"}], "13": [{"t": "Lock Cylinder", "u": "https://www.google.com/search?tbm=isch&q=Lock%20Cylinder%20locksmith", "k": "img"}, {"t": "Mortise Lock", "u": "https://www.google.com/search?tbm=isch&q=Mortise%20Lock%20locksmith", "k": "img"}, {"t": "Commercial rekey training", "u": "https://www.youtube.com/results?search_query=Commercial%20rekey%20training", "k": "vid"}], "14": [{"t": "Master Key System Diagram", "u": "https://www.google.com/search?tbm=isch&q=Master%20Key%20System%20Diagram%20locksmith", "k": "img"}, {"t": "Master key system design and administration", "u": "https://www.youtube.com/results?search_query=Master%20key%20system%20design%20and%20administration", "k": "vid"}], "15": [{"t": "Panic Bar", "u": "https://www.google.com/search?tbm=isch&q=Panic%20Bar%20locksmith", "k": "img"}, {"t": "Panic bar / exit device explained", "u": "https://www.youtube.com/results?search_query=Panic%20bar%20%2F%20exit%20device%20explained", "k": "vid"}], "16": [{"t": "Mortise Lock", "u": "https://www.google.com/search?tbm=isch&q=Mortise%20Lock%20locksmith", "k": "img"}, {"t": "Mortise lock explained", "u": "https://www.youtube.com/results?search_query=Mortise%20lock%20explained", "k": "vid"}], "17": [{"t": "Commercial Door Closer", "u": "https://www.google.com/search?tbm=isch&q=Commercial%20Door%20Closer%20locksmith", "k": "img"}, {"t": "Door closer explained", "u": "https://www.youtube.com/results?search_query=Door%20closer%20explained", "k": "vid"}], "18": [{"t": "Mag Lock", "u": "https://www.google.com/search?tbm=isch&q=Mag%20Lock%20locksmith", "k": "img"}, {"t": "Magnetic door lock explained", "u": "https://www.youtube.com/results?search_query=Magnetic%20door%20lock%20explained", "k": "vid"}], "19": [{"t": "Electric Strike", "u": "https://www.google.com/search?tbm=isch&q=Electric%20Strike%20locksmith", "k": "img"}, {"t": "Electric strike lock explained", "u": "https://www.youtube.com/results?search_query=Electric%20strike%20lock%20explained", "k": "vid"}], "20": [{"t": "Access Control System", "u": "https://www.google.com/search?tbm=isch&q=Access%20Control%20System%20locksmith", "k": "img"}, {"t": "Access control system explained", "u": "https://www.youtube.com/results?search_query=Access%20control%20system%20explained", "k": "vid"}], "21": [{"t": "Electronic Safe", "u": "https://www.google.com/search?tbm=isch&q=Electronic%20Safe%20locksmith", "k": "img"}, {"t": "Safe locksmith training", "u": "https://www.youtube.com/results?search_query=Safe%20locksmith%20training", "k": "vid"}], "22": [{"t": "Dial Safe", "u": "https://www.google.com/search?tbm=isch&q=Dial%20Safe%20locksmith", "k": "img"}, {"t": "Safe locksmith training", "u": "https://www.youtube.com/results?search_query=Safe%20locksmith%20training", "k": "vid"}], "23": [{"t": "Electronic Safe", "u": "https://www.google.com/search?tbm=isch&q=Electronic%20Safe%20locksmith", "k": "img"}, {"t": "Dial Safe", "u": "https://www.google.com/search?tbm=isch&q=Dial%20Safe%20locksmith", "k": "img"}, {"t": "Safe locksmith training", "u": "https://www.youtube.com/results?search_query=Safe%20locksmith%20training", "k": "vid"}], "24": [{"t": "Electronic Safe", "u": "https://www.google.com/search?tbm=isch&q=Electronic%20Safe%20locksmith", "k": "img"}, {"t": "Safe locksmith training", "u": "https://www.youtube.com/results?search_query=Safe%20locksmith%20training", "k": "vid"}], "25": [{"t": "Electronic Safe", "u": "https://www.google.com/search?tbm=isch&q=Electronic%20Safe%20locksmith", "k": "img"}, {"t": "Dial Safe", "u": "https://www.google.com/search?tbm=isch&q=Dial%20Safe%20locksmith", "k": "img"}, {"t": "Safe locksmith training", "u": "https://www.youtube.com/results?search_query=Safe%20locksmith%20training", "k": "vid"}]};
 
 /* ---- the 25 services ---- */
 const SERVICES=[
@@ -1459,16 +1454,16 @@ function drawPause(){
 }
 function drawSlots(){
   const el=document.getElementById("slotList"); if(!el) return;
-  const done=SERVICES.filter((_,i)=>MEDIA[i+1]&&(MEDIA[i+1].img||MEDIA[i+1].vid)).length;
-  el.innerHTML=`<div class="lbl">${done} of ${SERVICES.length} filled</div>`+
+  const total=Object.values(LINKS).reduce((n,a)=>n+a.length,0);
+  el.innerHTML=`<div class="lbl">${total} reference links across ${SERVICES.length} services</div>`+
     SERVICES.map((v,i)=>{
-      const m=MEDIA[i+1]||{}, has=!!(m.img||m.vid);
+      const n=(LINKS[i+1]||[]).length;
       return `<div class="diff"><span style="flex:1"><b style="color:var(--navy)">${i+1}.</b> ${v.n}
         <span class="note"> · ${v.c}</span></span>
-        <span style="color:${has?"var(--green)":"var(--muted)"};font-weight:600;font-size:12px">
-        ${has?((m.img?"photo":"")+(m.img&&m.vid?" + ":"")+(m.vid?"video":"")):"empty"}</span></div>`;
+        <span class="note">${n?n+" link"+(n>1?"s":""):"none"}</span></div>`;
     }).join("");
 }
+
 function fillVoicePickers(){
   const en=voices.filter(v=>(v.lang||"").toLowerCase().startsWith("en"));
   if(!en.length) return;
@@ -2218,23 +2213,23 @@ async function saveTyping(r){
   }catch(e){ console.warn(e); }
 }
 
-function media(n){
-  const o = MEDIA[n] || {};
-  let h="";
-  if(o.img) h+=`<img src="${o.img}" alt="" style="width:100%;border-radius:6px;margin-bottom:10px">`;
-  if(o.vid){
-    const id=(o.vid.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/)||[])[1];
-    h+=id?`<div style="position:relative;padding-top:56.25%;margin-bottom:10px">
-      <iframe src="https://www.youtube.com/embed/${id}" style="position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:6px"
-      allowfullscreen loading="lazy"></iframe></div>`
-     :`<a class="btn ghost" href="${o.vid}" target="_blank" rel="noopener" style="display:inline-block;margin-bottom:10px">Watch the video</a>`;
-  }
-  if(!o.img&&!o.vid) h=`<div class="note" style="border:1px dashed var(--line);border-radius:6px;
-    padding:18px;text-align:center;margin-bottom:10px">
-    <b style="color:var(--navy);font-size:15px">Media slot ${n}</b><br>
-    No photo or video yet. Send Claude the link as “${n}: your-url”.</div>`;
-  return h;
+function refPanel(n){
+  const items=LINKS[n]||[];
+  if(!items.length) return "";
+  const pics=items.filter(x=>x.k==="img"), vids=items.filter(x=>x.k==="vid");
+  const card=(x)=>`<a class="reflink ${x.k}" href="${x.u}" target="_blank" rel="noopener">
+    <span class="refic">${x.k==="vid"
+      ? '<svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h7A2.5 2.5 0 0 1 16 6.5v11A2.5 2.5 0 0 1 13.5 20h-7A2.5 2.5 0 0 1 4 17.5Z"/><path d="m16 10 4-2.5v9L16 14"/></svg>'
+      : '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m4 17 5-4.5 4 3.5 3-2.5 4 3.5"/></svg>'}</span>
+    <span class="reftx"><b>${x.t}</b><small>${x.k==="vid"?"Training videos":"Photos"}</small></span>
+    <span class="refgo">&#8599;</span></a>`;
+  return `<div class="panel">
+    <div class="lbl">See it for yourself</div>
+    <p class="note" style="margin:0 0 10px">Opens in a new tab so you keep your place here.</p>
+    <div class="refgrid">${pics.map(card).join("")}${vids.map(card).join("")}</div>
+  </div>`;
 }
+
 
 function forKind(v){
   if(typeof v!=="object"||v===null) return v;
@@ -2327,40 +2322,59 @@ function drawLearn(){
         education line and the approved objection response.</p>
         ${cats.map(c=>`<div class="lbl" style="margin-top:18px">${c}</div>
           <div class="jobs">${SERVICES.map((s2,i)=>s2.c!==c?"":`
-            <button class="jc" data-svc="${i}"><div class="jc-h">
-              <span class="src">Slot ${i+1}</span>
-              <span class="pri" style="background:${(MEDIA[i+1]&&(MEDIA[i+1].img||MEDIA[i+1].vid))?"#EAF9F1":"#EEF1F4"};
-                color:${(MEDIA[i+1]&&(MEDIA[i+1].img||MEDIA[i+1].vid))?"#1F7A4C":"#8493A2"}">
-                ${(MEDIA[i+1]&&(MEDIA[i+1].img||MEDIA[i+1].vid))?"has media":"empty"}</span></div>
+            <button class="jc" data-svc="${i}" style="border-top:3px solid ${CATCOL[s2.c]||"#8493A2"}">
               <div class="jc-b">
               <div class="jt" style="font-size:15px">${s2.n}</div>
-              <div class="jd">${s2.w.slice(0,72)}…</div></div></button>`).join("")}</div>`).join("")}`;
+              <div class="jd">${s2.w.slice(0,74)}…</div>
+              <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">
+                <span class="note" style="font-size:10.5px">${s2.q.length} questions</span>
+                ${(LINKS[i+1]||[]).length?`<span class="note" style="font-size:10.5px;color:${CATCOL[s2.c]||"#8493A2"}">${(LINKS[i+1]||[]).length} references</span>`:""}
+              </div></div></button>`).join("")}</div>`).join("")}`;
       $$("[data-svc]").forEach(x=>x.onclick=()=>{aSvc=+x.dataset.svc;drawLearn();window.scrollTo(0,0);});
     } else {
       const v=SERVICES[aSvc];
+      const refs=(LINKS[aSvc+1]||[]);
       a.innerHTML=`<button class="btn ghost" id="bk" style="margin-bottom:14px">← All services</button>
-        <div class="lbl">${v.c} · slot ${aSvc+1}</div><h1>${v.n}</h1>
-        <div class="panel">${media(aSvc+1)}<p style="margin:0">${v.w}</p></div>
+        <div class="svchero" style="background:${CATCOL[v.c]||"#212B3B"}">
+          <div class="cat">${v.c} · ${aSvc+1} of ${SERVICES.length}</div>
+          <h1>${v.n}</h1>
+          <p>${v.w}</p>
+          <div class="svcfacts">
+            <span class="svcfact">${v.t.split(".")[0]}</span>
+            <span class="svcfact">${v.q.length} questions to ask</span>
+            <span class="svcfact">${v.tools.length} tools</span>
+            ${refs.length?`<span class="svcfact">${refs.length} references</span>`:""}
+          </div>
+        </div>
         <div class="cols">
           <div>
             <div class="panel"><div class="lbl">Ask the customer</div>
-              <ul>${v.q.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+              <ol style="margin:0;padding-left:18px">${v.q.map(x=>`<li style="margin-bottom:6px;font-size:14px">${x}</li>`).join("")}</ol></div>
             <div class="panel"><div class="lbl">Educate them like this</div>
-              <div class="say" style="font-size:14px">${v.e}</div></div>
+              <div class="say" style="font-size:14px">${v.e}</div>
+              <button class="btn ghost" id="sayIt" style="margin-top:10px;padding:7px 12px;font-size:11.5px">Hear it</button></div>
           </div>
           <div>
             <div class="panel"><div class="lbl">Time on site</div>
-              <div>${v.t}</div>
-              <div class="lbl" style="margin-top:14px">What moves the price</div>
-              <ul>${v.p.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+              <div style="font-size:14px">${v.t}</div>
+              <div class="lbl" style="margin-top:16px">What moves the price</div>
+              <ul style="margin:0;padding-left:18px">${v.p.map(x=>`<li style="margin-bottom:5px;font-size:13.5px">${x}</li>`).join("")}</ul></div>
             <div class="panel"><div class="lbl">Tools he'll bring</div>
-              <div class="note">${v.tools.join(" · ")}</div></div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">${v.tools.map(x=>
+                `<span class="chip" style="cursor:default;font-size:11.5px;padding:6px 11px">${x}</span>`).join("")}</div></div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          ${aSvc>0?`<button class="btn" id="pv">← Previous service</button>`:""}
-          ${aSvc<SERVICES.length-1?`<button class="btn" id="nx">Next service →</button>`:""}
+        ${refPanel(aSvc+1)}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+          ${aSvc>0?`<button class="btn" id="pv">← ${SERVICES[aSvc-1].n}</button>`:""}
+          ${aSvc<SERVICES.length-1?`<button class="btn" id="nx">${SERVICES[aSvc+1].n} →</button>`:""}
         </div>`;
+      if($("#sayIt")) $("#sayIt").onclick=()=>{
+        if(!canSpeak) return; speechSynthesis.cancel();
+        const u=new SpeechSynthesisUtterance(v.e);
+        const p=pickVoice("f"); if(p){u.voice=p;u.lang=p.lang;} u.rate=.97;
+        speechSynthesis.speak(u);
+      };
       $("#bk").onclick=()=>{aSvc=null;drawLearn();};
       if($("#pv")) $("#pv").onclick=()=>{aSvc--;drawLearn();window.scrollTo(0,0);};
       if($("#nx")) $("#nx").onclick=()=>{aSvc++;drawLearn();window.scrollTo(0,0);};
