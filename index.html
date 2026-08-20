@@ -2236,6 +2236,7 @@ function forKind(v){
   const k=(job&&job.kind)||"def";
   return v[k]||v.def||Object.values(v)[0];
 }
+const CATCOL={Automotive:"#1E7C88",Residential:"#2C5FA8",Commercial:"#6B4C9A",Safes:"#9A7317"};
 function drawLearn(){
   const b=$("#learnBody");
   b.innerHTML=`<div class="seg" style="margin-bottom:16px;flex-wrap:wrap">
