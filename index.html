@@ -340,6 +340,10 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .setlab{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:9px;}
 .setrow .chips{margin-bottom:0;}
 .setrow .note{margin-top:8px;}
+.skilltag{background:#EDF1F5;color:#5D6C7B;font-size:10px;font-weight:600;padding:3px 8px;
+  border-radius:20px;white-space:nowrap;}
+.skillwarn{background:#FDECE9;color:#B33F2C;font-size:10px;font-weight:700;padding:3px 8px;
+  border-radius:20px;margin-left:6px;white-space:nowrap;}
 .techgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
 .stopline{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px dotted var(--line2);}
 .stopno{width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;
@@ -594,7 +598,13 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
         <div class="g2">
           <div class="f" style="margin-bottom:0"><input class="in" id="jobAddr"
             placeholder="New job address, e.g. 2614 E 112th Ave, Tampa FL 33612"></div>
-          <div class="f" style="margin-bottom:0"><button class="btn" id="findBtn" style="width:100%">Find nearest</button></div>
+          <div class="f" style="margin-bottom:0">
+            <select class="in" id="jobKind">${JOB_TYPES.map(j=>
+              `<option value="${j}">${j||"Job type (optional)"}</option>`).join("")}</select></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="findBtn">Find nearest</button>
+          <button class="btn ghost" id="gapBtn">Show coverage gaps</button>
         </div>
       </div>
 
@@ -3091,6 +3101,23 @@ function openDispatch(){
 
 let techs=[], techEdit=null, techMap=null, techLayer=null, sinceTimer=null, lastFind=null;
 
+const SKILLS=["Automotive keys","Car lockouts","RV, trailer & semi","Residential",
+  "Commercial hardware","Safes","Access control"];
+/* which skill a job type needs — first match wins */
+const SKILL_RULES=[
+  [/safe/i,"Safes"],
+  [/access control|mag lock|magnetic|electric strike|keypad/i,"Access control"],
+  [/\brv\b|semi|trailer|camper|mobile home/i,"RV, trailer & semi"],
+  [/commercial|office|exit device|door closer|master|panic|vending/i,"Commercial hardware"],
+  [/residential|house|apartment|room|bathroom|closet|patio|shed|cabinet|sliding|storage|padlock|toolbox|bike|lockbox/i,"Residential"],
+  [/mail\s?box/i,"Residential"],
+  [/car key|key made|key duplicate|ignition|fob|transponder|program|auto key/i,"Automotive keys"],
+  [/car|trunk|tailgate|roof box|hitch|steering|motorcycle|vehicle/i,"Car lockouts"]
+];
+const skillFor = jt => { for(const [re,sk] of SKILL_RULES) if(re.test(jt||"")) return sk; return null; };
+const skillsOf = t => Array.isArray(t.skills) ? t.skills : [];
+const canDo = (t,sk) => !sk || !skillsOf(t).length || skillsOf(t).includes(sk);
+
 const PALETTE=["#2C5FA8","#B3462F","#3E7D4F","#8C5BB0","#B07C1E","#1F7D86","#A8386B","#556070"];
 const colourOf = t => PALETTE[Math.abs(String(t.id).split("").reduce((a,c)=>a+c.charCodeAt(0),0))%PALETTE.length];
 const stopsOf  = t => Array.isArray(t.stops) ? t.stops : [];
@@ -3205,6 +3232,7 @@ function paintMap(extra){
   if(pts.length===1) techMap.setView(pts[0],13);
   else if(pts.length>1) techMap.fitBounds(pts,{padding:[40,40]});
   setTimeout(()=>techMap.invalidateSize(),100);
+  if(gapOn) setTimeout(drawGaps,60);
 }
 
 function askClearAll(){
@@ -3263,11 +3291,71 @@ async function refreshBoard(quiet){
     setTimeout(()=>lab.textContent="Refresh",1500); }
 }
 
+/* ---------- coverage: where nobody is close ---------- */
+let gapLayer=null, gapOn=false;
+const GAP_KM=20;      // roughly 30 minutes of driving
+
+function hav(a,b,c,d){
+  const R=6371, dLat=(c-a)*Math.PI/180, dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+function techPoints(){
+  const pts=[];
+  techs.forEach(t=>{
+    const lv=liveOf(t);
+    if(lv) pts.push([lv.lat,lv.lng]);
+    else { const st=stopsOf(t)[0]; if(st&&st.lat!=null) pts.push([st.lat,st.lng]); }
+  });
+  return pts;
+}
+function drawGaps(){
+  if(!techMap) return;
+  if(gapLayer){ techMap.removeLayer(gapLayer); gapLayer=null; }
+  const btn=document.getElementById("gapBtn");
+  if(!gapOn){ if(btn) btn.textContent="Show coverage gaps"; return; }
+  const pts=techPoints();
+  if(!pts.length){ if(btn) btn.textContent="Show coverage gaps";
+    $("#findOut").innerHTML='<div class="note" style="margin-top:12px">Nobody on the board to measure from.</div>';
+    gapOn=false; return; }
+
+  const lats=pts.map(p=>p[0]), lngs=pts.map(p=>p[1]);
+  const pad=0.35;
+  const s0=Math.min(...lats)-pad, n0=Math.max(...lats)+pad;
+  const w0=Math.min(...lngs)-pad, e0=Math.max(...lngs)+pad;
+  const rows=16, cols=16, dLat=(n0-s0)/rows, dLng=(e0-w0)/cols;
+
+  gapLayer=L.layerGroup().addTo(techMap);
+  let uncovered=0, total=0;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const la=s0+dLat*(r+.5), ln=w0+dLng*(c+.5);
+    let best=Infinity;
+    pts.forEach(p=>{ const d=hav(la,ln,p[0],p[1]); if(d<best) best=d; });
+    total++;
+    if(best>GAP_KM){
+      uncovered++;
+      const heat=Math.min(1,(best-GAP_KM)/25);
+      L.rectangle([[s0+dLat*r,w0+dLng*c],[s0+dLat*(r+1),w0+dLng*(c+1)]],
+        {stroke:false, fillColor:"#DD5240", fillOpacity:.10+heat*.24, interactive:false}).addTo(gapLayer);
+    }
+  }
+  if(gapLayer.bringToBack) gapLayer.bringToBack();
+  if(btn) btn.textContent="Hide coverage gaps";
+  $("#findOut").innerHTML=`<div class="panel" style="margin-top:12px">
+    <div class="lbl">Coverage</div>
+    <div style="font-size:14px">Shaded areas are more than about ${GAP_KM} km from your nearest
+      technician — roughly half an hour of driving. Darker means further.</div>
+    <div class="note" style="margin-top:8px">${Math.round((1-uncovered/total)*100)}% of the area
+      around your team is covered, measured straight line from ${pts.length} position${pts.length>1?"s":""}.</div>
+  </div>`;
+}
+
 async function drawTechs(){
   $("#addTechBtn").classList.toggle("hide", !dispatchOK);
   $("#clearAllBtn").classList.toggle("hide", !dispatchOK);
   $("#clearAllBtn").onclick=askClearAll;
   $("#refreshBtn").onclick=()=>refreshBoard(false);
+  $("#gapBtn").onclick=()=>{ gapOn=!gapOn; ensureMap(); drawGaps(); };
   $("#addTechBtn").onclick=()=>{ techEdit={new:true, stops:[{}]}; paintTechs(); };
   const {data,error}=await sb.from("techs").select("*").order("name");
   if(error){ $("#techList").innerHTML='<div class="note">Could not load: '+error.message+'</div>'; return; }
@@ -3289,6 +3377,10 @@ function techFormHtml(t){
     <div class="lbl" style="margin-top:6px">Jobs, in the order he works them</div>
     <div id="stopRows">${stops.map((st,i)=>stopRowHtml(st,i)).join("")}</div>
     <button class="btn ghost" id="tfAddStop" style="margin-bottom:12px">+ Add next job</button>
+    <div class="lbl" style="margin-top:10px">What he can work on</div>
+    <div class="chips" id="tfSkills" style="margin-bottom:12px">${SKILLS.map(sk=>
+      `<button type="button" class="chip ${(t.skills||[]).includes(sk)?"on":""}" data-sk="${sk}">${sk}</button>`).join("")}</div>
+    <div class="note" style="margin-top:-6px;margin-bottom:12px">Leave all off if he covers everything.</div>
     <div class="f"><input class="in" id="tfStatus" placeholder="Note, e.g. finishing about 3pm"
       value="${(t.status||"").replace(/"/g,"&quot;")}"></div>
     <button class="btn" id="tfSave">Save</button>
@@ -3328,6 +3420,9 @@ function paintTechs(){
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;color:var(--navy);font-size:16px">${t.name}</div>
           ${t.status?`<div class="note">${t.status}</div>`:""}
+        ${skillsOf(t).length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">${
+          skillsOf(t).map(sk=>`<span class="skilltag">${sk}</span>`).join("")}</div>`
+          :`<div class="note" style="font-size:11px;margin-top:4px">covers everything</div>`}
         ${liveOf(t)
           ? `<div class="liveline"><span class="livetag">LIVE</span>
                <span class="liveaddr" title="${liveAddr(t)||""}">${liveAddr(t) || "locating…"}</span>
@@ -3385,6 +3480,9 @@ function readStops(){
 function wireTechForm(){
   const cancel=document.getElementById("tfCancel");
   if(cancel) cancel.onclick=()=>{ techEdit=null; paintTechs(); };
+  document.querySelectorAll("[data-sk]").forEach(b=>b.onclick=()=>{
+    b.classList.toggle("on");
+  });
   const add=document.getElementById("tfAddStop");
   if(add) add.onclick=()=>{
     techEdit.stops=readStops(); techEdit.stops.push({}); paintTechs();
@@ -3417,7 +3515,8 @@ function wireTechForm(){
         label:geo?geo.label:null, lat:geo?geo.lat:null, lng:geo?geo.lng:null,
         assigned_at:new Date().toISOString() });
     }
-    const row={ name, stops:out, status:document.getElementById("tfStatus").value.trim(),
+    const picked=[...document.querySelectorAll("[data-sk].on")].map(x=>x.dataset.sk);
+    const row={ name, stops:out, skills:picked, status:document.getElementById("tfStatus").value.trim(),
                 updated_at:new Date().toISOString(), updated_by:me.id };
     const res = t.id ? await sb.from("techs").update(row).eq("id",t.id)
                      : await sb.from("techs").insert(row);
@@ -3446,7 +3545,10 @@ async function findNearest(){
       const e=results[i]; if(!e) return;
       if(!best[f.t.id] || e.minutes<best[f.t.id].e.minutes) best[f.t.id]={...f,e};
     });
-    const ranked=Object.values(best).sort((a,b)=>a.e.minutes-b.e.minutes);
+    const need=skillFor($("#jobKind").value);
+    const ranked=Object.values(best)
+      .map(x=>({...x, able:canDo(x.t,need)}))
+      .sort((a,b)=> (a.able===b.able) ? a.e.minutes-b.e.minutes : (a.able?-1:1));
     if(!ranked.length){ out.innerHTML='<div class="note">Could not work out drive times just now.</div>'; return; }
     lastFind={job, nearestId:ranked[0].t.id};
     paintMap(lastFind);
@@ -3456,7 +3558,8 @@ async function findNearest(){
       <div class="lbl">New job at ${job.label}</div>${approxNote}`+
       ranked.map((x,i)=>`<div class="diff" style="align-items:center">
         <span style="flex:1">
-          <b style="color:${colourOf(x.t)};font-weight:600">${i===0?"★ ":""}${x.t.name}</b>
+          <b style="color:${colourOf(x.t)};font-weight:600">${x.able&&i===0?"★ ":""}${x.t.name}</b>
+          ${x.able?"":`<span class="skillwarn">not trained on ${need}</span>`}
           <span class="note"> · ${x.st.job_type||"job"}</span><br>
           <span class="note">${x.i===-1
             ? "from where he actually is, "+sinceText(x.st.assigned_at)+" ago"
