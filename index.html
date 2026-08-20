@@ -326,6 +326,20 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .glossterm{font-weight:700;color:var(--navy);font-size:15px;}
 .glossdef{font-size:12.5px;color:#5D6C7B;line-height:1.5;}
 .glosshint{font-size:10.5px;color:#B7C1CB;letter-spacing:.05em;margin-top:auto;}
+.setgroup{background:#fff;border:1px solid var(--line2);border-radius:12px;margin-bottom:14px;
+  overflow:hidden;}
+.setgroup-h{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#F7F9FB;
+  border-bottom:1px solid var(--line2);}
+.setgroup-h b{display:block;color:var(--navy);font-size:15px;font-weight:600;}
+.setgroup-h small{display:block;font-size:12px;color:var(--muted);margin-top:1px;}
+.seticon{width:34px;height:34px;border-radius:9px;background:#EDF1F5;display:flex;align-items:center;
+  justify-content:center;font-size:16px;flex-shrink:0;}
+.setbody{padding:4px 16px 16px;}
+.setrow{padding:14px 0;border-bottom:1px solid var(--line2);}
+.setrow:last-child{border-bottom:none;padding-bottom:2px;}
+.setlab{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:9px;}
+.setrow .chips{margin-bottom:0;}
+.setrow .note{margin-top:8px;}
 .techgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
 .stopline{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px dotted var(--line2);}
 .stopno{width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;
@@ -452,87 +466,87 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   <div class="main">
     <!-- SETUP -->
     <section id="v-setup" class="hide">
-      <div class="setup">
-        <h1>Account</h1>
-        <div class="panel">
-          <div class="lbl">Signed in as</div>
-          <div id="whoami" style="font-weight:600;color:var(--navy)"></div>
-          <div class="note" id="roleNote" style="margin-top:6px"></div>
-          <div class="note" style="margin-top:10px;font-family:Inter,monospace">
-            Build <b id="buildTag"></b> — tell Claude this number if something looks out of date.
+      <div class="setup" style="max-width:620px">
+        <div class="crumb">Settings</div>
+        <h1 style="margin-bottom:16px">Settings</h1>
+
+        <!-- account -->
+        <div class="setgroup">
+          <div class="setgroup-h"><span class="seticon">&#128100;</span>
+            <div><b>Account</b><small>Who you are signed in as</small></div></div>
+          <div class="setbody">
+            <div id="whoami" style="font-weight:600;color:var(--navy)"></div>
+            <div class="note" id="roleNote" style="margin-top:6px"></div>
+            <div class="note" style="margin-top:12px;font-family:Inter,monospace;font-size:11px">
+              Build <b id="buildTag"></b></div>
           </div>
         </div>
 
-        <h1 style="margin-top:34px">Voice quality</h1>
-        <div class="panel">
-          <button class="chip" id="natTgl" style="font-size:13px;padding:10px 16px"></button>
-          <div class="note" id="natNote" style="margin-top:10px"></div>
-        </div>
-
-        <h1 style="margin-top:34px">When your turn gets sent</h1>
-        <div class="panel">
-          <div class="chips" id="modeRow"></div>
-          <div class="note" id="modeNote" style="margin-top:10px"></div>
-          <div id="pauseWrap" style="border-top:1px solid var(--line2);margin-top:14px;padding-top:14px">
-          <div class="lbl">Length of pause</div>
-          <div class="chips" id="pauseRow" style="margin-bottom:0"></div>
-          <div class="note" style="margin-top:10px">How long a silence has to last before the caller
-            answers. Longer is safer &mdash; you can pause between sentences without being cut
-            off, and press <b>Send</b> (or Enter) the moment you have finished.</div>
-          </div>
-        </div>
-
-        <h1 style="margin-top:34px">Microphone sensitivity</h1>
-        <div class="panel">
-          <div class="chips" id="gateRow"></div>
-          <div style="border-top:1px solid var(--line2);margin-top:14px;padding-top:14px">
-            <div class="lbl">Calibrate to your room</div>
-            <div style="height:14px;background:#E6ECF1;border-radius:7px;overflow:hidden;position:relative;margin:10px 0">
-              <i id="lvlBar" style="display:block;height:100%;width:0%;background:var(--teal);transition:width .08s"></i>
-              <i id="lvlMark" style="position:absolute;top:0;bottom:0;width:2px;background:var(--red);left:0"></i>
+        <!-- speaking -->
+        <div class="setgroup">
+          <div class="setgroup-h"><span class="seticon">&#127908;</span>
+            <div><b>Your microphone</b><small>How the app hears you on a call</small></div></div>
+          <div class="setbody">
+            <div class="setrow">
+              <div class="setlab">When your turn gets sent</div>
+              <div class="chips" id="modeRow"></div>
+              <div class="note" id="modeNote"></div>
+              <div id="pauseWrap" style="margin-top:12px">
+                <div class="setlab">Length of pause</div>
+                <div class="chips" id="pauseRow"></div>
+              </div>
             </div>
-            <button class="btn" id="calBtn">Start calibration</button>
-            <div class="note" id="calMsg" style="margin-top:10px">Takes eight seconds. Stay quiet
-              for the first half, then talk normally the way you would on a call.</div>
-          </div>
-          <div class="note" style="margin-top:10px">If people talking nearby keep getting picked
-            up, move this toward Strict &mdash; only speech close to the microphone counts. Move
-            toward Sensitive if your own quiet speech is being ignored.</div>
-        </div>
 
-        <h1 style="margin-top:34px">Speech recognition</h1>
-        <div class="panel">
-          <button class="chip" id="sttTgl" style="font-size:13px;padding:10px 16px"></button>
-          <div class="note" id="sttNote" style="margin-top:10px"></div>
-        </div>
-        <div class="panel">
-          <div class="chips" id="langRow" style="margin-bottom:0"></div>
-          <div class="note" style="margin-top:10px">If the app mishears you often, try another
-            English variant — recognition accuracy changes a lot between them. Takes effect on
-            the next call.</div>
-        </div>
+            <div class="setrow">
+              <div class="setlab">Background noise</div>
+              <div class="chips" id="gateRow"></div>
+              <div style="height:12px;background:#E6ECF1;border-radius:6px;overflow:hidden;position:relative;margin:12px 0 10px">
+                <i id="lvlBar" style="display:block;height:100%;width:0%;background:var(--teal);transition:width .08s"></i>
+                <i id="lvlMark" style="position:absolute;top:0;bottom:0;width:2px;background:var(--red);left:0"></i>
+              </div>
+              <button class="btn ghost" id="calBtn" style="padding:9px 14px;font-size:12.5px">Calibrate to this room</button>
+              <div class="note" id="calMsg" style="margin-top:9px">Eight seconds: stay quiet, then talk normally.</div>
+            </div>
 
-        <h1 style="margin-top:34px">Reference links</h1>
-        <p class="sub">Photo and video references attached to each service, opened from the
-          Training tab. Send Claude more as “12: https://…” to add them.</p>
-        <div class="panel" id="slotList"></div>
-
-        <h1 style="margin-top:34px">Caller voices</h1>
-        <p class="sub">Pick the most human-sounding voices your browser has. On Windows, Microsoft
-          Edge offers "Natural" voices that sound far better than anything in Chrome — if the caller
-          sounds robotic, open the app in Edge and choose one below.</p>
-        <div class="panel">
-          <div class="f"><span class="tag">Male callers</span><select class="in" id="voiceM"></select></div>
-          <button class="btn ghost" id="testM" style="margin-bottom:14px">Test male voice</button>
-          <div class="f"><span class="tag">Female callers</span><select class="in" id="voiceF"></select></div>
-          <button class="btn ghost" id="testF">Test female voice</button>
-          <div class="note" id="voiceMsg" style="margin-top:12px"></div>
-          <div style="border-top:1px solid var(--line2);margin-top:16px;padding-top:14px">
-            <button class="btn" id="testNat">Play a random caller voice</button>
-            <div class="note" id="natResult" style="margin-top:10px">Plays through the tts function,
-              exactly as a real call does, and tells you which voice it used.</div>
+            <div class="setrow">
+              <div class="setlab">Speech recognition</div>
+              <button class="chip" id="sttTgl" style="font-size:12.5px;padding:9px 14px"></button>
+              <div class="note" id="sttNote" style="margin-top:9px"></div>
+              <div class="chips" id="langRow" style="margin-top:12px"></div>
+              <div class="note">If it mishears you often, try another English variant.</div>
+            </div>
           </div>
         </div>
+
+        <!-- listening -->
+        <div class="setgroup">
+          <div class="setgroup-h"><span class="seticon">&#128266;</span>
+            <div><b>The caller's voice</b><small>How callers sound to you</small></div></div>
+          <div class="setbody">
+            <div class="setrow">
+              <div class="setlab">Voice quality</div>
+              <button class="chip" id="natTgl" style="font-size:12.5px;padding:9px 14px"></button>
+              <div class="note" id="natNote" style="margin-top:9px"></div>
+              <button class="btn ghost" id="testNat" style="margin-top:12px;padding:9px 14px;font-size:12.5px">
+                Play a random caller voice</button>
+              <div class="note" id="natResult" style="margin-top:9px"></div>
+            </div>
+
+            <details class="setrow">
+              <summary class="setlab" style="cursor:pointer">Browser voices, if the natural one is off</summary>
+              <div style="padding-top:12px">
+                <div class="f"><span class="tag">Male callers</span><select class="in" id="voiceM"></select></div>
+                <button class="btn ghost" id="testM" style="margin-bottom:12px;padding:8px 13px;font-size:12px">Test male voice</button>
+                <div class="f"><span class="tag">Female callers</span><select class="in" id="voiceF"></select></div>
+                <button class="btn ghost" id="testF" style="padding:8px 13px;font-size:12px">Test female voice</button>
+                <div class="note" id="voiceMsg" style="margin-top:10px">On Windows, Microsoft Edge has far
+                  better voices than Chrome.</div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div style="display:none" id="slotList"></div>
       </div>
     </section>
 
