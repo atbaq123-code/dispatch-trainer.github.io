@@ -395,9 +395,6 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   .gateform{padding:40px 24px;min-height:100vh;}
   .gateform .f,.gateform .btn,.gateseg,.gateor{max-width:none;}
 }
-.herotop{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;}
-.herodate{font-size:12.5px;color:var(--muted);text-align:right;line-height:1.5;}
-.herodate b{display:block;color:var(--navy);font-size:14px;font-weight:600;}
 
 .nextcard{display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:#fff;
   border:1px solid var(--line2);border-left:5px solid var(--gold);border-radius:14px;
@@ -408,17 +405,6 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .nextcard p{margin:0;font-size:13.5px;color:#5D6C7B;max-width:60ch;line-height:1.5;}
 .nextcard .nc-go{margin-left:auto;}
 
-.track{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px;}
-.tcard{background:#fff;border:1px solid var(--line2);border-radius:12px;padding:15px 16px;text-align:left;
-  transition:all .16s;}
-.tcard:hover{border-color:var(--teal);transform:translateY(-2px);box-shadow:0 6px 16px rgba(33,43,59,.09);}
-.tcard .t-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
-.tcard .t-n{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em;}
-.tcard .t-v{font-size:20px;font-weight:700;color:var(--navy);line-height:1.1;margin-top:6px;}
-.tcard .t-v small{font-size:12px;color:var(--muted);font-weight:600;}
-.tbar{height:5px;background:#E6ECF1;border-radius:3px;overflow:hidden;margin-top:10px;}
-.tbar i{display:block;height:100%;border-radius:3px;transition:width .5s cubic-bezier(.2,.7,.3,1);}
-.tstate{font-size:11px;margin-top:7px;color:var(--muted);}
 
 .tiles{grid-template-columns:repeat(auto-fit,minmax(215px,1fr));}
 .tile{padding:17px;}
@@ -758,17 +744,11 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
     <!-- HOME -->
     <section id="v-home" class="hide">
       <div class="hero">
-        <div class="herotop">
-          <div>
-            <div class="crumb" id="homeCrumb">Dispatcher Academy</div>
-            <h1 id="homeHi">Welcome</h1>
-          </div>
-          <div class="herodate" id="homeDate"></div>
-        </div>
+        <div class="crumb" id="homeCrumb">Dispatcher Academy</div>
+        <h1 id="homeHi">Welcome</h1>
       </div>
       <div id="homeNext"></div>
-      <div class="track" id="homeTrack"></div>
-      <div class="lbl" style="margin:26px 0 10px">Everything else</div>
+      <div class="lbl" style="margin:22px 0 10px">Where to go</div>
       <div class="tiles" id="homeTiles"></div>
       <div id="homeDispatch"></div>
     </section>
@@ -951,7 +931,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0821-34";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0821-36";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -4142,77 +4122,13 @@ async function drawHome(){
   $("#homeHi").textContent = first ? part+", "+first : "Dispatcher Academy";
   $("#homeCrumb").textContent = isSuperAdmin ? "Super admin" : isAdmin ? "Supervisor"
     : isGuest ? "Guest session" : "Dispatcher in training";
-  const d=new Date();
-  $("#homeDate").innerHTML="<b>"+d.toLocaleDateString(undefined,{weekday:"long"})+"</b>"+
-    d.toLocaleDateString(undefined,{day:"numeric",month:"long"});
-
-  const trained = localStorage.getItem(trainedKey())==="done";
   loadTest();
-  const testDone=(testRun&&testRun.done)?testRun.done.length:0;
 
-  // what has this person actually done?
-  let calls=[], exam=null;
-  if(me && !isGuest){
-    try{
-      const {data}=await sb.from("results").select("total,verdict,scenario_id,scores,created_at")
-        .eq("user_id",me.id).order("created_at",{ascending:false}).limit(200);
-      calls=(data||[]).filter(r=>!["typing","exam","calltest"].includes(r.scenario_id));
-      exam=(data||[]).find(r=>r.scenario_id==="exam")||null;
-    }catch(e){}
-  }
-  const avg=calls.length?Math.round(calls.reduce((a,b2)=>a+(b2.total||0),0)/calls.length):0;
-
-  // ---- the one thing worth doing next ----
-  let n;
-  if(!trained)
-    n={kick:"Start here",h:"Work through the academy",go:"learn",cta:"Open training",
-       p:"The call flow, all 25 services, the equipment and the words. About an hour, and everything after it gets easier."};
-  else if(!calls.length)
-    n={kick:"Next up",h:"Take your first call",go:"board",cta:"Pick a call",
-       p:"Seventeen scenarios built from real OnCall calls. Answer, fill the job file, get scored."};
-  else if(testDone>0 && testDone<TEST_TARGET)
-    n={kick:"In progress",h:"Call test — "+testDone+" of "+TEST_TARGET+" done",go:"test",cta:"Continue the test",
-       p:"Pick up where you stopped. Your completed calls are saved."};
-  else if(!exam)
-    n={kick:"When you are ready",h:"Sit the certification exam",go:"learn",cta:"Go to the exam",
-       p:"36 questions across everything in the academy. 85% to pass, and you can retake it as often as you like."};
-  else if(calls.length<10)
-    n={kick:"Keep going",h:"More calls, harder ones",go:"board",cta:"Take a call",
-       p:"You have taken "+calls.length+". The awkward scenarios — the price shopper, the one with no address — are where the learning is."};
-  else
-    n={kick:"The real assessment",h:"Run the "+TEST_TARGET+"-call test",go:"test",cta:"Start the test",
-       p:"Thirty calls back to back, scored together. It shows patterns a single call never will."};
-
-  $("#homeNext").innerHTML=`<button class="nextcard" data-tile="${n.go}">
-      <span style="flex:1;min-width:220px;text-align:left">
-        <span class="nc-kick">${n.kick}</span>
-        <h2>${n.h}</h2><p>${n.p}</p>
-      </span>
-      <span class="nc-go"><span class="btn" style="pointer-events:none">${esc(n.cta)}</span></span>
-    </button>`;
+  /* The suggestion card and the progress rail used to sit here. Both are gone:
+     the same information lives in Results, where it belongs, and the home screen
+     is now just a way in rather than a scoreboard. The resume card stays — it is
+     an action, not a statistic, and it is the only way back into a dropped call. */
   offerResume();
-
-  // ---- progress rail ----
-  const bar=(pct,col)=>`<div class="tbar"><i style="width:${pct}%;background:${col}"></i></div>`;
-  const track=[
-    {n:"Training", v:trained?"Done":"Not started", pct:trained?100:0,
-     col:"var(--green)", go:"learn", s:trained?"Revisit any section":"About an hour"},
-    {n:"Calls taken", v:calls.length, pct:Math.min(100,calls.length/10*100),
-     col:"var(--teal)", go:"results", who:"me",
-     s:calls.length?("average "+avg+"/30"):"none yet"},
-    {n:"Exam", v:exam?exam.total+"%":"—", pct:exam?exam.total:0,
-     col:exam&&exam.total>=85?"var(--green)":"var(--gold)", go:"learn",
-     s:exam?(exam.verdict==="PASS"?"passed":"not passed yet"):"not sat"},
-    {n:"Call test", v:testDone+"/"+TEST_TARGET, pct:Math.round(testDone/TEST_TARGET*100),
-     col:"var(--gold)", go:"test", s:testDone>=TEST_TARGET?"complete":testDone?"in progress":"not started"}
-  ];
-  $("#homeTrack").innerHTML=track.map(t=>`<button class="tcard" data-tile="${t.go}" data-who="${t.who||""}">
-      <span class="t-h"><span class="t-n">${t.n}</span></span>
-      <div class="t-v">${t.v}</div>
-      ${bar(t.pct,t.col)}
-      <div class="tstate">${t.s}</div>
-    </button>`).join("");
-  if(isGuest) $("#homeTrack").innerHTML='<div class="note">Guest session — nothing is saved. Register to keep your progress.</div>';
 
   // ---- everything else ----
   const tiles=[
