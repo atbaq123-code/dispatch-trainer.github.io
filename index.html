@@ -3430,9 +3430,7 @@ function paintTechs(){
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;color:var(--navy);font-size:16px">${t.name}</div>
           ${t.status?`<div class="note">${t.status}</div>`:""}
-        ${skillsOf(t).length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">${
-          skillsOf(t).map(sk=>`<span class="skilltag">${sk}</span>`).join("")}</div>`
-          :`<div class="note" style="font-size:11px;margin-top:4px">covers everything</div>`}
+
         ${liveOf(t)
           ? `<div class="liveline"><span class="livetag">LIVE</span>
                <span class="liveaddr" title="${liveAddr(t)||""}">${liveAddr(t) || "locating…"}</span>
@@ -3582,20 +3580,26 @@ async function findNearest(){
           ${dispatchOK?`<button class="btn ghost" data-assign="${x.t.id}"
             style="padding:5px 10px;font-size:11px;margin-top:4px">Assign</button>`:""}
         </span></div>`).join("")+`</div>`;
-    $$("[data-assign]").forEach(b=>b.onclick=()=>assignJob(+b.dataset.assign, job, q));
+    $$("[data-assign]").forEach(b=>b.onclick=()=>assignJob(+b.dataset.assign, job, q, $("#jobKind").value));
   }catch(e){ out.innerHTML='<div class="note" style="color:var(--red);margin-top:12px">'+e.message+'</div>'; }
 }
 
-async function assignJob(techId, job, rawAddr){
+async function assignJob(techId, job, rawAddr, kind){
   const t=techs.find(x=>x.id===techId); if(!t) return;
   const stops=[...stopsOf(t), { address:rawAddr, label:job.label, lat:job.lat, lng:job.lng,
-    job_type:"", assigned_at:new Date().toISOString() }];
+    job_type:kind||"", assigned_at:new Date().toISOString() }];
   const {error}=await sb.from("techs").update({stops, updated_at:new Date().toISOString(),
     updated_by:me.id}).eq("id",techId);
   if(error){ alert("Could not assign: "+error.message); return; }
-  $("#jobAddr").value=""; $("#findOut").innerHTML=
-    '<div class="panel" style="margin-top:12px;border-color:var(--green)"><b style="color:var(--green)">'+
-    'Assigned to '+t.name+' as job '+stops.length+'.</b></div>';
+  $("#jobAddr").value="";
+  const kindEl=document.getElementById("jobKind"); if(kindEl) kindEl.value="";
+  $("#findOut").innerHTML=
+    '<div class="panel" style="margin-top:12px;border-color:var(--green)">'+
+    '<b style="color:var(--green)">Assigned to '+t.name+' as job '+stops.length+'.</b>'+
+    (kind?'<div class="note" style="margin-top:4px">'+kind+' · '+(job.label||rawAddr)+'</div>'
+        :'<div class="note" style="margin-top:4px">'+(job.label||rawAddr)+
+          ' — no job type set, edit him to add one.</div>')+
+    '</div>';
   lastFind=null;
   await drawTechs();
 }
