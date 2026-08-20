@@ -344,6 +344,16 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   border-radius:20px;white-space:nowrap;}
 .skillwarn{background:#FDECE9;color:#B33F2C;font-size:10px;font-weight:700;padding:3px 8px;
   border-radius:20px;margin-left:6px;white-space:nowrap;}
+.findrow{display:grid;grid-template-columns:minmax(220px,1fr) 200px auto auto;gap:9px;align-items:stretch;}
+.findrow .in{margin:0;height:46px;}
+.findbtn{height:46px;padding:0 20px;border-radius:6px;font-size:13px;white-space:nowrap;}
+.findbtn.alt{background:var(--navy);color:#fff;}
+.findbtn.alt.on{background:var(--red);}
+@media(max-width:860px){
+  .findrow{grid-template-columns:1fr 1fr;}
+  .findrow .in:first-child{grid-column:1/-1;}
+}
+@media(max-width:480px){ .findrow{grid-template-columns:1fr;} }
 .techgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
 .stopline{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px dotted var(--line2);}
 .stopno{width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;
@@ -595,16 +605,11 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
         closest to a new job.</p>
 
       <div class="panel">
-        <div class="g2">
-          <div class="f" style="margin-bottom:0"><input class="in" id="jobAddr"
-            placeholder="New job address, e.g. 2614 E 112th Ave, Tampa FL 33612"></div>
-          <div class="f" style="margin-bottom:0">
-            <select class="in" id="jobKind">${JOB_TYPES.map(j=>
-              `<option value="${j}">${j||"Job type (optional)"}</option>`).join("")}</select></div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn" id="findBtn">Find nearest</button>
-          <button class="btn ghost" id="gapBtn">Show coverage gaps</button>
+        <div class="findrow">
+          <input class="in" id="jobAddr" placeholder="New job address, e.g. 2614 E 112th Ave, Tampa FL 33612">
+          <select class="in" id="jobKind"></select>
+          <button class="btn findbtn" id="findBtn">Find nearest</button>
+          <button class="btn findbtn alt" id="gapBtn">Coverage gaps</button>
         </div>
       </div>
 
@@ -3313,9 +3318,9 @@ function drawGaps(){
   if(!techMap) return;
   if(gapLayer){ techMap.removeLayer(gapLayer); gapLayer=null; }
   const btn=document.getElementById("gapBtn");
-  if(!gapOn){ if(btn) btn.textContent="Show coverage gaps"; return; }
+  if(!gapOn){ if(btn){ btn.textContent="Coverage gaps"; btn.classList.remove("on"); } return; }
   const pts=techPoints();
-  if(!pts.length){ if(btn) btn.textContent="Show coverage gaps";
+  if(!pts.length){ if(btn){ btn.textContent="Coverage gaps"; btn.classList.remove("on"); }
     $("#findOut").innerHTML='<div class="note" style="margin-top:12px">Nobody on the board to measure from.</div>';
     gapOn=false; return; }
 
@@ -3340,7 +3345,7 @@ function drawGaps(){
     }
   }
   if(gapLayer.bringToBack) gapLayer.bringToBack();
-  if(btn) btn.textContent="Hide coverage gaps";
+  if(btn){ btn.textContent="Hide gaps"; btn.classList.add("on"); }
   $("#findOut").innerHTML=`<div class="panel" style="margin-top:12px">
     <div class="lbl">Coverage</div>
     <div style="font-size:14px">Shaded areas are more than about ${GAP_KM} km from your nearest
@@ -3350,7 +3355,12 @@ function drawGaps(){
   </div>`;
 }
 
+function fillJobKind(){
+  const el=document.getElementById("jobKind"); if(!el || el.options.length) return;
+  el.innerHTML=JOB_TYPES.map(j=>`<option value="${j}">${j||"Job type (optional)"}</option>`).join("");
+}
 async function drawTechs(){
+  fillJobKind();
   $("#addTechBtn").classList.toggle("hide", !dispatchOK);
   $("#clearAllBtn").classList.toggle("hide", !dispatchOK);
   $("#clearAllBtn").onclick=askClearAll;
