@@ -307,6 +307,25 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .svchero p{margin:0;font-size:14px;line-height:1.5;opacity:.92;max-width:62ch;}
 .svcfacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
 .svcfact{background:rgba(255,255,255,.14);border-radius:8px;padding:7px 11px;font-size:11.5px;font-weight:600;}
+.kitgrid,.glossgrid{display:grid;gap:10px;}
+.kitgrid{grid-template-columns:repeat(auto-fit,minmax(280px,1fr));}
+.glossgrid{grid-template-columns:repeat(auto-fit,minmax(215px,1fr));}
+.kitcard{background:#fff;border:1px solid var(--line2);border-radius:11px;padding:15px;text-align:left;
+  transition:all .16s;}
+.kitcard:hover{border-color:var(--teal);transform:translateY(-2px);box-shadow:0 6px 16px rgba(33,43,59,.09);}
+.kithead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;}
+.kitname{font-weight:600;color:var(--navy);font-size:14.5px;}
+.kittag{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);
+  background:#E4F4F6;padding:3px 8px;border-radius:20px;white-space:nowrap;}
+.kitdesc{font-size:13px;margin-top:7px;}
+.kitwhy{margin-top:10px;padding:10px 12px;background:#FFF6E2;border-radius:8px;font-size:13px;
+  color:#5C4A16;line-height:1.5;}
+.glosscard{background:#fff;border:1px solid var(--line2);border-radius:11px;padding:15px;text-align:left;
+  min-height:104px;display:flex;flex-direction:column;gap:6px;transition:all .16s;}
+.glosscard:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 6px 16px rgba(33,43,59,.09);}
+.glossterm{font-weight:700;color:var(--navy);font-size:15px;}
+.glossdef{font-size:12.5px;color:#5D6C7B;line-height:1.5;}
+.glosshint{font-size:10.5px;color:#B7C1CB;letter-spacing:.05em;margin-top:auto;}
 .techgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
 .stopline{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px dotted var(--line2);}
 .stopno{width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;
@@ -1071,6 +1090,33 @@ const SERVICES=[
   tools:["Safe manipulation tools","Manufacturer reset tools"]}
 ];
 
+const EQUIP_GROUPS=["Automotive programming","Automotive access","Cutting","Hardware"];
+const EQUIP_META={
+ "Autel IM608":{g:"Automotive programming",tag:"Diagnostic + programming",
+   why:"When a caller asks why a key costs more than a hardware-shop copy, this is the answer: the tech is reading the car's security system, not cutting metal."},
+ "XHorse Dolphin XP005":{g:"Cutting",tag:"Portable cutter",
+   why:"Lets the tech cut high-security and laser keys at the roadside instead of towing the car to a shop."},
+ "XHorse Condor":{g:"Cutting",tag:"Shop cutter",
+   why:"Higher volume work. Mention it when a property manager asks about doing many keys at once."},
+ "XHorse Key Tool Plus":{g:"Automotive programming",tag:"Generate + clone",
+   why:"Used alongside the cutter. This is why a duplicate still needs programming."},
+ "EEPROM equipment":{g:"Automotive programming",tag:"Chip level",
+   why:"The fallback when the diagnostic port cannot produce a key. Explains why some all-keys-lost jobs take far longer."},
+ "Lishi tools":{g:"Automotive access",tag:"Pick and decode",
+   why:"Opens and reads a lock without damage — the reason we can promise non-destructive entry."},
+ "Air wedges":{g:"Automotive access",tag:"Non-destructive entry",
+   why:"The gap tool. Say this when a caller worries about their paintwork or weatherstripping."},
+ "Long reach tools":{g:"Automotive access",tag:"Non-destructive entry",
+   why:"Reaches the interior control through that gap. Pairs with the wedge on nearly every car lockout."},
+ "Key cutting machines":{g:"Cutting",tag:"Cut to code",
+   why:"Cuts by code or by copying. Not the same as programming, and callers confuse the two constantly."},
+ "Service vans":{g:"Hardware",tag:"Mobile workshop",
+   why:"Everything above travels to the customer. It is why there is a call-out at all."},
+ "Residential hardware":{g:"Hardware",tag:"Home locks",
+   why:"Deadbolts, knobs, smart locks, high-security. Grade decides both price and how long it takes."},
+ "Commercial hardware":{g:"Hardware",tag:"Business locks",
+   why:"Mortise, panic bars, mag locks, strikes, access control. Heavier, code-bound, and priced differently."}
+};
 const EQUIP=[
  ["Autel IM608","Professional diagnostic and key programming tool — reads vehicle security data, generates key codes, programs transponders and smart fobs across most makes."],
  ["XHorse Dolphin XP005","Portable automatic key cutting machine, handles high-security and laser-cut blanks on site."],
@@ -1132,25 +1178,65 @@ function detailScore(src,typed){
   return {want,hit,pct:want.length?Math.round(hit.length/want.length*100):100};
 }
 
-const EXAM=[
+const EXAM_FOUND=[
  {q:"What is the Golden Rule of the handbook?",
-  o:["Answer within three rings","Educate before pricing","Always give a range","Never transfer a call"],a:1},
+  o:["Answer within three rings","Educate before pricing","Always give a range","Never transfer a call"],a:1,
+  why:"Any number sounds high when the caller does not yet understand what the work involves."},
  {q:"The Universal Call Flow, in order:",
-  o:["Greeting → Price → Gather info → Close","Greeting → Identify service → Gather info → Educate → Price → Close","Identify service → Price → Educate → Close","Greeting → Gather info → Price → Educate → Close"],a:1},
- {q:"What must always be verified before an all-keys-lost automotive job begins?",
-  o:["The customer's budget","Ownership — title or registration","That the car is under ten years old","A card on file"],a:1},
- {q:"Difference between a rekey and a full lock replacement?",
-  o:["Rekey changes the pin combination and keeps the hardware","Rekey replaces the whole lock body","They are the same thing","Rekey only works on deadbolts"],a:0},
- {q:"Why must mag locks on egress doors release automatically during a fire alarm?",
-  o:["To save battery","So occupants can always exit safely — it's a code requirement","To reset the access control log","To protect the magnet"],a:1},
- {q:"Approved response to “That's expensive”:",
-  o:["“What's your budget?”","“I completely understand — different vehicles and locks vary significantly in complexity.”","“That's just our price.”","“The technician will just inspect it.”"],a:1},
- {q:"A child is reported locked in a hot vehicle. First thing you do?",
-  o:["Take payment details","Advise them to call 911 as well, then dispatch as top priority","Ask year, make and model","Put them on hold to check the price"],a:1},
- {q:"A caller is confused about rekey versus replace. Correct response?",
-  o:["Quote both immediately","Explain plainly in one sentence","Transfer to a technician","Ask which they'd prefer"],a:1},
+  o:["Greeting → Price → Gather info → Close","Greeting → Identify service → Gather info → Educate → Price → Close",
+     "Identify service → Price → Educate → Close","Greeting → Gather info → Price → Educate → Close"],a:1,
+  why:"Educate always sits between gathering the information and giving a price."},
  {q:"How do you answer every single call?",
-  o:["“Hello?”","“This is The Locksmith, how can I help you?”","“Locksmith, what do you need?”","Whatever feels natural at the time"],a:1}
+  o:["“Hello?”","“This is The Locksmith, how can I help you?”","“Locksmith, what do you need?”","Whatever feels natural"],a:1,
+  why:"Word for word, every call. The caller must know who picked up."},
+ {q:"A caller opens with “how much for a car key?” What comes first?",
+  o:["A ballpark range","Year, make, model and what happened to the original key","Their address","Their card details"],a:1,
+  why:"You cannot price a job you have not identified. Qualify, then educate, then price."},
+ {q:"Approved response to “That's expensive”:",
+  o:["“What's your budget?”","“I completely understand — different vehicles and locks vary significantly in complexity.”",
+     "“That's just our price.”","“The technician will just inspect it.”"],a:1,
+  why:"Acknowledge, then explain the variation. Never argue and never ask their budget."},
+ {q:"A caller pushes for a number after you have explained the on-site procedure. What now?",
+  o:["Repeat the same sentence again","Put them on hold, check with the lead technician, come back with a range",
+     "Guess a number to keep them on the line","Tell them to call back"],a:1,
+  why:"Stonewalling loses the call. A checked range is honest and usually closes it."},
+ {q:"Which of these should never leave your mouth?",
+  o:["“Let me check with my lead technician”","“I'm not sure”","“I completely understand”","“May I place you on a brief hold?”"],a:1,
+  why:"Uncertainty sounds like you do not know your own business. Say what you will do to find out."},
+ {q:"A child is reported locked in a hot vehicle. First thing you do?",
+  o:["Take payment details","Advise them to call 911 as well, then dispatch as top priority",
+     "Ask year, make and model","Put them on hold to check the price"],a:1,
+  why:"Life safety first. Emergency services in parallel, then the technician."},
+ {q:"Nobody will be at the property when the technician arrives. What do you need?",
+  o:["Nothing, the tech handles it","Paperwork with their name and the address, plus matching ID",
+     "The owner's phone number","A card on file"],a:1,
+  why:"Anyone can hand you a phone number. Documents and ID are what actually prove anything."},
+ {q:"A caller cancels because they got in by themselves. What is the right move?",
+  o:["Explain the technician's wasted time","Accept it, then leave them a flat price for next time",
+     "Ask them to pay a call-out fee","Hang up politely"],a:1,
+  why:"No job today. The only thing worth winning is the next call, and the number in their phone."},
+ {q:"“Your guy is late.” What do you do first?",
+  o:["Explain traffic","Acknowledge the delay plainly, then give a real update and one specific next step",
+     "Offer a discount","Transfer them to the technician"],a:1,
+  why:"Acknowledge once, no excuses, then something concrete you will personally do."},
+ {q:"The caller says their zip is 33615. Your map shows that street as 33634.",
+  o:["Type what they said","Say both numbers out loud and ask which is right",
+     "Quietly type what the map says","Leave the zip blank"],a:1,
+  why:"People get their own zip wrong constantly. Reading both back catches it in two seconds."},
+ {q:"A caller asks for “spare keys” for a truck. What must you confirm?",
+  o:["Their budget","Whether they still have a working key","The colour of the truck","Their email"],a:1,
+  why:"Half of callers say spare when they have lost the only one. Completely different job."},
+ {q:"Which is the correct way to close a booked call?",
+  o:["“He'll be there in twenty minutes”","“A technician is on the way and will call you to say how far he is”",
+     "“Someone will be in touch”","“Call us back if he hasn't arrived”"],a:1,
+  why:"Promise a callback, never an arrival time. You do not control the road."},
+ {q:"A caller is clearly price shopping in the first ten seconds. Which emotional state is that?",
+  o:["Panicked","Price shopping — educate before quoting","Confused","Angry"],a:1,
+  why:"Named in the handbook, and the response is the Golden Rule."},
+ {q:"The line keeps breaking up. What is the better response?",
+  o:["Repeat the exact same words louder","Rephrase and expand the question",
+     "Ask them to call back","Carry on regardless"],a:1,
+  why:"“Metal key ignition — the one where you turn the key — or a push button?” gives them a second way in."}
 ];
 
 /* ---- Locked fact sheets. The caller may never contradict these; the review
@@ -1690,6 +1776,7 @@ function go(v){
   if(v==="techs") openDispatch();
   if(v==="users"){ if(!isAdmin){ go("home"); return; } drawUsers(); }
   if(v!=="setup") calStop();
+  if(v!=="learn") examStop();
   if(v==="setup"){ drawSlots(); drawMode(); drawPause(); drawLang(); drawGate(); }
   window.scrollTo(0,0);
 }
@@ -2162,6 +2249,41 @@ function drawReview(){
 }
 
 /* ============================ academy ============================ */
+let glossOpen=false, gqI=0, gqScore=0, gqSet=[];
+let examSet=[], examAns=[], examLeft=0, examTimer=null;
+
+const shuffle=a=>a.slice().sort(()=>Math.random()-.5);
+function mcq(q,correct,pool,why,sec){
+  const wrong=shuffle(pool.filter(x=>x!==correct)).slice(0,3);
+  const opts=shuffle([correct,...wrong]);
+  return {q,o:opts,a:opts.indexOf(correct),why,sec};
+}
+function buildExam(){
+  const out=[];
+  shuffle(EXAM_FOUND).slice(0,14).forEach(x=>out.push({...x,sec:"Foundations"}));
+
+  const names=SERVICES.map(v=>v.n);
+  shuffle(SERVICES).slice(0,6).forEach(v=>out.push(
+    mcq("Which service is this? “"+v.w.split(".")[0]+".”", v.n, names,
+        "That is "+v.n+", under "+v.c+".", "Services")));
+  shuffle(SERVICES).slice(0,5).forEach(v=>{
+    const q=v.q[Math.floor(Math.random()*v.q.length)];
+    out.push(mcq("On which job would you ask: “"+q+"”", v.n, names,
+      "That question belongs to "+v.n+".", "Services"));
+  });
+
+  const tools=EQUIP.map(e=>e[0]);
+  shuffle(EQUIP).slice(0,5).forEach(([n,d])=>out.push(
+    mcq("Which piece of equipment is this? “"+d.split(".")[0]+".”", n, tools,
+        n+" — "+(EQUIP_META[n]?EQUIP_META[n].tag:""), "Equipment")));
+
+  const terms=GLOSSARY.map(g=>g[0]);
+  shuffle(GLOSSARY).slice(0,6).forEach(([t,d])=>out.push(
+    mcq("Which term means: “"+d+"”", t, terms, t+" — "+d, "Glossary")));
+
+  return shuffle(out);
+}
+function examStop(){ clearInterval(examTimer); examTimer=null; }
 let aTab="found", aSvc=null, exI=0, exScore=0, exPicked=null;
 let typeRun=false, typeDone=null, typeItem=null, typeLeft=180, typeTimer=null, typeT0=0;
 
@@ -2201,6 +2323,17 @@ function finishTyping(){
   saveTyping(typeDone);
   drawLearn(); window.scrollTo(0,0);
 }
+async function saveExam(pct,pass,bySec){
+  if(!me||isGuest) return;
+  try{
+    await sb.from("results").insert({
+      user_id:me.id, scenario:"Certification exam", scenario_id:"exam",
+      total:pct, verdict:pass?"PASS":"NEEDS WORK",
+      scores:Object.entries(bySec).map(([k,v])=>({c:k,s:v.ok+"/"+v.n})),
+      data_errors:[], fixes:[], duration_secs:45*60-examLeft
+    });
+  }catch(e){ console.warn(e); }
+}
 async function saveTyping(r){
   if(!me||isGuest) return;
   try{
@@ -2237,6 +2370,36 @@ function forKind(v){
   return v[k]||v.def||Object.values(v)[0];
 }
 const CATCOL={Automotive:"#1E7C88",Residential:"#2C5FA8",Commercial:"#6B4C9A",Safes:"#9A7317"};
+function glossQuiz(){
+  const box=document.getElementById("gQuizBox"); if(!box) return;
+  if(!gqSet.length){ gqSet=[...GLOSSARY].sort(()=>Math.random()-.5).slice(0,6); gqI=0; gqScore=0; }
+  if(gqI>=gqSet.length){
+    box.innerHTML=`<div class="panel" style="text-align:center;border-color:var(--teal)">
+      <div class="tot">${gqScore}<span style="font-size:18px;color:var(--muted)">/${gqSet.length}</span></div>
+      <div class="note" style="margin-top:8px">${gqScore===gqSet.length?"Every one right.":"Tap the cards you missed to read them again."}</div>
+      <button class="btn" id="gqAgain" style="margin-top:12px">Another round</button></div>`;
+    document.getElementById("gqAgain").onclick=()=>{gqSet=[];glossQuiz();};
+    return;
+  }
+  const [term,def]=gqSet[gqI];
+  const wrong=GLOSSARY.filter(g=>g[0]!==term).sort(()=>Math.random()-.5).slice(0,3);
+  const opts=[...wrong.map(g=>g[0]),term].sort(()=>Math.random()-.5);
+  box.innerHTML=`<div class="panel" style="border-color:var(--teal)">
+    <div class="lbl">Question ${gqI+1} of ${gqSet.length}</div>
+    <div class="big-say">${def}</div>
+    <div id="gqOpts">${opts.map(o=>`<button class="opt" data-gq="${o}">${o}</button>`).join("")}</div></div>`;
+  box.querySelectorAll("[data-gq]").forEach(b=>b.onclick=()=>{
+    const ok=b.dataset.gq===term; if(ok) gqScore++;
+    box.querySelectorAll("[data-gq]").forEach(x=>{
+      x.disabled=true;
+      if(x.dataset.gq===term) x.classList.add("right");
+      else if(x===b) x.classList.add("wrong"); else x.classList.add("dim");
+    });
+    setTimeout(()=>{ gqI++; glossQuiz(); }, ok?650:1500);
+  });
+  box.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
 function drawLearn(){
   const b=$("#learnBody");
   b.innerHTML=`<div class="seg" style="margin-bottom:16px;flex-wrap:wrap">
@@ -2384,27 +2547,67 @@ function drawLearn(){
   }
 
   if(aTab==="kit"){
-    a.innerHTML=`<h1>Equipment</h1>
-      <p class="sub">Not for field use — knowing this exists is how you explain why jobs vary in
-      time and price.</p>
-      ${EQUIP.map(([n,d])=>`<div class="panel"><div style="font-weight:600;color:var(--navy)">${n}</div>
-        <div class="note" style="font-size:13.5px">${d}</div></div>`).join("")}`;
+    const meta=n=>EQUIP_META[n]||{g:"Hardware",tag:"",why:""};
+    a.innerHTML=`<h1>What's in the van</h1>
+      <p class="sub">You will never touch any of it. Knowing it exists is how you answer
+        “why does that cost so much?” without sounding uncertain.</p>
+      ${EQUIP_GROUPS.map(g=>{
+        const rows=EQUIP.filter(([n])=>meta(n).g===g);
+        if(!rows.length) return "";
+        return `<div class="lbl" style="margin-top:20px">${g}</div>
+        <div class="kitgrid">${rows.map(([n,d])=>`
+          <button class="kitcard" data-kit="${n}">
+            <div class="kithead">
+              <span class="kitname">${n}</span>
+              <span class="kittag">${meta(n).tag}</span>
+            </div>
+            <div class="note kitdesc">${d}</div>
+            <div class="kitwhy hide"><b>On a call:</b> ${meta(n).why}</div>
+            <span class="tile-go">Why it matters →</span>
+          </button>`).join("")}</div>`;
+      }).join("")}`;
+    $$("[data-kit]").forEach(b=>b.onclick=()=>{
+      const w=b.querySelector(".kitwhy"), lab=b.querySelector(".tile-go");
+      const open=!w.classList.contains("hide");
+      w.classList.toggle("hide",open);
+      lab.textContent = open ? "Why it matters →" : "Hide";
+    });
     return;
   }
 
   if(aTab==="gloss"){
-    a.innerHTML=`<h1>Glossary</h1>
-      <div class="f"><input class="in" id="gq" placeholder="Search a term"></div>
-      <div class="panel" id="gl"></div>`;
+    a.innerHTML=`<h1>The words</h1>
+      <p class="sub">Say these back to a caller and you sound like you have done this before.
+        Tap a card to flip it, or use the quiz to test yourself.</p>
+      <div class="f" style="margin-bottom:6px">
+        <input class="in" id="gq" placeholder="Search a term or a definition"></div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn ghost" id="gFlipAll" style="padding:8px 13px;font-size:12px">Show every definition</button>
+        <button class="btn ghost" id="gQuiz" style="padding:8px 13px;font-size:12px">Test me</button>
+      </div>
+      <div id="gl"></div>
+      <div id="gQuizBox"></div>`;
     const paint=()=>{
       const t=($("#gq").value||"").toLowerCase();
-      $("#gl").innerHTML=GLOSSARY.filter(([k,d])=>(k+d).toLowerCase().includes(t))
-        .map(([k,d])=>`<div class="diff" style="align-items:flex-start">
-          <b style="flex:1;color:var(--navy);font-weight:600">${k}</b>
-          <span style="flex:2;text-align:right" class="note">${d}</span></div>`).join("")
-        || '<div class="note">Nothing matches that.</div>';
+      const rows=GLOSSARY.filter(([k,d])=>(k+d).toLowerCase().includes(t));
+      $("#gl").innerHTML = rows.length ? `<div class="glossgrid">${rows.map(([k,d],i)=>`
+        <button class="glosscard" data-gl="${i}">
+          <span class="glossterm">${k}</span>
+          <span class="glossdef ${glossOpen?"":"hide"}">${d}</span>
+          <span class="glosshint ${glossOpen?"hide":""}">tap to reveal</span>
+        </button>`).join("")}</div>`
+        : '<div class="note">Nothing matches that.</div>';
+      $$("[data-gl]").forEach(b=>b.onclick=()=>{
+        b.querySelector(".glossdef").classList.toggle("hide");
+        b.querySelector(".glosshint").classList.toggle("hide");
+      });
     };
-    $("#gq").oninput=paint; paint();
+    $("#gq").oninput=paint;
+    $("#gFlipAll").onclick=()=>{ glossOpen=!glossOpen;
+      $("#gFlipAll").textContent = glossOpen ? "Hide definitions" : "Show every definition";
+      paint(); };
+    $("#gQuiz").onclick=()=>glossQuiz();
+    paint();
     return;
   }
 
@@ -2479,35 +2682,111 @@ function drawLearn(){
   }
 
   if(aTab==="exam"){
-    if(exI>=EXAM.length){
-      const pct=Math.round(exScore/EXAM.length*100), pass=pct>=85;
+    if(!examSet.length){
+      a.innerHTML=`<h1>Certification exam</h1>
+        <p class="sub">35 questions drawn from everything in the academy — the call flow, all 25
+          services, the equipment and the glossary. Different questions every attempt.</p>
+        <div class="cols">
+          <div class="panel"><div class="lbl">What it covers</div>
+            <div class="diff"><span>Foundations &amp; call handling</span><b style="color:var(--navy)">14</b></div>
+            <div class="diff"><span>The 25 services</span><b style="color:var(--navy)">11</b></div>
+            <div class="diff"><span>Equipment</span><b style="color:var(--navy)">5</b></div>
+            <div class="diff"><span>Glossary</span><b style="color:var(--navy)">6</b></div>
+          </div>
+          <div class="panel"><div class="lbl">How it works</div>
+            <ul>
+              <li>45 minutes. That is more than you need — do not rush.</li>
+              <li>You are told after each answer whether it was right, and why.</li>
+              <li>85% to pass. Your result is saved for your supervisor.</li>
+              <li>Retake as many times as you like; the questions change.</li>
+            </ul>
+          </div>
+        </div>
+        <button class="btn" id="exGo">Start the exam</button>`;
+      $("#exGo").onclick=()=>{
+        examSet=buildExam(); examAns=[]; exI=0; exScore=0; exPicked=null;
+        examLeft=45*60; examStop();
+        examTimer=setInterval(()=>{
+          examLeft--;
+          const el=document.getElementById("exClock");
+          if(el){ el.textContent=Math.floor(examLeft/60)+":"+String(examLeft%60).padStart(2,"0");
+                  el.style.color = examLeft<300 ? "var(--red)" : "var(--navy)"; }
+          if(examLeft<=0){ examStop(); exI=examSet.length; drawLearn(); }
+        },1000);
+        drawLearn();
+      };
+      return;
+    }
+
+    if(exI>=examSet.length){
+      examStop();
+      const pct=Math.round(exScore/examSet.length*100), pass=pct>=85;
+      const bySec={};
+      examSet.forEach((q,i)=>{
+        const k=q.sec||"Other";
+        bySec[k]=bySec[k]||{n:0,ok:0};
+        bySec[k].n++; if(examAns[i]===q.a) bySec[k].ok++;
+      });
+      const missed=examSet.map((q,i)=>({q,i})).filter(x=>examAns[x.i]!==x.q.a);
+      saveExam(pct,pass,bySec);
       a.innerHTML=`<h1>Certification exam</h1>
         <div class="panel" style="text-align:center">
           <div class="tot">${pct}%</div>
           <div class="vd ${pass?"ok":""}" style="display:inline-block;margin-top:10px">${pass?"PASSED":"NOT YET — 85% NEEDED"}</div>
-          <div class="note" style="margin-top:12px">${exScore} of ${EXAM.length} correct.
-          ${pass?"Certificate issued by your supervisor.":"Review the Foundations tab with a supervisor, then retake."}</div>
+          <div class="note" style="margin-top:10px">${exScore} of ${examSet.length} correct${
+            examLeft<=0?" · time ran out":""}</div>
         </div>
-        <button class="btn" id="exAgain">Retake</button>
+        <div class="cols">
+          <div class="panel"><div class="lbl">By section</div>
+            ${Object.entries(bySec).map(([k,v])=>{
+              const p=Math.round(v.ok/v.n*100);
+              return `<div class="diff" style="align-items:center">
+                <span style="flex:1">${k}</span>
+                <span style="display:flex;align-items:center;gap:8px;min-width:140px">
+                  <span style="flex:1;height:7px;background:#E6ECF1;border-radius:4px;overflow:hidden">
+                    <i style="display:block;height:100%;width:${p}%;background:${
+                      p>=85?"var(--green)":p>=60?"var(--gold)":"var(--red)"}"></i></span>
+                  <b style="color:var(--navy);min-width:44px;text-align:right">${v.ok}/${v.n}</b></span></div>`;
+            }).join("")}
+          </div>
+          <div class="panel"><div class="lbl">What to go back over</div>
+            ${missed.length?missed.slice(0,8).map(x=>`<div class="diff" style="align-items:flex-start">
+                <span style="flex:1;font-size:13px">${x.q.q}</span>
+                <span style="flex:1;text-align:right"><b style="color:var(--green);font-size:12.5px">${
+                  x.q.o[x.q.a]}</b></span></div>`).join("")
+              :'<div class="note" style="color:var(--green)">Nothing missed. Full marks.</div>'}
+          </div>
+        </div>
+        <button class="btn" id="exAgain">Take it again</button>
         <button class="btn ghost" id="exCalls" style="margin-left:8px">Go to calls</button>`;
-      $("#exAgain").onclick=()=>{exI=0;exScore=0;exPicked=null;drawLearn();};
+      $("#exAgain").onclick=()=>{examSet=[];drawLearn();};
       $("#exCalls").onclick=()=>finishTraining(false);
       return;
     }
-    const q=EXAM[exI];
-    a.innerHTML=`<h1>Certification exam</h1>
-      <div class="prog"><i style="width:${Math.round(exI/EXAM.length*100)}%"></i></div>
-      <p class="sub">Question ${exI+1} of ${EXAM.length} · 85% to pass</p>
+
+    const q=examSet[exI];
+    a.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:10px">
+        <h1 style="margin:0">Certification exam</h1>
+        <b id="exClock" style="font-family:Inter,monospace;font-size:20px;color:var(--navy)">${
+          Math.floor(examLeft/60)+":"+String(examLeft%60).padStart(2,"0")}</b>
+      </div>
+      <div class="prog" style="margin:12px 0"><i style="width:${Math.round(exI/examSet.length*100)}%"></i></div>
+      <p class="sub" style="margin-bottom:10px">Question ${exI+1} of ${examSet.length}
+        · <b style="color:var(--teal)">${q.sec||""}</b> · ${exScore} right so far</p>
       <div class="big-say">${q.q}</div>
       <div id="eo">${q.o.map((o,n)=>`<button class="opt" data-eo="${n}">${o}</button>`).join("")}</div>
       <div id="ef"></div>`;
     $$("[data-eo]").forEach(btn=>btn.onclick=()=>{
       if(exPicked!==null) return;
-      exPicked=+btn.dataset.eo;
+      exPicked=+btn.dataset.eo; examAns[exI]=exPicked;
       const ok=exPicked===q.a; if(ok) exScore++;
       $$("[data-eo]").forEach((x,n)=>{x.disabled=true;
-        if(n===q.a) x.classList.add("right"); else if(n===exPicked) x.classList.add("wrong"); else x.classList.add("dim");});
-      $("#ef").innerHTML=`<button class="btn" id="exNext">${ok?"Correct — next":"Next"}</button>`;
+        if(n===q.a) x.classList.add("right");
+        else if(n===exPicked) x.classList.add("wrong"); else x.classList.add("dim");});
+      $("#ef").innerHTML=`<div class="panel" style="border-color:${ok?"var(--green)":"var(--red)"}">
+          <div class="lbl">${ok?"Correct":"Not quite"}</div>
+          <div style="font-size:13.5px">${q.why||""}</div></div>
+        <button class="btn" id="exNext">${exI+1===examSet.length?"Finish":"Next question"}</button>`;
       $("#exNext").onclick=()=>{exI++;exPicked=null;drawLearn();window.scrollTo(0,0);};
     });
     return;
