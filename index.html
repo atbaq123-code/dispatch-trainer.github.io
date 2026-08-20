@@ -652,7 +652,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
           <div class="rail">
             <div class="rail-hd">
               <div class="seg">
-                <button id="tabScript" class="on">Script</button>
+                <button id="tabScript" class="on">What to say</button>
                 <button id="tabLog">Transcript</button>
               </div>
               <button class="seg" id="audioTgl" style="font-size:11px;color:var(--muted);font-weight:600">Audio on</button>
@@ -779,7 +779,14 @@ function jobOptions(sel){
 }
 const SOURCES=["","Google","Google Ads","Repeat client","Referral","Yelp","Website","Other"];
 
-const CHIPS=[["emergency","Emergency check"],["educate","Educated first"],["price","Price handled"],["close","Booked & confirmed"]];
+const CHIPS=[
+  {k:"phone", n:"Copy the phone number", auto:f=>!!f.phone && touched.has("phone")},
+  {k:"info",  n:"Gather the details",    auto:f=>!!(f.job_type||f.job_description) && !!f.client_name},
+  {k:"addr",  n:"Get the address",       auto:f=>!!f.address && !!f.zip},
+  {k:"price", n:"Pricing",               auto:null},
+  {k:"book",  n:"Book & confirm",        auto:f=>!!(f.starts_at||f.tech)}
+];
+const chipDone=(c,f)=>chips[c.k] || (c.auto ? c.auto(f) : false);
 
 /* Universal Call Flow — Dispatcher Academy Handbook v2.0 */
 const STEPS=[
@@ -1659,8 +1666,9 @@ function formData(){ const o={}; $$("[data-k]").forEach(el=>o[el.dataset.k]=el.v
 function setForm(obj){ $$("[data-k]").forEach(el=>{ el.value=obj[el.dataset.k]||""; el.classList.toggle("ok",!!el.value); }); }
 function onFormInput(e){
   const el=e.target; if(!el.dataset.k) return;
+  touched.add(el.dataset.k);
   el.classList.toggle("ok",!!el.value.trim());
-  drawSteps(); drawCount();
+  drawChips(); drawSteps(); drawCount();
 }
 
 /* ============================ render ============================ */
@@ -1696,26 +1704,45 @@ function drawJobs(){
   $$("[data-job]").forEach(b=>b.onclick=()=>start(JOBS.find(j=>j.id===b.dataset.job)));
 }
 function drawChips(){
-  $("#chipRow").innerHTML = CHIPS.map(([k,l])=>
-    `<button class="chip ${chips[k]?"on":""}" data-chip="${k}">${chips[k]?"✓":"○"} ${l}</button>`).join("");
-  $$("[data-chip]").forEach(b=>b.onclick=()=>{chips[b.dataset.chip]=!chips[b.dataset.chip];drawChips();drawSteps();});
+  const f=formData();
+  $("#chipRow").innerHTML = CHIPS.map((c,i)=>{
+    const done=chipDone(c,f);
+    return `<button class="chip ${done?"on":""}" data-chip="${c.k}" title="${
+      c.auto ? "Ticks itself once the job file has it" : "Tap once you have handled this"}">
+      <b style="opacity:.5;margin-right:5px">${i+1}</b>${done?"&#10003;":"&#9675;"} ${c.n}</button>`;
+  }).join("");
+  $$("[data-chip]").forEach(b=>b.onclick=()=>{
+    chips[b.dataset.chip]=!chips[b.dataset.chip]; drawChips(); drawSteps();
+  });
 }
 function stepDone(s,f){
   if(s.key==="greet") return log.some(m=>m.w==="you");
-  if(s.key.startsWith("chip:")) return !!chips[s.key.slice(5)];
+  if(s.key.startsWith("chip:")){
+    const c=CHIPS.find(x=>x.k===s.key.slice(5));
+    return c ? chipDone(c,f) : false;
+  }
   return !!f[s.key];
 }
+let stepOpen=null;          // null = follow the call, a number = the dispatcher chose one
 function drawSteps(){
   const f=formData();
   const now=STEPS.findIndex(s=>!stepDone(s,f));
   $("#steps").innerHTML = STEPS.map((s,i)=>{
-    const d=stepDone(s,f), n=i===now;
-    return `<div class="step ${n?"now":""} ${d?"done":""}">
-      <span class="tick ${d?"":"no"}">${d?"✓":"○"}</span>
-      <div style="flex:1"><div class="st">${s.t}</div>
-      ${n?`<div class="note">${forKind(s.note)}</div><div class="say">${forKind(s.say)}</div>`:""}</div></div>`;
+    const d=stepDone(s,f);
+    const n=i===now;
+    const open = stepOpen===null ? n : stepOpen===i;
+    return `<button class="step ${n?"now":""} ${d?"done":""}" data-step="${i}"
+        style="text-align:left;width:100%">
+      <span class="tick ${d?"":"no"}">${d?"&#10003;":"&#9675;"}</span>
+      <div style="flex:1"><div class="st">${s.t}${n&&stepOpen!==null?' <span class="note">· up next</span>':""}</div>
+      ${open?`<div class="note">${forKind(s.note)}</div><div class="say">${forKind(s.say)}</div>`:""}</div></button>`;
   }).join("");
-  $("#tabScript").textContent="Script "+STEPS.filter(s=>stepDone(s,f)).length+"/7";
+  $$("[data-step]").forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.step;
+    stepOpen = (stepOpen===i) ? null : i;      // tap again to hand it back to the call
+    drawSteps();
+  });
+  $("#tabScript").textContent="What to say";
 }
 function drawLog(){
   const el=$("#log");
@@ -1791,7 +1818,7 @@ function tick(){ secs++; const m=String(Math.floor(secs/60)).padStart(2,"0"), s=
 
 /* ============================ flow ============================ */
 function start(j){
-  callLive=false; muted=false; micOff();
+  callLive=false; muted=false; micOff(); touched=new Set(); stepOpen=null;
   curVoice = Math.random()<0.5 ? "m" : "f";
   curName  = ((ALT_NAMES[j.id]||{})[curVoice]) || "";
   curVariant = Math.floor(Math.random()*3);
@@ -1995,7 +2022,7 @@ async function createJob(){
   const f=formData();
   const transcript=log.filter(m=>m.w!=="sys").map(m=>(m.w==="you"?"DISPATCHER: ":"CALLER: ")+m.t).join("\n");
   const entered=Object.entries(f).map(([k,v])=>k+": "+(v||"(blank)")).join("; ");
-  const ticked=CHIPS.filter(([k])=>chips[k]).map(([,l])=>l).join(", ")||"none";
+  const ticked=CHIPS.filter(c=>chipDone(c,f)).map(c=>c.n).join(", ")||"none";
 
   const system = `You are a QA supervisor at OnCall Locksmith / The Locksmith Crew, reviewing a trainee dispatcher's call against the Dispatcher Academy Handbook v2.0. The dispatcher spoke out loud (transcribed — ignore speech typos) and typed the job file while talking. Be specific, fair and direct.
 
@@ -3232,6 +3259,7 @@ async function drawHome(){
 
 }
 
+let touched=new Set();
 let resRows=[], resOpen=null, resSel=new Set(), resWho="me", resFold={};
 
 async function drawResults(){
