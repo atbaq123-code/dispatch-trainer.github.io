@@ -14,6 +14,8 @@
 <meta name="apple-mobile-web-app-title" content="Dispatch" />
 <meta name="theme-color" content="#212B3B" />
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="10" fill="%23F5C63D"/><path d="M20 9a7 7 0 0 0-3 13.3V29a1.6 1.6 0 0 0 .5 1.2l2 1.9a.7.7 0 0 0 1 0l2-1.9A1.6 1.6 0 0 0 23 29v-6.7A7 7 0 0 0 20 9Z" fill="%23212B3B"/><circle cx="20" cy="16" r="2.6" fill="%23F5C63D"/></svg>' />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon-192.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -264,6 +266,11 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .livetag:before{content:"";position:absolute;left:7px;top:50%;width:5px;height:5px;margin-top:-2.5px;
   border-radius:50%;background:#fff;animation:livepulse2 1.8s infinite;}
 @keyframes livepulse2{0%,100%{opacity:1}50%{opacity:.3}}
+.livetag.stale{background:#B07C1E;}
+.livetag.stale:before{animation:none;opacity:.55;}
+@media (prefers-reduced-motion:reduce){
+  .livetag:before,.rec{animation:none;}
+}
 .liveaddr{font-size:12.5px;color:var(--navy);font-weight:600;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;flex:1;min-width:0;}
 .liveago{font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0;}
@@ -388,6 +395,37 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   .gateform{padding:40px 24px;min-height:100vh;}
   .gateform .f,.gateform .btn,.gateseg,.gateor{max-width:none;}
 }
+.herotop{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;}
+.herodate{font-size:12.5px;color:var(--muted);text-align:right;line-height:1.5;}
+.herodate b{display:block;color:var(--navy);font-size:14px;font-weight:600;}
+
+.nextcard{display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:#fff;
+  border:1px solid var(--line2);border-left:5px solid var(--gold);border-radius:14px;
+  padding:22px 24px;box-shadow:0 4px 18px rgba(33,43,59,.07);}
+.nextcard .nc-kick{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--brass,#8C6D2F);
+  font-weight:700;}
+.nextcard h2{margin:5px 0 5px;font-size:20px;color:var(--navy);font-weight:600;}
+.nextcard p{margin:0;font-size:13.5px;color:#5D6C7B;max-width:60ch;line-height:1.5;}
+.nextcard .nc-go{margin-left:auto;}
+
+.track{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px;}
+.tcard{background:#fff;border:1px solid var(--line2);border-radius:12px;padding:15px 16px;text-align:left;
+  transition:all .16s;}
+.tcard:hover{border-color:var(--teal);transform:translateY(-2px);box-shadow:0 6px 16px rgba(33,43,59,.09);}
+.tcard .t-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.tcard .t-n{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em;}
+.tcard .t-v{font-size:20px;font-weight:700;color:var(--navy);line-height:1.1;margin-top:6px;}
+.tcard .t-v small{font-size:12px;color:var(--muted);font-weight:600;}
+.tbar{height:5px;background:#E6ECF1;border-radius:3px;overflow:hidden;margin-top:10px;}
+.tbar i{display:block;height:100%;border-radius:3px;transition:width .5s cubic-bezier(.2,.7,.3,1);}
+.tstate{font-size:11px;margin-top:7px;color:var(--muted);}
+
+.tiles{grid-template-columns:repeat(auto-fit,minmax(215px,1fr));}
+.tile{padding:17px;}
+.tile-ic{width:38px;height:38px;border-radius:10px;margin-bottom:11px;}
+.tile-ic svg{width:19px;height:19px;}
+.tile h3{font-size:15px;}
+.tile p{font-size:12.5px;}
 .techgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
 .stopline{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px dotted var(--line2);}
 .stopno{width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;
@@ -415,6 +453,24 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 @keyframes livepulse{0%{box-shadow:0 0 0 4px rgba(47,164,92,.35),0 2px 6px rgba(0,0,0,.35)}
   70%{box-shadow:0 0 0 14px rgba(47,164,92,0),0 2px 6px rgba(0,0,0,.35)}
   100%{box-shadow:0 0 0 4px rgba(47,164,92,0),0 2px 6px rgba(0,0,0,.35)}}
+.livedot.stale{animation:none;opacity:.42;border-style:dashed;
+  box-shadow:0 0 0 4px rgba(176,124,30,.28),0 2px 6px rgba(0,0,0,.25);}
+@media (prefers-reduced-motion:reduce){ .livedot{animation:none;} }
+.updatebar{position:fixed;left:12px;right:12px;bottom:12px;z-index:60;background:var(--navy);
+  color:#fff;border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;
+  flex-wrap:wrap;box-shadow:0 8px 24px rgba(0,0,0,.28);font-size:13px;}
+.updatebar .btn{padding:8px 14px;font-size:12.5px;}
+.updatebar span{flex:1;min-width:160px;}
+.jhist{font-size:11.5px;color:var(--muted);margin-top:7px;padding-top:7px;
+  border-top:1px solid var(--line2);}
+.jhist b{color:#8C6D2F;font-weight:600;}
+.snip{font-size:12px;color:#5D6C7B;background:#F4FBFC;border-left:3px solid var(--teal);
+  padding:5px 8px;margin-top:5px;border-radius:0 4px 4px 0;font-family:Inter,sans-serif;
+  line-height:1.45;}
+.livebadge{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  padding:3px 9px;border-radius:20px;background:#EEF1F4;color:#8493A2;border:1px solid var(--line);
+  align-self:center;white-space:nowrap;cursor:help;}
+.livebadge.on{background:#EAF9F1;color:#1F7A4C;border-color:#B6E3CB;}
 .since{font-size:11px;font-weight:600;color:var(--brassish,#8C6D2F);}
 .shell.solo{grid-template-columns:1fr;}
 .shell.solo .side{display:none;}
@@ -675,6 +731,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
           <h1 style="font-size:20px;margin:0">Technicians</h1>
           <div class="note" id="techCount"></div>
         </div>
+        <span class="livebadge" id="liveBadge" title="Connecting…">Connecting…</span>
         <div class="techacts">
           <button class="btn-soft" id="refreshBtn">
             <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>
@@ -701,10 +758,17 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
     <!-- HOME -->
     <section id="v-home" class="hide">
       <div class="hero">
-        <div class="crumb" id="homeCrumb">Dispatcher Academy</div>
-        <h1 id="homeHi">Welcome</h1>
-        <p class="sub" id="homeSub">Everything you need is below.</p>
+        <div class="herotop">
+          <div>
+            <div class="crumb" id="homeCrumb">Dispatcher Academy</div>
+            <h1 id="homeHi">Welcome</h1>
+          </div>
+          <div class="herodate" id="homeDate"></div>
+        </div>
       </div>
+      <div id="homeNext"></div>
+      <div class="track" id="homeTrack"></div>
+      <div class="lbl" style="margin:26px 0 10px">Everything else</div>
       <div class="tiles" id="homeTiles"></div>
       <div id="homeDispatch"></div>
     </section>
@@ -724,7 +788,8 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
       <h1>Take a call</h1>
       <p class="sub">Answer with the mic, keep the caller talking, and fill the job form as you go.
         When you hit Create, your entries get checked against what the caller actually said.</p>
-      <div class="err hide" id="boardErr"></div>
+      <div class="err hide" id="boardErr" role="alert"></div>
+      <div id="jobPick" style="margin-bottom:16px"></div>
       <div class="jobs" id="jobList"></div>
     </section>
 
@@ -732,7 +797,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
     <section id="v-call" class="hide">
       <div class="crumb">Jobs # Messages # New job</div>
       <h1>New Job</h1>
-      <div class="err hide" id="callErr"></div>
+      <div class="err hide" id="callErr" role="alert"></div>
       <div class="chips" id="chipRow"></div>
       <div class="cols">
         <div>
@@ -830,7 +895,6 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
       </div>
       <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn hide" id="testNextBtn">Next test call</button>
-        <button class="btn hide" id="testNextBtn">Next test call</button>
         <button class="btn" id="againBtn">Run this call again</button>
         <button class="btn ghost" data-go="board">Back to calls</button></div>
     </section>
@@ -877,7 +941,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
     <svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .58 3.6 1 1 0 0 1-.25 1Z"/></svg>
     <span id="micLabel">Answer</span>
   </button>
-  <div class="capt" id="capt"></div>
+  <div class="capt" id="capt" role="status" aria-live="polite" aria-atomic="true"></div>
   <input class="type" id="typeIn" placeholder="or type your line">
   <button class="barbtn hide" id="sendNowBtn" style="background:var(--teal);border-color:var(--teal);font-size:13px;padding:11px 18px">Send ⏎</button>
   <button class="barbtn hide" id="muteBtn">Mute</button>
@@ -887,7 +951,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0816-33";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0821-34";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -1460,11 +1524,24 @@ const FEM=/female|samantha|karen|victoria|zira|fiona|serena|moira|tessa|susan|li
 const MAL=/male|daniel|alex|fred|david|george|thomas|oliver|arthur|rishi|mark|tom|aaron/i;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 
+/* Everything that reaches innerHTML goes through esc() first. Names, addresses,
+   transcripts and model output all contain apostrophes and quotes in normal use —
+   "O'Brien", 'Bldg "C"' — and unescaped they break the surrounding attribute. */
+const ESC_MAP={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c=>ESC_MAP[c]);
+
 /* ============================ api ============================ */
+/* `system` may be a plain string (role-play calls, where it varies anyway) or
+   {stable, call} for the QA review, where the stable half is cached server-side. */
 async function ask(messages, system, mode){
-  const { data, error } = await sb.functions.invoke("claude", {
-    body: { system, messages, mode, max_tokens: mode==="review" ? 3000 : 220 }
-  });
+  const body = { messages, mode, max_tokens: mode==="review" ? 3000 : 220 };
+  if(system && typeof system==="object"){
+    body.systemStable = system.stable;
+    body.systemCall   = system.call;
+  } else {
+    body.system = system;
+  }
+  const { data, error } = await sb.functions.invoke("claude", { body });
   if(error) throw new Error(error.message||"Server error");
   if(data && data.error) throw new Error(data.error.message||"API error");
   return (data.content||[]).map(b=>b.type==="text"?b.text:"").join("").trim();
@@ -1840,11 +1917,13 @@ function toggleMute(){
 /* ============================ form ============================ */
 function formData(){ const o={}; $$("[data-k]").forEach(el=>o[el.dataset.k]=el.value.trim()); return o; }
 function setForm(obj){ $$("[data-k]").forEach(el=>{ el.value=obj[el.dataset.k]||""; el.classList.toggle("ok",!!el.value); }); }
+let draftT=null;
 function onFormInput(e){
   const el=e.target; if(!el.dataset.k) return;
   touched.add(el.dataset.k);
   el.classList.toggle("ok",!!el.value.trim());
   drawChips(); drawSteps(); drawCount();
+  clearTimeout(draftT); draftT=setTimeout(saveDraft,600);
 }
 
 /* ============================ render ============================ */
@@ -1858,6 +1937,7 @@ function go(v){
   if(sec){ sec.classList.remove("enter"); void sec.offsetWidth; sec.classList.add("enter"); }
   $("#clockWrap").classList.toggle("hide",v!=="call");
   document.body.style.paddingBottom = (v==="call"&&job)?"110px":"24px";
+  if(v==="board"){ loadScenarioStats().then(drawJobs); }
   if(v==="results") drawResults();
   if(v==="learn") drawLearn();
   if(v==="home") drawHome();
@@ -1874,11 +1954,32 @@ function showErr(m){ const e=$("#callErr"); e.textContent=m; e.classList.remove(
 function hideErr(){ $("#callErr").classList.add("hide"); }
 
 function drawJobs(){
-  $("#jobList").innerHTML = JOBS.map(j=>`
-    <button class="jc" data-job="${j.id}">
-      <div class="jc-h"><span class="src">${j.src}</span><span class="pri ${j.lv}">${j.lv}</span></div>
-      <div class="jc-b"><div class="jt">${j.title}</div><div class="jd">${j.blurb}</div></div>
-    </button>`).join("");
+  const list=$("#jobList");
+  /* Order the board by what would teach them most, not by however JOBS happens
+     to be written. The scores behind this are the trainee's own. */
+  const ordered=[...JOBS].sort((a,b)=>jobWeight(b)-jobWeight(a));
+  const pick=document.getElementById("jobPick");
+  if(pick){
+    const top=ordered[0], why=top?whyJob(top):null;
+    pick.innerHTML = (why && Object.keys(scenarioStats).length)
+      ? `<button class="nextcard" data-job="${esc(top.id)}" style="width:100%">
+           <span style="flex:1;min-width:220px;text-align:left">
+             <span class="nc-kick">Suggested next</span>
+             <h2>${esc(top.title)}</h2><p>${esc(why)}. ${esc(top.blurb)}</p>
+           </span>
+           <span class="nc-go"><span class="btn" style="pointer-events:none">Take this call</span></span>
+         </button>`
+      : "";
+  }
+  list.innerHTML = ordered.map(j=>{
+    const why=whyJob(j), st=scenarioStats[j.id];
+    return `<button class="jc" data-job="${esc(j.id)}">
+      <div class="jc-h"><span class="src">${esc(j.src)}</span><span class="pri ${esc(j.lv)}">${esc(j.lv)}</span></div>
+      <div class="jc-b"><div class="jt">${esc(j.title)}</div><div class="jd">${esc(j.blurb)}</div>
+        ${st?`<div class="jhist">${st.n} attempt${st.n===1?"":"s"} · best effort ${Math.round(st.avg)}/30${
+          why?" · <b>"+esc(why)+"</b>":""}</div>`:""}</div>
+    </button>`;
+  }).join("");
   $$("[data-job]").forEach(b=>b.onclick=()=>start(JOBS.find(j=>j.id===b.dataset.job)));
 }
 function drawChips(){
@@ -1890,7 +1991,7 @@ function drawChips(){
       <b style="opacity:.5;margin-right:5px">${i+1}</b>${done?"&#10003;":"&#9675;"} ${c.n}</button>`;
   }).join("");
   $$("[data-chip]").forEach(b=>b.onclick=()=>{
-    chips[b.dataset.chip]=!chips[b.dataset.chip]; drawChips(); drawSteps();
+    chips[b.dataset.chip]=!chips[b.dataset.chip]; drawChips(); drawSteps(); saveDraft();
   });
 }
 function stepDone(s,f){
@@ -1925,8 +2026,8 @@ function drawSteps(){
 function drawLog(){
   const el=$("#log");
   el.innerHTML = (!log.length?`<div class="sys">Line ringing — tap Talk and answer</div>`:"") +
-    log.map(m=>m.w==="sys"?`<div class="sys">— ${m.t} —</div>`:
-      `<div class="msg ${m.w}"><div class="who">${m.w==="you"?"You":"Caller"}</div><div class="bub">${m.t}</div></div>`).join("") +
+    log.map(m=>m.w==="sys"?`<div class="sys">— ${esc(m.t)} —</div>`:
+      `<div class="msg ${esc(m.w)}"><div class="who">${m.w==="you"?"You":"Caller"}</div><div class="bub">${esc(m.t)}</div></div>`).join("") +
     (busy?`<div class="sys">…</div>`:"");
   el.scrollTop=el.scrollHeight;
 }
@@ -1941,13 +2042,6 @@ function drawCapt(){
   c.innerHTML = sendMode==="manual"
     ? '<small>Listening — '+words+' words</small>Take your time, then press Send'
     : '<small>Listening</small>Pause when done, or press Send';
-  return;
-  /* old caption below, unused */
-  const last=[...log].reverse().find(m=>m.w==="caller");
-  if(listening||heard){ c.className="capt me"; c.innerHTML="<small>You</small>"+(heard||"Listening…"); }
-  else if(last){ c.className="capt"; c.innerHTML=`<small>${speaking?"Caller speaking":"Caller"}</small>`+last.t; }
-  else { c.className="capt"; c.innerHTML="<small>Line 1</small>Ringing — tap Answer"; }
-
 }
 function drawMic(){
   const m=$("#micBtn");
@@ -1955,8 +2049,11 @@ function drawMic(){
   const lab=document.getElementById("micLabel");
   if(lab) lab.textContent = callLive ? "Hang up" : "Answer";
   m.disabled = !SR && !callLive;
+  m.setAttribute("aria-pressed", callLive?"true":"false");
+  m.setAttribute("aria-label", callLive ? "Hang up the call" : "Answer the call");
   const mu=document.getElementById("muteBtn");
-  if(mu){ mu.classList.toggle("hide",!callLive); mu.textContent = muted?"Unmute":"Mute"; }
+  if(mu){ mu.classList.toggle("hide",!callLive); mu.textContent = muted?"Unmute":"Mute";
+    mu.setAttribute("aria-pressed", muted?"true":"false"); }
   const sn=document.getElementById("sendNowBtn");
   if(sn) sn.classList.toggle("hide",!callLive);
 }
@@ -1994,8 +2091,71 @@ function drawCount(){
 function tick(){ secs++; const m=String(Math.floor(secs/60)).padStart(2,"0"), s=String(secs%60).padStart(2,"0");
   $("#clock").textContent=m+":"+s; }
 
+/* ---------- surviving a reload mid-call ----------
+   Nothing reaches the database until the job is created, so before this a crash,
+   a phone call stealing the browser, or a stray refresh cost the trainee the whole
+   call. The transcript and job file are mirrored into sessionStorage after every
+   turn; the audio recording cannot be saved this way and is honestly declared lost. */
+const DRAFT_KEY="oc_draft";
+function saveDraft(){
+  if(!job || !log.length) return;
+  try{
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+      jobId:job.id, log, chips, secs, form:formData(),
+      curVoice, curName, curVariant, at:Date.now()
+    }));
+  }catch(e){}
+}
+function clearDraft(){ try{ sessionStorage.removeItem(DRAFT_KEY); }catch(e){} }
+function readDraft(){
+  try{
+    const d=JSON.parse(sessionStorage.getItem(DRAFT_KEY)||"null");
+    if(!d || !d.jobId || !(d.log||[]).length) return null;
+    if(Date.now()-(d.at||0) > 6*3600*1000){ clearDraft(); return null; }  // stale overnight
+    return JOBS.some(j=>j.id===d.jobId) ? d : null;
+  }catch(e){ return null; }
+}
+function resumeDraft(d){
+  const j=JOBS.find(x=>x.id===d.jobId);
+  start(j);
+  log=d.log||[]; chips=d.chips||{}; secs=d.secs||0;
+  curVoice=d.curVoice||curVoice; curName=d.curName||curName;
+  curVariant=d.curVariant!=null?d.curVariant:curVariant;
+  setForm(d.form||{});
+  drawChips(); drawSteps(); drawLog(); drawCount();
+  callLive=true; drawMic(); drawCapt();
+  log.push({w:"sys",t:"Call restored — the recording could not be recovered"});
+  drawLog();
+  startRecording();     // start a fresh recording from here
+  saveDraft();
+}
+function offerResume(){
+  const d=readDraft(); if(!d) return false;
+  const j=JOBS.find(x=>x.id===d.jobId);
+  const turns=d.log.filter(m=>m.w!=="sys").length;
+  const box=document.getElementById("homeNext");
+  if(!box) return false;
+  box.insertAdjacentHTML("afterbegin",
+    `<div class="panel" id="resumeCard" style="background:#FFFBEE;border-color:var(--gold)">
+      <div class="lbl">You have a call in progress</div>
+      <div style="font-weight:600;color:var(--navy);margin-bottom:4px">${esc(j.title)}</div>
+      <div class="note">${turns} turn${turns===1?"":"s"} and your job file were saved when the page closed.
+        The audio recording was not — a resumed call records from here on.</div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn" id="resumeGo">Pick the call back up</button>
+        <button class="btn ghost" id="resumeDrop">Discard it</button>
+      </div>
+    </div>`);
+  document.getElementById("resumeGo").onclick=()=>resumeDraft(d);
+  document.getElementById("resumeDrop").onclick=()=>{
+    clearDraft(); const c=document.getElementById("resumeCard"); if(c) c.remove();
+  };
+  return true;
+}
+
 /* ============================ flow ============================ */
 function start(j){
+  clearDraft();
   callLive=false; muted=false; micOff(); touched=new Set(); stepOpen=null;
   curVoice = Math.random()<0.5 ? "m" : "f";
   curName  = ((ALT_NAMES[j.id]||{})[curVoice]) || "";
@@ -2190,6 +2350,7 @@ If your character would genuinely end the call, put ##END at the very end of the
     showErr("Could not reach the caller: "+e.message);
   }
   busy=false; drawMic(); drawLog(); drawCapt(); drawSteps();
+  saveDraft();
   if(callLive && !speaking) setTimeout(micOn,200);
 }
 
@@ -2204,13 +2365,13 @@ async function createJob(){
   const entered=Object.entries(f).map(([k,v])=>k+": "+(v||"(blank)")).join("; ");
   const ticked=CHIPS.filter(c=>chipDone(c,f)).map(c=>c.n).join(", ")||"none";
 
-  const system = `You are a QA supervisor at OnCall Locksmith / The Locksmith Crew, reviewing a trainee dispatcher's call against the Dispatcher Academy Handbook v2.0. The dispatcher spoke out loud (transcribed — ignore speech typos) and typed the job file while talking. Be specific, fair and direct.
-
-SCENARIO: ${job.title} — ${job.blurb}
-THE CALLER'S ACTUAL DETAILS — the job file must match these exactly:
-${factSheet(job.id)}
-WHAT THEY TYPED INTO THE JOB FILE: ${entered}
-CHECKLIST THEY TICKED: ${ticked}
+  /* Split in two so the edge function can cache the expensive half.
+     Everything above the split is identical on every scored call — the handbook,
+     the rubric, the output contract — so it is sent as a cacheable prefix. The
+     per-call facts go in the second block, after the cache breakpoint. The order
+     is load-bearing: anything that varies must come after, or the cache never
+     hits and the whole exercise is pointless. */
+  const systemStable = `You are a QA supervisor at OnCall Locksmith / The Locksmith Crew, reviewing a trainee dispatcher's call against the Dispatcher Academy Handbook v2.0. The dispatcher spoke out loud (transcribed — ignore speech typos) and typed the job file while talking. Be specific, fair and direct.
 
 HANDBOOK STANDARDS — judge against these, not generic call-centre theory:
 - GOLDEN RULE: educate before pricing. Quoting or discussing a number before explaining what the work involves is the single most common failure. Mark Customer Education down hard for it.
@@ -2258,8 +2419,17 @@ Score each of the six categories 0-5. Reply with ONLY valid JSON, no markdown. I
 {"scores":[{"c":"Greeting & Tone (10%)","s":0,"n":"max 12 words"}, ... one object for each of the 6 categories in this exact order: ${CATS.join(", ")}],"data":[{"f":"field","got":"what they typed","should":"what is actually correct"}],"strengths":["2 items, max 15 words"],"fixes":["3 items, max 18 words"],"rewrite":{"said":"one weak line they actually said","better":"a stronger version using approved wording"},"verdict":"PASS or NEEDS WORK"}
 Leave "data" empty if every field matches.`;
 
+  const systemCall = `THIS CALL:
+
+SCENARIO: ${job.title} — ${job.blurb}
+THE CALLER'S ACTUAL DETAILS — the job file must match these exactly:
+${factSheet(job.id)}
+WHAT THEY TYPED INTO THE JOB FILE: ${entered}
+CHECKLIST THEY TICKED: ${ticked}`;
+
   try{
-    let raw=await ask([{role:"user",content:transcript}],system,"review");
+    let raw=await ask([{role:"user",content:transcript}],
+      {stable:systemStable, call:systemCall},"review");
     try{ report=toJSON(raw); }
     catch(e1){
       const fixed=await ask(
@@ -2268,7 +2438,7 @@ Leave "data" empty if every field matches.`;
       report=toJSON(fixed);
     }
     report.total=(report.scores||[]).reduce((a,b)=>a+(Number(b.s)||0),0);
-    drawReview(); clearInterval(timer); await saveResult(blob, f);
+    drawReview(); clearInterval(timer); clearDraft(); await saveResult(blob, f);
     loadTest();
     if(testRun && (testRun.done||[]).length < TEST_TARGET){
       testRun.done.push({ id:job.id, scenario:job.title, total:report.total,
@@ -2288,6 +2458,7 @@ Leave "data" empty if every field matches.`;
         duration_secs: secs
       });
     }catch(e2){ console.warn(e2); }
+    clearDraft();
     showErr("Scoring failed ("+e.message+") but the call was saved — the transcript and recording are in Results.");
     wrapReady(false);
   }
@@ -3072,23 +3243,6 @@ async function saveResult(blob, f){
     });
   }catch(e){ console.warn("save failed",e); }
 }
-async function loadAudio(ix){
-  const r=(window.__rows||[])[ix], box=document.getElementById("aud"+ix);
-  if(!r||!box||!r.recording_path) return;
-  box.innerHTML='<span class="note">Loading…</span>';
-  const { data, error } = await sb.storage.from("recordings").createSignedUrl(r.recording_path, 3600);
-  if(error||!data){ box.innerHTML='<span class="note">Could not load: '+((error&&error.message)||"unknown")+'</span>'; return; }
-  box.innerHTML='<audio controls preload="none" style="width:100%" src="'+data.signedUrl+'"></audio>'+
-    '<a class="note" href="'+data.signedUrl+'" download style="display:inline-block;margin-top:6px">Download</a>';
-}
-function copyCall(ix){
-  const r=(window.__rows||[])[ix]; if(!r) return;
-  const head=`${r.scenario} — ${new Date(r.created_at).toLocaleString()}\n`+
-    (r.profiles&&r.profiles.full_name?`Dispatcher: ${r.profiles.full_name}\n`:"")+
-    `Score: ${r.total}${r.scenario_id==="typing"?"%":"/30"} ${r.verdict||""}\n\n`;
-  const body=(r.transcript||[]).map(m=>(m.w==="you"?"DISPATCHER: ":"CALLER: ")+m.t).join("\n");
-  navigator.clipboard.writeText(head+body).catch(()=>{});
-}
 /* ---------------- call test: a run of calls scored together ---------------- */
 const TEST_TARGET=30;
 let testRun=null;
@@ -3101,10 +3255,58 @@ function saveTest(){
   if(testRun) localStorage.setItem(testKey(), JSON.stringify(testRun));
   else localStorage.removeItem(testKey());
 }
+/* ---------- picking the next scenario ----------
+   Random selection wastes a trainee's time: it keeps handing them the calls they
+   already handle well. These weights push practice towards the scenarios they have
+   never taken and the ones they scored badly on, while still keeping enough variety
+   that the run doesn't become the same three calls over and over. */
+let scenarioStats={};                       // { [scenario_id]: {n, avg, last} }
+async function loadScenarioStats(){
+  if(!me || isGuest) { scenarioStats={}; return; }
+  try{
+    const {data}=await sb.from("results")
+      .select("scenario_id,total,created_at,verdict")
+      .eq("user_id",me.id).order("created_at",{ascending:false}).limit(300);
+    const acc={};
+    (data||[]).forEach(r=>{
+      if(!r.scenario_id || ["typing","exam","calltest"].includes(r.scenario_id)) return;
+      if(r.verdict==="NOT SCORED" || r.verdict==="VOIDED") return;
+      const a=acc[r.scenario_id]=acc[r.scenario_id]||{n:0,sum:0,last:r.created_at};
+      a.n++; a.sum+=(r.total||0);
+    });
+    Object.values(acc).forEach(a=>a.avg=a.sum/a.n);
+    scenarioStats=acc;
+  }catch(e){ scenarioStats={}; }
+}
+function jobWeight(j, avoid){
+  if(avoid && avoid.includes(j.id)) return 0.04;   // seen very recently: almost never
+  const st=scenarioStats[j.id];
+  if(!st) return 3.0;                              // never attempted: the strongest pull
+  if(st.avg<17) return 2.6;                        // failed it: needs another go
+  if(st.avg<22) return 1.6;                        // shaky
+  if(st.avg<26) return 0.9;
+  return 0.35;                                     // comfortably handled, low value
+}
+function weightedPick(pool, avoid){
+  const ws=pool.map(j=>jobWeight(j,avoid));
+  const total=ws.reduce((a,b)=>a+b,0);
+  if(!total) return pool[Math.floor(Math.random()*pool.length)];
+  let r=Math.random()*total;
+  for(let i=0;i<pool.length;i++){ r-=ws[i]; if(r<=0) return pool[i]; }
+  return pool[pool.length-1];
+}
 function nextTestJob(){
   const usedRecently=(testRun.done||[]).slice(-6).map(d=>d.id);
   const pool=JOBS.filter(j=>!usedRecently.includes(j.id));
-  return pool[Math.floor(Math.random()*pool.length)] || JOBS[Math.floor(Math.random()*JOBS.length)];
+  return weightedPick(pool.length?pool:JOBS, usedRecently);
+}
+/* Why this scenario is being suggested, in the trainee's terms. */
+function whyJob(j){
+  const st=scenarioStats[j.id];
+  if(!st) return "You have not taken this one";
+  if(st.avg<17) return "You did not pass this last time";
+  if(st.avg<22) return "Worth another go — you scored "+Math.round(st.avg)+"/30";
+  return null;
 }
 
 function drawTest(){
@@ -3196,18 +3398,18 @@ function drawTestReport(done){
     <div class="cols">
       <div class="panel"><div class="lbl">Where you are strong and where you are not</div>
         ${catAvg.map(x=>`<div class="diff" style="align-items:center">
-          <span style="flex:1;font-size:13.5px">${x.c.replace(/ \(.*/,"")}</span>
+          <span style="flex:1;font-size:13.5px">${esc(x.c.replace(/ \(.*/,""))}</span>
           <span style="display:flex;align-items:center;gap:8px;min-width:150px">
             <span style="flex:1;height:7px;background:#E6ECF1;border-radius:4px;overflow:hidden">
               <i style="display:block;height:100%;width:${Math.round(x.a/5*100)}%;background:${
                 x.a>=4?"var(--green)":x.a>=3?"var(--gold)":"var(--red)"}"></i></span>
             <b style="color:var(--navy);min-width:34px;text-align:right">${x.a.toFixed(1)}</b></span></div>`).join("")}
         ${catAvg.length?`<div class="note" style="margin-top:10px">Work on
-          <b>${catAvg[catAvg.length-1].c.replace(/ \(.*/,"")}</b> before anything else.</div>`:""}
+          <b>${esc(catAvg[catAvg.length-1].c.replace(/ \(.*/,""))}</b> before anything else.</div>`:""}
       </div>
       <div class="panel"><div class="lbl">Mistakes you kept repeating</div>
         ${topErrs.length?topErrs.map(([f,n])=>`<div class="diff">
-            <span>${f.replace(/_/g," ")}</span>
+            <span>${esc(f.replace(/_/g," "))}</span>
             <b style="color:${n>3?"var(--red)":"var(--navy)"}">${n} call${n>1?"s":""}</b></div>`).join("")
           :'<div class="note" style="color:var(--green)">No repeated errors across the whole run.</div>'}
         <div class="lbl" style="margin-top:16px">Your three weakest calls</div>
@@ -3253,19 +3455,19 @@ async function drawUsers(){
       return `<div class="panel" style="display:flex;justify-content:space-between;gap:12px;
               flex-wrap:wrap;align-items:center">
         <div style="flex:1;min-width:200px">
-          <div style="font-weight:600;color:var(--navy)">${u.full_name||"(no name)"}
+          <div style="font-weight:600;color:var(--navy)">${esc(u.full_name||"(no name)")}
             ${isSA?'<span class="vd" style="font-size:10px;padding:2px 8px;margin-left:6px">SUPER ADMIN</span>':""}</div>
-          <div class="note">${u.email}</div>
+          <div class="note">${esc(u.email)}</div>
           <div class="note">joined ${new Date(u.created_at).toLocaleDateString()}</div>
         </div>
         ${isSA?'<span class="note">always a supervisor</span>'
         : isSuperAdmin ? `<div class="chips" style="margin:0">
-            <button class="chip ${u.is_admin?"on":""}" data-role="1" data-uid="${u.id}">Supervisor</button>
-            <button class="chip ${u.is_admin?"":"on"}" data-role="0" data-uid="${u.id}">Trainee</button>
+            <button class="chip ${u.is_admin?"on":""}" data-role="1" data-uid="${esc(u.id)}">Supervisor</button>
+            <button class="chip ${u.is_admin?"":"on"}" data-role="0" data-uid="${esc(u.id)}">Trainee</button>
           </div>`
         : `<span class="chip on" style="cursor:default">${u.is_admin?"Supervisor":"Trainee"}</span>`}
         ${(!isSA && u.id!==me.id && (isSuperAdmin || !u.is_admin))
-          ? `<button class="btn ghost" data-rmuser="${u.id}"
+          ? `<button class="btn ghost" data-rmuser="${esc(u.id)}"
               style="border-color:var(--red);color:var(--red);padding:6px 10px;font-size:11px">Remove</button>`
           : ""}
       </div>`;
@@ -3339,14 +3541,25 @@ const skillFor = jt => { for(const [re,sk] of SKILL_RULES) if(re.test(jt||"")) r
 const skillsOf = t => Array.isArray(t.skills) ? t.skills : [];
 const canDo = (t,sk) => !sk || !skillsOf(t).length || skillsOf(t).includes(sk);
 
+/* Tracking links are bearer credentials — the token is the only thing standing
+   between a stranger and a technician's live position. Use the CSPRNG, not Math.random. */
+function newToken(){
+  const b=new Uint8Array(24); crypto.getRandomValues(b);
+  return [...b].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+
 const PALETTE=["#2C5FA8","#B3462F","#3E7D4F","#8C5BB0","#B07C1E","#1F7D86","#A8386B","#556070"];
 const colourOf = t => PALETTE[Math.abs(String(t.id).split("").reduce((a,c)=>a+c.charCodeAt(0),0))%PALETTE.length];
 const stopsOf  = t => Array.isArray(t.stops) ? t.stops : [];
 const sentText = st => { const a=st.assigned_at||st.started_at; return a ? ("sent "+sinceText(a)+" ago") : "sent"; };
+/* Reverse geocoding is billed per lookup, so the cache key is deliberately coarse.
+   Three decimals is about 110 m — far below the precision of a street label, but
+   enough that a technician driving a route doesn't bill a lookup every few seconds. */
 const revCache={};
+const revKey = (lat,lng) => lat.toFixed(3)+","+lng.toFixed(3);
 async function reverseFor(t){
   const lv=liveOf(t); if(!lv) return;
-  const key=lv.lat.toFixed(4)+","+lv.lng.toFixed(4);
+  const key=revKey(lv.lat,lv.lng);
   if(revCache[key]!==undefined) return;
   revCache[key]=null;
   try{
@@ -3357,10 +3570,15 @@ async function reverseFor(t){
 }
 const liveAddr = t => {
   const lv=liveOf(t); if(!lv) return null;
-  return revCache[lv.lat.toFixed(4)+","+lv.lng.toFixed(4)]||null;
+  return revCache[revKey(lv.lat,lv.lng)]||null;
 };
-const liveOf = t => (t.clocked_in && t.live_lat!=null && t.live_at &&
-  (Date.now()-new Date(t.live_at).getTime()) < 15*60000)
+const posAge = t => (t.live_at ? Date.now()-new Date(t.live_at).getTime() : Infinity);
+const FRESH_MS = 15*60000;
+const liveOf = t => (t.clocked_in && t.live_lat!=null && posAge(t) < FRESH_MS)
+  ? {lat:t.live_lat, lng:t.live_lng, at:t.live_at} : null;
+/* Clocked in, but the phone has gone quiet — usually a locked screen suspending
+   the page timer. The last known position is still worth showing, clearly labelled. */
+const staleOf = t => (t.clocked_in && t.live_lat!=null && posAge(t) >= FRESH_MS && t.live_at)
   ? {lat:t.live_lat, lng:t.live_lng, at:t.live_at} : null;
 
 async function geoCall(body){
@@ -3428,26 +3646,34 @@ function paintMap(extra){
     const col=colourOf(t), line=[];
     stopsOf(t).forEach((st,i)=>{
       if(st.lat==null) return;
-      const html='<div class="pin" style="background:'+col+'">'+t.name+(i?" ②③④⑤".trim()[i]||(" "+(i+1)):"")+'</div>';
+      const html='<div class="pin" style="background:'+col+'">'+esc(t.name)+(i?" ②③④⑤".trim()[i]||(" "+(i+1)):"")+'</div>';
       L.marker([st.lat,st.lng],{icon:L.divIcon({className:"",html,iconSize:null})}).addTo(techLayer)
-       .bindPopup("<b>"+t.name+"</b> — stop "+(i+1)+"<br>"+(st.job_type||"")+"<br>"+
-                  (st.label||st.address||"")+"<br><i>"+sentText(st)+(i?" &middot; queued":" &middot; current")+"</i>");
+       .bindPopup("<b>"+esc(t.name)+"</b> — stop "+(i+1)+"<br>"+esc(st.job_type||"")+"<br>"+
+                  esc(st.label||st.address||"")+"<br><i>"+esc(sentText(st))+(i?" &middot; queued":" &middot; current")+"</i>");
       line.push([st.lat,st.lng]); pts.push([st.lat,st.lng]);
     });
     const lv=liveOf(t);
     if(lv){
       L.marker([lv.lat,lv.lng],{icon:L.divIcon({className:"",
         html:'<div class="livedot" style="background:'+col+'"></div>',iconSize:[16,16],iconAnchor:[8,8]})})
-        .addTo(techLayer).bindPopup("<b>"+t.name+"</b><br>"+(liveAddr(t)||"live position")+"<br><i>"+sinceText(lv.at)+" ago</i>");
+        .addTo(techLayer).bindPopup("<b>"+esc(t.name)+"</b><br>"+esc(liveAddr(t)||"live position")+"<br><i>"+esc(sinceText(lv.at))+" ago</i>");
       pts.push([lv.lat,lv.lng]);
       if(line.length) L.polyline([[lv.lat,lv.lng],line[0]],{color:col,weight:2,opacity:.55}).addTo(techLayer);
+    }
+    const sv=staleOf(t);
+    if(sv){
+      L.marker([sv.lat,sv.lng],{icon:L.divIcon({className:"",
+        html:'<div class="livedot stale" style="background:'+col+'"></div>',iconSize:[16,16],iconAnchor:[8,8]})})
+        .addTo(techLayer).bindPopup("<b>"+esc(t.name)+"</b><br>Last known position<br><i>"+
+          esc(sinceText(sv.at))+" ago — not current</i>");
+      pts.push([sv.lat,sv.lng]);
     }
     if(line.length>1) L.polyline(line,{color:col,weight:2,dashArray:"5,6",opacity:.7}).addTo(techLayer);
   });
   if(extra && extra.job){
     L.marker([extra.job.lat,extra.job.lng],{icon:L.divIcon({className:"",
       html:'<div class="pin job">NEW JOB</div>',iconSize:null})}).addTo(techLayer)
-      .bindPopup("<b>New job</b><br>"+extra.job.label);
+      .bindPopup("<b>New job</b><br>"+esc(extra.job.label));
     pts.push([extra.job.lat,extra.job.lng]);
   }
   if(pts.length===1) techMap.setView(pts[0],13);
@@ -3584,31 +3810,74 @@ async function drawTechs(){
   $("#gapBtn").onclick=()=>{ gapOn=!gapOn; ensureMap(); drawGaps(); };
   $("#addTechBtn").onclick=()=>{ techEdit={new:true, stops:[{}]}; paintTechs(); };
   const {data,error}=await sb.from("techs").select("*").order("name");
-  if(error){ $("#techList").innerHTML='<div class="note">Could not load: '+error.message+'</div>'; return; }
+  if(error){ $("#techList").innerHTML='<div class="note">Could not load: '+esc(error.message)+'</div>'; return; }
   techs=data||[];
   paintTechs(); paintMap(lastFind);
-  clearInterval(sinceTimer);
   techs.forEach(reverseFor);
+  watchTechs();
+}
+
+/* ---------- live board ----------
+   A tech clocking in used to take up to thirty seconds to appear, because the
+   board polled. Realtime pushes the row the moment it changes. The slow timer
+   stays as a safety net for a dropped socket, and to re-render the "sent 12 min
+   ago" strings, which go stale on their own with no database change behind them. */
+let techChan=null;
+function watchTechs(){
   clearInterval(sinceTimer);
+  const boardOpen = () => !$("#v-techs").classList.contains("hide");
+
+  if(!techChan){
+    try{
+      techChan = sb.channel("techs-board")
+        .on("postgres_changes", {event:"*", schema:"public", table:"techs"}, payload=>{
+          if(techEdit) return;                    // never yank the form out from under an edit
+          const row=payload.new, old=payload.old;
+          if(payload.eventType==="DELETE"){ techs=techs.filter(t=>t.id!==(old||{}).id); }
+          else if(row){
+            const i=techs.findIndex(t=>t.id===row.id);
+            if(i<0) techs.push(row); else techs[i]=row;
+            techs.sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+            reverseFor(row);
+          }
+          if(boardOpen()){ paintTechs(); paintMap(lastFind); }
+        })
+        .subscribe(status=>{ setLiveBadge(status==="SUBSCRIBED"); });
+    }catch(e){ setLiveBadge(false); }
+  }
+
+  /* Realtime carries row changes, not the passage of time — repaint on a slow
+     tick so the relative timestamps and the LIVE/STALE flip stay truthful. */
   sinceTimer=setInterval(()=>{
-    if(!$("#v-techs").classList.contains("hide")) refreshBoard(true);
+    if(!boardOpen()) return;
+    if(techChan && techChan.state==="joined") paintTechs();
+    else refreshBoard(true);
   },30000);
+}
+function setLiveBadge(on){
+  const el=document.getElementById("liveBadge");
+  if(!el) return;
+  el.textContent = on ? "Live" : "Polling";
+  el.className = "livebadge"+(on?" on":"");
+  el.title = on ? "The board updates the moment anything changes."
+                : "Realtime is not connected — the board refreshes every 30 seconds instead. "+
+                  "Enable replication on the techs table in Supabase to get instant updates.";
 }
 
 function techFormHtml(t){
   const stops = (t.stops && t.stops.length) ? t.stops : [{}];
   return `<div class="panel" style="border-color:var(--teal)">
-    <div class="lbl">${t.id?"Editing "+t.name:"New technician"}</div>
-    <div class="f"><input class="in" id="tfName" placeholder="Name" value="${(t.name||"").replace(/"/g,"&quot;")}"></div>
+    <div class="lbl">${t.id?"Editing "+esc(t.name):"New technician"}</div>
+    <div class="f"><input class="in" id="tfName" placeholder="Name" value="${esc(t.name||"")}"></div>
     <div class="lbl" style="margin-top:6px">Jobs, in the order he works them</div>
     <div id="stopRows">${stops.map((st,i)=>stopRowHtml(st,i)).join("")}</div>
     <button class="btn ghost" id="tfAddStop" style="margin-bottom:12px">+ Add next job</button>
     <div class="lbl" style="margin-top:10px">What he can work on</div>
     <div class="chips" id="tfSkills" style="margin-bottom:12px">${SKILLS.map(sk=>
-      `<button type="button" class="chip ${(t.skills||[]).includes(sk)?"on":""}" data-sk="${sk}">${sk}</button>`).join("")}</div>
+      `<button type="button" class="chip ${(t.skills||[]).includes(sk)?"on":""}" data-sk="${esc(sk)}">${esc(sk)}</button>`).join("")}</div>
     <div class="note" style="margin-top:-6px;margin-bottom:12px">Leave all off if he covers everything.</div>
     <div class="f"><input class="in" id="tfStatus" placeholder="Note, e.g. finishing about 3pm"
-      value="${(t.status||"").replace(/"/g,"&quot;")}"></div>
+      value="${esc(t.status||"")}"></div>
     <button class="btn" id="tfSave">Save</button>
     <button class="btn ghost" id="tfCancel" style="margin-left:8px">Cancel</button>
     <div class="note" id="tfMsg" style="margin-top:10px"></div>
@@ -3621,7 +3890,7 @@ function stopRowHtml(st,i){
       ${i?`<button class="btn ghost" data-rmstop="${i}" style="padding:4px 8px;font-size:11px">Remove</button>`:""}
     </div>
     <div class="f" style="margin-bottom:6px"><input class="in sAddr" placeholder="Address"
-      value="${(st.address||"").replace(/"/g,"&quot;")}"></div>
+      value="${esc(st.address||"")}"></div>
     <select class="in sJob">${jobOptions(st.job_type||"")}</select>
   </div>`;
 }
@@ -3640,38 +3909,44 @@ function paintTechs(){
     (live?" · "+live+" live":"");
   $("#techList").innerHTML=techs.map(t=>{
     if(techEdit && techEdit.id===t.id) return techFormHtml(techEdit);
-    const col=colourOf(t), sts=stopsOf(t);
+    const col=colourOf(t), sts=stopsOf(t), lv=liveOf(t), stale=staleOf(t);
     return `<div class="panel" style="border-left:4px solid ${col}">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
         <div style="flex:1;min-width:0">
-          <div style="font-weight:600;color:var(--navy);font-size:16px">${t.name}</div>
-          ${t.status?`<div class="note">${t.status}</div>`:""}
+          <div style="font-weight:600;color:var(--navy);font-size:16px">${esc(t.name)}</div>
+          ${t.status?`<div class="note">${esc(t.status)}</div>`:""}
 
-        ${liveOf(t)
+        ${lv
           ? `<div class="liveline"><span class="livetag">LIVE</span>
-               <span class="liveaddr" title="${liveAddr(t)||""}">${liveAddr(t) || "locating…"}</span>
-               <span class="liveago">${sinceText(liveOf(t).at)} ago</span></div>`
-          : t.clocked_in ? `<div class="note">Clocked in, no recent position</div>`
+               <span class="liveaddr" title="${esc(liveAddr(t)||"")}">${esc(liveAddr(t) || "locating…")}</span>
+               <span class="liveago">${esc(sinceText(lv.at))} ago</span></div>`
+          : stale
+            ? `<div class="liveline"><span class="livetag stale">STALE</span>
+                 <span class="liveaddr">Last seen ${esc(sinceText(stale.at))} ago</span></div>
+               <div class="note">His phone stopped reporting — the position on the map is where he was, not where he is.</div>`
+          : t.clocked_in ? `<div class="note">Clocked in, no position yet</div>`
           : `<div class="note" style="color:var(--muted)">Not clocked in</div>`}
         </div>
-        ${dispatchOK?`<div style="display:flex;gap:6px;flex-shrink:0">
-          <button class="btn ghost" data-link="${t.token||""}" data-name="${t.name}"
+        ${dispatchOK?`<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn ghost" data-link="${esc(t.token||"")}" data-name="${esc(t.name)}"
             style="padding:6px 10px;font-size:11px">Link</button>
-          <button class="btn ghost" data-ed="${t.id}" style="padding:6px 10px;font-size:11px">Edit</button>
+          <button class="btn ghost" data-newlink="${esc(t.id)}" data-name="${esc(t.name)}"
+            style="padding:6px 10px;font-size:11px" title="Issue a new link and kill the old one">New link</button>
+          <button class="btn ghost" data-ed="${esc(t.id)}" style="padding:6px 10px;font-size:11px">Edit</button>
           <button class="btn ghost" style="border-color:var(--red);color:var(--red);padding:6px 10px;font-size:11px"
-            data-del="${t.id}">Remove</button></div>`:""}
+            data-del="${esc(t.id)}">Remove</button></div>`:""}
       </div>
       ${sts.length?sts.map((st,i)=>`<div class="stopline">
           <span class="stopno" style="background:${i?"#AEB9C4":col}">${i+1}</span>
           <span style="flex:1;min-width:0">
-            <div style="font-size:13px;color:var(--navy)">${st.job_type||"job"}</div>
-            <div class="note">${st.label||st.address||"no address"}</div>
+            <div style="font-size:13px;color:var(--navy)">${esc(st.job_type||"job")}</div>
+            <div class="note">${esc(st.label||st.address||"no address")}</div>
             <div class="note" style="color:${i?"var(--muted)":"var(--teal)"}">
-              ${sentText(st)}${i===0?(liveOf(t)?" · heading there":" · current job"):" · queued"}</div>
+              ${esc(sentText(st))}${i===0?(lv?" · heading there":" · current job"):" · queued"}</div>
           </span>
           ${dispatchOK?`<span class="stopacts">
-            <button class="stopbtn done" data-done="${t.id}:${i}" title="Job finished">&#10003;</button>
-            <button class="stopbtn cancel" data-cancel="${t.id}:${i}" title="Job cancelled">&#10005;</button>
+            <button class="stopbtn done" data-done="${esc(t.id)}:${i}" title="Job finished">&#10003;</button>
+            <button class="stopbtn cancel" data-cancel="${esc(t.id)}:${i}" title="Job cancelled">&#10005;</button>
           </span>`:""}</div>`).join("")
         :'<div class="note" style="margin-top:8px">No jobs assigned.</div>'}
     </div>`;
@@ -3685,6 +3960,20 @@ function paintTechs(){
     navigator.clipboard.writeText(url).catch(()=>{});
     prompt("Send this private link to "+b.dataset.name+
       ". They open it on their phone and press Clock in.\n\n(copied to your clipboard)", url);
+  });
+  $$("[data-newlink]").forEach(b=>b.onclick=async()=>{
+    const name=b.dataset.name;
+    if(!confirm("Issue a new link for "+name+"?\n\nHis old link stops working immediately. "+
+                "He will need the new one to clock in.")) return;
+    b.disabled=true;
+    const token=newToken();
+    const {error}=await sb.from("techs").update({token}).eq("id",b.dataset.newlink);
+    b.disabled=false;
+    if(error){ alert("Could not issue a new link: "+error.message); return; }
+    const url=location.origin+location.pathname+"?track="+token;
+    navigator.clipboard.writeText(url).catch(()=>{});
+    prompt("New link for "+name+". The old one is now dead.\n\n(copied to your clipboard)", url);
+    drawTechs();
   });
   $$("[data-ed]").forEach(b=>b.onclick=()=>{
     techEdit=JSON.parse(JSON.stringify(techs.find(x=>x.id==b.dataset.ed))); paintTechs(); });
@@ -3848,38 +4137,105 @@ function paintBandPin(){
 
 async function drawHome(){
   const first=((($("#whoTop").textContent)||"").split(" ")[0])||"";
-  $("#homeHi").textContent = first ? "Hello, "+first : "Dispatcher Academy";
-  $("#homeCrumb").textContent = isSuperAdmin ? "Super admin" : (isGuest ? "Guest session" : (isAdmin ? "Supervisor" : "Trainee"));
-  $("#homeSub").textContent = isAdmin
-    ? "Take calls yourself, or review how your dispatchers are doing."
-    : "Work through the academy, then take live calls until they feel easy.";
+  const hr=new Date().getHours();
+  const part = hr<12 ? "Good morning" : hr<18 ? "Good afternoon" : "Good evening";
+  $("#homeHi").textContent = first ? part+", "+first : "Dispatcher Academy";
+  $("#homeCrumb").textContent = isSuperAdmin ? "Super admin" : isAdmin ? "Supervisor"
+    : isGuest ? "Guest session" : "Dispatcher in training";
+  const d=new Date();
+  $("#homeDate").innerHTML="<b>"+d.toLocaleDateString(undefined,{weekday:"long"})+"</b>"+
+    d.toLocaleDateString(undefined,{day:"numeric",month:"long"});
 
   const trained = localStorage.getItem(trainedKey())==="done";
+  loadTest();
+  const testDone=(testRun&&testRun.done)?testRun.done.length:0;
+
+  // what has this person actually done?
+  let calls=[], exam=null;
+  if(me && !isGuest){
+    try{
+      const {data}=await sb.from("results").select("total,verdict,scenario_id,scores,created_at")
+        .eq("user_id",me.id).order("created_at",{ascending:false}).limit(200);
+      calls=(data||[]).filter(r=>!["typing","exam","calltest"].includes(r.scenario_id));
+      exam=(data||[]).find(r=>r.scenario_id==="exam")||null;
+    }catch(e){}
+  }
+  const avg=calls.length?Math.round(calls.reduce((a,b2)=>a+(b2.total||0),0)/calls.length):0;
+
+  // ---- the one thing worth doing next ----
+  let n;
+  if(!trained)
+    n={kick:"Start here",h:"Work through the academy",go:"learn",cta:"Open training",
+       p:"The call flow, all 25 services, the equipment and the words. About an hour, and everything after it gets easier."};
+  else if(!calls.length)
+    n={kick:"Next up",h:"Take your first call",go:"board",cta:"Pick a call",
+       p:"Seventeen scenarios built from real OnCall calls. Answer, fill the job file, get scored."};
+  else if(testDone>0 && testDone<TEST_TARGET)
+    n={kick:"In progress",h:"Call test — "+testDone+" of "+TEST_TARGET+" done",go:"test",cta:"Continue the test",
+       p:"Pick up where you stopped. Your completed calls are saved."};
+  else if(!exam)
+    n={kick:"When you are ready",h:"Sit the certification exam",go:"learn",cta:"Go to the exam",
+       p:"36 questions across everything in the academy. 85% to pass, and you can retake it as often as you like."};
+  else if(calls.length<10)
+    n={kick:"Keep going",h:"More calls, harder ones",go:"board",cta:"Take a call",
+       p:"You have taken "+calls.length+". The awkward scenarios — the price shopper, the one with no address — are where the learning is."};
+  else
+    n={kick:"The real assessment",h:"Run the "+TEST_TARGET+"-call test",go:"test",cta:"Start the test",
+       p:"Thirty calls back to back, scored together. It shows patterns a single call never will."};
+
+  $("#homeNext").innerHTML=`<button class="nextcard" data-tile="${n.go}">
+      <span style="flex:1;min-width:220px;text-align:left">
+        <span class="nc-kick">${n.kick}</span>
+        <h2>${n.h}</h2><p>${n.p}</p>
+      </span>
+      <span class="nc-go"><span class="btn" style="pointer-events:none">${esc(n.cta)}</span></span>
+    </button>`;
+  offerResume();
+
+  // ---- progress rail ----
+  const bar=(pct,col)=>`<div class="tbar"><i style="width:${pct}%;background:${col}"></i></div>`;
+  const track=[
+    {n:"Training", v:trained?"Done":"Not started", pct:trained?100:0,
+     col:"var(--green)", go:"learn", s:trained?"Revisit any section":"About an hour"},
+    {n:"Calls taken", v:calls.length, pct:Math.min(100,calls.length/10*100),
+     col:"var(--teal)", go:"results", who:"me",
+     s:calls.length?("average "+avg+"/30"):"none yet"},
+    {n:"Exam", v:exam?exam.total+"%":"—", pct:exam?exam.total:0,
+     col:exam&&exam.total>=85?"var(--green)":"var(--gold)", go:"learn",
+     s:exam?(exam.verdict==="PASS"?"passed":"not passed yet"):"not sat"},
+    {n:"Call test", v:testDone+"/"+TEST_TARGET, pct:Math.round(testDone/TEST_TARGET*100),
+     col:"var(--gold)", go:"test", s:testDone>=TEST_TARGET?"complete":testDone?"in progress":"not started"}
+  ];
+  $("#homeTrack").innerHTML=track.map(t=>`<button class="tcard" data-tile="${t.go}" data-who="${t.who||""}">
+      <span class="t-h"><span class="t-n">${t.n}</span></span>
+      <div class="t-v">${t.v}</div>
+      ${bar(t.pct,t.col)}
+      <div class="tstate">${t.s}</div>
+    </button>`).join("");
+  if(isGuest) $("#homeTrack").innerHTML='<div class="note">Guest session — nothing is saved. Register to keep your progress.</div>';
+
+  // ---- everything else ----
   const tiles=[
     {go:"learn", ic:ICONS.learn, bg:"#FFF6E2", h:"Training",
-     p: trained ? "The handbook, all 25 services, the typing test and the certification exam."
-                : "Start here. The handbook, all 25 services, the typing test and the certification exam.",
-     bar: trained?100:0, note: trained?"Completed →":"Not started yet →"},
+     p:"Handbook, 25 services, equipment, glossary, exam."},
     {go:"board", ic:ICONS.board, bg:"#E4F4F6", h:"Take a call",
-     p:JOBS.length+" scenarios taken from real calls. You answer, you fill the job file, you get scored."},
-    {go:"setup", ic:ICONS.setup, bg:"#EDF1F5", h:"Settings",
-     p:"Caller voices, microphone sensitivity, when your turn gets sent."}
+     p:JOBS.length+" scenarios taken from real calls."},
+    {go:"test", ic:ICONS.test, bg:"#FDF0E4", h:"Call test",
+     p:TEST_TARGET+" calls back to back, scored together."},
+    {go:"results", who:"me", ic:ICONS.mine, bg:"#E9F7EF", h:"My results",
+     p:"Scores, what you missed, transcripts and recordings."}
   ];
-  tiles.splice(2,0,{go:"test", ic:ICONS.test, bg:"#FDF0E4", h:"Call test",
-    p:"A run of "+TEST_TARGET+" calls back to back, scored together at the end. The real assessment."});
-  tiles.splice(3,0,{go:"results", who:"me", ic:ICONS.mine, bg:"#E9F7EF", h:"My results",
-    p:"Your own calls — scores, what you missed, transcripts and recordings."});
-  if(isAdmin) tiles.splice(4,0,{go:"results", who:"all", ic:ICONS.team, bg:"#EAF0FA", h:"Team results",
-    p:"Every call your dispatchers have taken, grouped by person."});
-  if(isSuperAdmin) tiles.push({go:"users", ic:ICONS.users, bg:"#F2EDFA", h:"Users",
-    p:"Who has an account, and who is a supervisor."});
+  if(isAdmin) tiles.push({go:"results", who:"all", ic:ICONS.team, bg:"#EAF0FA", h:"Team results",
+    p:"Every call your dispatchers have taken."});
+  if(isAdmin) tiles.push({go:"users", ic:ICONS.users, bg:"#F2EDFA", h:"Users",
+    p:isSuperAdmin?"Who has an account, and who is a supervisor.":"Who is on the team."});
+  tiles.push({go:"setup", ic:ICONS.setup, bg:"#EDF1F5", h:"Settings",
+    p:"Microphone, caller voices, speech recognition."});
 
   $("#homeTiles").innerHTML = tiles.map(t=>`
     <button class="tile" data-tile="${t.go}" data-who="${t.who||''}">
       <div class="tile-ic" style="background:${t.bg}">${t.ic}</div>
       <h3>${t.h}</h3><p>${t.p}</p>
-      ${t.bar!==undefined?`<div class="tile-bar"><i style="width:${t.bar}%"></i></div>
-        <span class="tile-go">${t.note}</span>`:`<span class="tile-go">Open →</span>`}
     </button>`).join("");
 
   $("#homeDispatch").innerHTML=`
@@ -3890,7 +4246,7 @@ async function drawHome(){
       <span>
         <h3>Dispatch board</h3>
         <p>Live map of where every technician is working, how long they have been there, and who is
-           closest to a new job. Needs the dispatch code.</p>
+           closest to a new job.</p>
       </span>
       <span class="db-pin" id="dbPin"></span>
     </button>`;
@@ -3911,6 +4267,46 @@ async function drawHome(){
 
 let touched=new Set();
 let resRows=[], resOpen=null, resSel=new Set(), resWho="me", resFold={};
+let resQuery="";
+
+/* Search runs over the transcript, the job file and the coaching notes, because
+   the useful questions are phrased in the caller's words, not in field names:
+   "who quoted before educating", "which calls mentioned a child in the car". */
+function rowText(r){
+  if(r.__text==null){
+    r.__text = [
+      r.scenario||"", r.verdict||"", r.caller_name||"",
+      (r.transcript||[]).map(m=>m.t).join(" "),
+      Object.values(r.job_form||{}).join(" "),
+      (r.fixes||[]).join(" "),
+      (r.data_errors||[]).map(d=>[d.f,d.got,d.should].join(" ")).join(" ")
+    ].join(" ").toLowerCase();
+  }
+  return r.__text;
+}
+/* Every word has to appear somewhere in the row, in any order. Quoted runs of
+   words must appear together — "child in the car" should not match a call that
+   happens to contain all four words scattered about. */
+function matchesQuery(r,q){
+  if(!q) return true;
+  const text=rowText(r);
+  const terms=(q.toLowerCase().match(/"[^"]+"|\S+/g)||[])
+    .map(t=>t.replace(/^"|"$/g,"").trim()).filter(Boolean);
+  return terms.every(t=>text.includes(t));
+}
+/* Show the caller's or dispatcher's actual line around the hit, not the whole call. */
+function snippetFor(r,q){
+  if(!q) return "";
+  const first=(q.toLowerCase().match(/"[^"]+"|\S+/g)||[])[0];
+  if(!first) return "";
+  const needle=first.replace(/^"|"$/g,"").toLowerCase();
+  const hit=(r.transcript||[]).find(m=>(m.t||"").toLowerCase().includes(needle));
+  if(!hit) return "";
+  const t=hit.t, i=t.toLowerCase().indexOf(needle);
+  const from=Math.max(0,i-45), to=Math.min(t.length,i+needle.length+65);
+  return (hit.w==="you"?"Dispatcher: ":"Caller: ")+
+    (from?"…":"")+t.slice(from,to)+(to<t.length?"…":"");
+}
 
 async function drawResults(){
   const wrap=$("#resWrap");
@@ -3960,13 +4356,18 @@ function paintResults(){
   $("#resSub").textContent=calls.length+" calls · average "+avg+"/30 · "+pass+" passed"+
     (typings?" · "+typings+" typing tests":"");
 
-  let head="";
+  let head=`<div class="f" style="margin-bottom:12px">
+      <input class="in" id="resSearch" placeholder="Search transcripts, job files and coaching notes"
+        value="${esc(resQuery)}" autocomplete="off" style="padding-right:80px">
+      ${resQuery?`<button class="btn ghost" id="resClear"
+        style="position:absolute;right:6px;top:6px;padding:6px 10px;font-size:11px">Clear</button>`:""}
+    </div>`;
   if(isAdmin){
     const people=[...new Set(resRows.map(nameOf))].sort();
     head=`<div class="chips" style="margin-bottom:12px">
       <button class="chip ${resWho==="me"?"on":""}" data-who="me">My calls</button>
       <button class="chip ${resWho==="all"?"on":""}" data-who="all">Everyone</button>
-      ${people.map(p=>`<button class="chip ${resWho===p?"on":""}" data-who="${p.replace(/"/g,"&quot;")}">${p}</button>`).join("")}
+      ${people.map(p=>`<button class="chip ${resWho===p?"on":""}" data-who="${esc(p)}">${esc(p)}</button>`).join("")}
     </div>`;
   }
   if(resSel.size){
@@ -3979,13 +4380,21 @@ function paintResults(){
       </span></div>`;
   }
 
-  const shown = resWho==="all" ? resRows
+  let shown = resWho==="all" ? resRows
     : resWho==="me" ? resRows.filter(r=>r.user_id===me.id)
     : resRows.filter(r=>nameOf(r)===resWho);
+  if(resQuery){
+    const before=shown.length;
+    shown=shown.filter(r=>matchesQuery(r,resQuery));
+    head+=`<div class="note" style="margin-bottom:10px">
+      ${shown.length} of ${before} calls match <b>${esc(resQuery)}</b>.
+      ${shown.length?"":"Try fewer words, or put a phrase in quotes to match it exactly."}</div>`;
+  }
   let body="";
   if(isAdmin && resWho==="all"){
     const groups={};
     shown.forEach(r=>{ (groups[nameOf(r)]=groups[nameOf(r)]||[]).push(r); });
+    if(!Object.keys(groups).length) body='<div class="note">Nothing matches that search.</div>';
     body=Object.keys(groups).sort().map(who=>{
       const rows=groups[who];
       const c=rows.filter(r=>!isTypingRow(r));
@@ -3994,27 +4403,57 @@ function paintResults(){
       return `<div class="panel" style="padding:0;overflow:hidden;margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;
              padding:12px 14px;background:#F7F9FB;border-bottom:1px solid var(--line2);flex-wrap:wrap">
-          <span style="cursor:pointer;flex:1;min-width:160px" data-fold="${who.replace(/"/g,"&quot;")}">
-            <b style="color:var(--navy);font-size:16px">${folded?"▸":"▾"} ${who}</b>
+          <span style="cursor:pointer;flex:1;min-width:160px" data-fold="${esc(who)}">
+            <b style="color:var(--navy);font-size:16px">${folded?"▸":"▾"} ${esc(who)}</b>
             <span class="note"> · ${c.length} calls · average ${a}/30</span>
           </span>
           <span style="display:flex;gap:6px">
-            <button class="btn ghost" data-selall="${who.replace(/"/g,"&quot;")}">Select all</button>
+            <button class="btn ghost" data-selall="${esc(who)}">Select all</button>
             <button class="btn ghost" style="border-color:var(--red);color:var(--red)"
-              data-delall="${who.replace(/"/g,"&quot;")}">Delete all</button>
+              data-delall="${esc(who)}">Delete all</button>
           </span>
         </div>
         <div style="padding:0 14px 6px">${folded?"":rows.map(rowHtml).join("")}</div>
       </div>`;
     }).join("");
   } else {
-    const personal = (resWho==="me" || !isAdmin) ? personalPanel(shown) : "";
-    body = personal + `<div class="lbl" style="margin-bottom:8px">Every call, most recent first</div>
-      <div class="panel">${shown.map(rowHtml).join("")}</div>`;
+    /* The stats panel describes the person, so it ignores the search filter —
+       otherwise searching for one word would redraw their whole history around it. */
+    const all = resWho==="all" ? resRows
+      : resWho==="me" ? resRows.filter(r=>r.user_id===me.id)
+      : resRows.filter(r=>nameOf(r)===resWho);
+    const personal = (resWho==="me" || !isAdmin) ? personalPanel(all) : "";
+    body = personal + `<div class="lbl" style="margin-bottom:8px">${
+        resQuery ? "Matching calls" : "Every call, most recent first"}</div>
+      <div class="panel">${shown.length?shown.map(rowHtml).join("")
+        :'<div class="note">Nothing matches that search.</div>'}</div>`;
   }
 
   wrap.innerHTML=head+body;
   wireResults();
+}
+
+/* A run of scores says more than an average does — an average hides whether
+   someone is climbing or sliding. Plotted inline as a tiny SVG, oldest to newest. */
+function sparkline(vals, max, w, h){
+  if(vals.length<2) return "";
+  const pad=3, W=w||220, H=h||44, M=max||30;
+  const x=i=>pad+i*(W-pad*2)/(vals.length-1);
+  const y=v=>H-pad-(Math.max(0,Math.min(M,v))/M)*(H-pad*2);
+  const pts=vals.map((v,i)=>x(i).toFixed(1)+","+y(v).toFixed(1));
+  const area="M"+pts[0]+" L"+pts.slice(1).join(" L")+
+    " L"+x(vals.length-1).toFixed(1)+","+(H-pad)+" L"+x(0).toFixed(1)+","+(H-pad)+" Z";
+  const passY=y(17).toFixed(1);   // the pass line, so the shape means something
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none"
+      role="img" aria-label="Scores from oldest to newest, out of ${M}">
+    <line x1="${pad}" y1="${passY}" x2="${W-pad}" y2="${passY}"
+      stroke="var(--line)" stroke-width="1" stroke-dasharray="3,3"/>
+    <path d="${area}" fill="rgba(43,175,189,.13)"/>
+    <polyline points="${pts.join(" ")}" fill="none" stroke="var(--teal)"
+      stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${x(vals.length-1).toFixed(1)}" cy="${y(vals[vals.length-1]).toFixed(1)}"
+      r="3.5" fill="var(--teal)"/>
+  </svg>`;
 }
 
 function personalPanel(rows){
@@ -4060,20 +4499,25 @@ function personalPanel(rows){
       : trend<-1 ? "Your recent calls are scoring lower than your early ones. Worth slowing down and working the script."
       : "Your scores are holding steady."}</div>`:""}
 
+    ${chron.length>=3?`<div class="lbl" style="margin-top:18px">Your last ${Math.min(chron.length,20)} calls</div>
+      ${sparkline(chron.slice(-20).map(r=>r.total||0),30)}
+      <div class="note" style="display:flex;justify-content:space-between;margin-top:2px">
+        <span>oldest</span><span>dashed line is the pass mark</span><span>newest</span></div>`:""}
+
     ${catAvg.length?`<div class="lbl" style="margin-top:18px">Where you are strong and where you are not</div>
       ${catAvg.map(x=>`<div class="diff" style="align-items:center">
-        <span style="flex:1;font-size:13.5px">${x.c.replace(/ \(.*/,"")}</span>
+        <span style="flex:1;font-size:13.5px">${esc(x.c.replace(/ \(.*/,""))}</span>
         <span style="display:flex;align-items:center;gap:8px;min-width:150px">
           <span style="flex:1;height:7px;background:#E6ECF1;border-radius:4px;overflow:hidden">
             <i style="display:block;height:100%;width:${Math.round(x.a/5*100)}%;
               background:${x.a>=4?"var(--green)":x.a>=3?"var(--gold)":"var(--red)"}"></i></span>
           <b style="color:var(--navy);min-width:34px;text-align:right">${x.a.toFixed(1)}</b>
         </span></div>`).join("")}
-      <div class="note" style="margin-top:8px">Strongest: <b>${catAvg[0].c.replace(/ \(.*/,"")}</b>.
-        Weakest: <b>${catAvg[catAvg.length-1].c.replace(/ \(.*/,"")}</b> — that is the one to work on next.</div>`:""}
+      <div class="note" style="margin-top:8px">Strongest: <b>${esc(catAvg[0].c.replace(/ \(.*/,""))}</b>.
+        Weakest: <b>${esc(catAvg[catAvg.length-1].c.replace(/ \(.*/,""))}</b> — that is the one to work on next.</div>`:""}
 
     ${topErrs.length?`<div class="lbl" style="margin-top:18px">What you keep getting wrong on the job file</div>
-      ${topErrs.map(([f,n])=>`<div class="diff"><span>${f.replace(/_/g," ")}</span>
+      ${topErrs.map(([f,n])=>`<div class="diff"><span>${esc(f.replace(/_/g," "))}</span>
         <b style="color:${n>2?"var(--red)":"var(--navy)"}">${n} time${n>1?"s":""}</b></div>`).join("")}
       <div class="note" style="margin-top:8px">Read these back to the caller out loud before you create the job.</div>`
       :`<div class="note" style="margin-top:18px;color:var(--green)">No repeated errors on your job files. Good.</div>`}
@@ -4083,7 +4527,7 @@ function personalPanel(rows){
       <div class="diff"><span>Tests taken</span><b style="color:var(--navy)">${typing.length}</b></div>`:""}
 
     ${best&&best.scenario?`<div class="note" style="margin-top:16px">Your best call so far:
-      <b>${best.scenario}</b> at ${best.total}/30.</div>`:""}
+      <b>${esc(best.scenario)}</b> at ${esc(best.total)}/30.</div>`:""}
   </div>`;
 }
 
@@ -4091,23 +4535,38 @@ function rowHtml(r){
   const d=new Date(r.created_at);
   const t=isTypingRow(r);
   const wpm=t?((r.scores||[])[0]||{}).s:null;
+  const snip=snippetFor(r,resQuery);
   const errs=t?(wpm+" wpm · "+r.total+"% captured")
     :((r.data_errors&&r.data_errors.length)?r.data_errors.length+" field error"+(r.data_errors.length>1?"s":""):"clean ticket");
   return `<div class="diff" style="align-items:flex-start">
       ${isAdmin?`<input type="checkbox" data-pick="${r.id}" ${resSel.has(r.id)?"checked":""}
         style="margin-top:4px;width:16px;height:16px;flex-shrink:0">`:""}
       <span style="flex:1;cursor:pointer" data-open="${r.id}">
-        <b style="color:var(--navy);font-weight:600">${r.scenario||""}</b><br>
-        <span class="note">${d.toLocaleDateString()} ${d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · ${errs}</span>
+        <b style="color:var(--navy);font-weight:600">${esc(r.scenario||"")}</b><br>
+        <span class="note">${d.toLocaleDateString()} ${d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · ${esc(errs)}</span>
+        ${snip?`<div class="snip">${esc(snip)}</div>`:""}
       </span>
       <span style="text-align:right;white-space:nowrap;cursor:pointer" data-open="${r.id}">
         <b style="color:var(--navy);font-size:16px;font-weight:700">${r.total}</b><span class="note">${t?"%":"/30"}</span><br>
-        <span class="vd ${r.verdict==="PASS"?"ok":""}" style="font-size:10px;padding:2px 8px;${r.verdict==="VOIDED"?"background:#EEF1F4;color:#8493A2":""}">${r.verdict||""}</span>
+        <span class="vd ${r.verdict==="PASS"?"ok":""}" style="font-size:10px;padding:2px 8px;${r.verdict==="VOIDED"?"background:#EEF1F4;color:#8493A2":""}">${esc(r.verdict||"")}</span>
       </span></div>
     <div id="det${r.id}" class="${resOpen===r.id?"":"hide"}" style="padding:4px 0 16px">${resOpen===r.id?detailHtml(r):""}</div>`;
 }
 
 function wireResults(){
+  const q=document.getElementById("resSearch");
+  if(q){
+    let t=null;
+    q.oninput=()=>{ clearTimeout(t); t=setTimeout(()=>{
+      const pos=q.selectionStart;
+      resQuery=q.value.trim(); resOpen=null; paintResults();
+      const nq=document.getElementById("resSearch");
+      if(nq){ nq.focus(); try{ nq.setSelectionRange(pos,pos); }catch(e){} }
+    },250); };
+    q.onkeydown=e=>{ if(e.key==="Escape"){ resQuery=""; paintResults(); } };
+  }
+  const qc=document.getElementById("resClear");
+  if(qc) qc.onclick=()=>{ resQuery=""; resOpen=null; paintResults(); };
   $$("[data-who]").forEach(b=>b.onclick=()=>{resWho=b.dataset.who;resOpen=null;paintResults();});
   $$("[data-fold]").forEach(b=>b.onclick=()=>{const k=b.dataset.fold;resFold[k]=!resFold[k];paintResults();});
   $$("[data-open]").forEach(b=>b.onclick=()=>{
@@ -4160,29 +4619,29 @@ function detailHtml(r){
   const tr=r.transcript||[], form=r.job_form||{};
   const filled=Object.entries(form).filter(([,v])=>v);
   return `<div class="panel" style="margin:0">
-    ${r.caller_name?`<div class="lbl">Caller was ${r.caller_name}</div>`:""}
+    ${r.caller_name?`<div class="lbl">Caller was ${esc(r.caller_name)}</div>`:""}
     <div class="lbl">Transcript</div>
     ${tr.length?tr.map(m=>`<div class="msg ${m.w}" style="margin-bottom:9px">
         <div class="who">${m.w==="you"?"Dispatcher":"Caller"}</div>
-        <div class="bub">${(m.t||"").replace(/</g,"&lt;")}</div></div>`).join("")
+        <div class="bub">${esc(m.t||"")}</div></div>`).join("")
       :'<div class="note">No transcript saved for this call.</div>'}
 
     <div class="lbl" style="margin-top:16px">What they typed into the job file</div>
-    ${filled.length?filled.map(([k,v])=>`<div class="diff"><span class="note">${k.replace(/_/g," ")}</span>
-        <b style="color:var(--navy);font-weight:600">${String(v).replace(/</g,"&lt;")}</b></div>`).join("")
+    ${filled.length?filled.map(([k,v])=>`<div class="diff"><span class="note">${esc(k.replace(/_/g," "))}</span>
+        <b style="color:var(--navy);font-weight:600">${esc(v)}</b></div>`).join("")
       :'<div class="note">Nothing was entered.</div>'}
 
     ${(r.data_errors&&r.data_errors.length)?`<div class="lbl" style="margin-top:16px">Wrong or missing</div>
-      ${r.data_errors.map(d=>`<div class="diff"><span class="note">${d.f}</span>
-        <span style="text-align:right"><b style="color:var(--red)">${d.got||"(blank)"}</b>
-        <span class="note"> should be ${d.should}</span></span></div>`).join("")}`:""}
+      ${r.data_errors.map(d=>`<div class="diff"><span class="note">${esc(d.f)}</span>
+        <span style="text-align:right"><b style="color:var(--red)">${esc(d.got||"(blank)")}</b>
+        <span class="note"> should be ${esc(d.should)}</span></span></div>`).join("")}`:""}
 
     ${(r.scores&&r.scores.length)?`<div class="lbl" style="margin-top:16px">Scores</div>
-      ${r.scores.map(x=>`<div class="diff"><span>${x.c}</span>
-        <b style="color:var(--navy)">${x.s}${isTypingRow(r)?"":"/5"}</b></div>`).join("")}`:""}
+      ${r.scores.map(x=>`<div class="diff"><span>${esc(x.c)}</span>
+        <b style="color:var(--navy)">${esc(x.s)}${isTypingRow(r)?"":"/5"}</b></div>`).join("")}`:""}
 
     ${(r.fixes&&r.fixes.length)?`<div class="lbl" style="margin-top:16px">Told to fix</div>
-      <ul>${r.fixes.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
+      <ul>${r.fixes.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
 
     ${r.recording_path?`<div class="lbl" style="margin-top:16px">Recording</div>
       <div id="aud${r.id}"><button class="btn ghost" onclick="loadAudio(${r.id})">Load recording</button></div>`:""}
@@ -4321,6 +4780,38 @@ function init(){
   fillVoicePickers();
   $("#hearBtn").onclick=()=>{ if(!canSpeak||!report?.rewrite) return;
     speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(report.rewrite.better); u.rate=.95; speechSynthesis.speak(u); };
+  registerSW();
+}
+
+/* Installing to a phone home screen matters most for the technician tracker —
+   a tab among forty tabs is a tab that gets closed mid-shift. The worker caches
+   the shell and the fonts only; nothing live is ever served from a cache. */
+function registerSW(){
+  if(!("serviceWorker" in navigator)) return;
+  if(location.protocol!=="https:" && location.hostname!=="localhost") return;
+  navigator.serviceWorker.register("sw.js").then(reg=>{
+    reg.addEventListener("updatefound",()=>{
+      const w=reg.installing; if(!w) return;
+      w.addEventListener("statechange",()=>{
+        if(w.state==="installed" && navigator.serviceWorker.controller) offerUpdate(w);
+      });
+    });
+  }).catch(()=>{});
+}
+function offerUpdate(worker){
+  /* Never reload underneath someone mid-call — they would lose the turn in flight. */
+  if(callLive) return;
+  const bar=document.createElement("div");
+  bar.className="updatebar";
+  bar.innerHTML='<span>A newer version of the app is ready.</span>'+
+    '<button class="btn" id="swGo">Reload</button>'+
+    '<button class="btn ghost" id="swLater">Later</button>';
+  document.body.appendChild(bar);
+  bar.querySelector("#swGo").onclick=()=>{
+    worker.postMessage("skipWaiting");
+    navigator.serviceWorker.addEventListener("controllerchange",()=>location.reload(),{once:true});
+  };
+  bar.querySelector("#swLater").onclick=()=>bar.remove();
 }
 init();
 </script>
