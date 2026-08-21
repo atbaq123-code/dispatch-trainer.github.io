@@ -471,10 +471,8 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .tbtn.danger:hover{background:#FDECE9;color:#B33F2C;}
 /* On a phone these are thumbs, not a mouse pointer — give them a real target. */
 @media(max-width:640px){ .tbtn{min-height:38px;padding:9px 11px;} }
-.livebadge{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
-  padding:3px 9px;border-radius:20px;background:#EEF1F4;color:#8493A2;border:1px solid var(--line);
-  align-self:center;white-space:nowrap;cursor:help;}
-.livebadge.on{background:#EAF9F1;color:#1F7A4C;border-color:#B6E3CB;}
+.livebadge{font-size:11px;font-weight:500;color:#96A2AE;background:none;border:0;
+  padding:0;align-self:center;white-space:nowrap;cursor:help;}
 .since{font-size:11px;font-weight:600;color:var(--brassish,#8C6D2F);}
 .shell.solo{grid-template-columns:1fr;}
 .shell.solo .side{display:none;}
@@ -736,7 +734,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
           <h1 style="font-size:20px;margin:0">Technicians</h1>
           <div class="note" id="techCount"></div>
         </div>
-        <span class="livebadge" id="liveBadge" title="Connecting…">Connecting…</span>
+        <span class="livebadge" id="liveBadge" title="Connecting to the database…">Connecting…</span>
         <div class="techacts">
           <button class="btn-soft" id="refreshBtn">
             <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>
@@ -950,7 +948,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0821-38";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0821-39";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -3929,14 +3927,22 @@ function watchTechs(){
     else refreshBoard(true);
   },30000);
 }
+/* Deliberately grey and deliberately not the word "live".
+   The technician cards use a green LIVE tag to mean "this man is reporting his
+   position right now". This badge is about the board's connection to the
+   database — a completely different thing — and using the same colour and the
+   same word for both made it read as a technician status. */
 function setLiveBadge(on){
   const el=document.getElementById("liveBadge");
   if(!el) return;
-  el.textContent = on ? "Live" : "Polling";
-  el.className = "livebadge"+(on?" on":"");
-  el.title = on ? "The board updates the moment anything changes."
-                : "Realtime is not connected — the board refreshes every 30 seconds instead. "+
-                  "Enable replication on the techs table in Supabase to get instant updates.";
+  el.textContent = on ? "Updates instantly" : "Updates every 30s";
+  el.className = "livebadge";
+  el.title = on
+    ? "This board is connected to the database, so changes appear the moment they happen. "+
+      "It refers to the connection, not to any technician."
+    : "Realtime is not connected, so the board refreshes every 30 seconds instead. "+
+      "Everything still works, it is just slower. Enable replication on the techs "+
+      "table in Supabase for instant updates.";
 }
 
 function techFormHtml(t){
