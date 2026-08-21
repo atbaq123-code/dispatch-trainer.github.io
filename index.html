@@ -422,6 +422,8 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
    identity through the dot, the name and the route line. */
 .mtech,.mstop{width:0!important;height:0!important;overflow:visible;}
 
+/* No max-width: a technician's name is the one thing on this map that must never
+   be truncated. A chip that reads "Marcus Delg…" is worse than no chip. */
 .mchip{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);
   display:flex;align-items:center;gap:6px;white-space:nowrap;
   background:#fff;border-radius:20px;padding:4px 9px 4px 7px;
@@ -463,10 +465,11 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   font-family:Inter,sans-serif;font-size:11px;font-weight:700;color:#fff;
   border:2.5px solid;box-shadow:0 2px 7px rgba(20,30,45,.32);}
 .jdot.cur{width:26px;height:26px;left:-13px;top:-13px;font-size:12px;}
-.jeta{position:absolute;left:50%;top:16px;transform:translateX(-50%);
-  font-family:Inter,sans-serif;font-size:10px;font-weight:700;white-space:nowrap;
-  background:rgba(255,255,255,.94);border-radius:8px;padding:1px 5px;
-  box-shadow:0 1px 4px rgba(20,30,45,.2);}
+.jeta{position:absolute;left:50%;top:17px;transform:translateX(-50%);
+  font-family:Inter,sans-serif;font-size:10px;font-weight:600;white-space:nowrap;
+  background:rgba(255,255,255,.95);border-radius:8px;padding:2px 6px;
+  box-shadow:0 1px 4px rgba(20,30,45,.22);}
+.jeta b{font-weight:700;color:#37424F;}
 @media (prefers-reduced-motion:reduce){ .mdot.live{animation:none;} }
 .wrapup{position:fixed;inset:0;z-index:60;background:rgba(24,32,45,.55);
   display:flex;align-items:center;justify-content:center;padding:20px;animation:rise .25s ease both}
@@ -1017,7 +1020,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0821-45";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0821-46";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -3925,8 +3928,11 @@ function paintMap(extra){
           (cur?"background:"+col+";border-color:#fff"
               :"background:#fff;border-color:"+col+";color:"+col)+
         '">'+(i+1)+'</div>'+
-        (cur&&eta?'<div class="jeta" style="color:'+col+'">'+
-          (eta.minutes<=2?"arriving":esc(eta.minutes)+" min")+'</div>':"");
+        /* The head of each route gets a label too, so you can tell whose job this
+           is without tracing the line back to the chip. Short form here — the
+           full name is already on his chip a few centimetres away. */
+        (cur?'<div class="jeta" style="color:'+col+'">'+esc(shortName(t))+
+          (eta?' <b>'+(eta.minutes<=2?"arriving":esc(eta.minutes)+" min")+'</b>':"")+'</div>':"");
       L.marker([st.lat,st.lng],{icon:L.divIcon({className:"mstop",html,iconSize:[0,0]})}).addTo(techLayer)
        .bindPopup("<b>"+esc(t.name)+"</b> \u2014 stop "+(i+1)+" of "+sts.length+"<br>"+esc(st.job_type||"")+"<br>"+
                   esc(st.label||st.address||"")+"<br><i>"+esc(sentText(st))+(i?" &middot; queued":" &middot; current")+"</i>");
@@ -3940,7 +3946,7 @@ function paintMap(extra){
       const chip=
         '<div class="mchip '+kind+'">'+
           '<i style="background:'+col+'"></i>'+
-          '<span style="color:'+col+'">'+esc(shortName(t))+'</span>'+
+          '<span style="color:'+col+'">'+esc(t.name||"Unnamed")+'</span>'+
           (sts.length?'<b class="ld">'+sts.length+'</b>':'<b class="ld free">free</b>')+
         '</div>'+
         '<div class="mdot '+kind+'" style="'+(kind==="done"
