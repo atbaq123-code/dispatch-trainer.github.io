@@ -457,6 +457,10 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
    live position are what a dispatcher reads, and four buttons at the top fought
    with them for attention. Remove sits apart on the right and stays grey until
    hovered — a destructive action should be reachable, not shouting. */
+.errbtn{display:inline-block;margin-left:10px;font-size:12px;font-weight:600;
+  background:rgba(255,255,255,.85);border:1px solid currentColor;border-radius:6px;
+  padding:5px 11px;line-height:1;color:inherit;}
+.errbtn:hover{background:#fff;}
 .techfoot{display:flex;align-items:center;gap:4px;flex-wrap:wrap;
   margin-top:12px;padding-top:10px;border-top:1px solid var(--line2);}
 .tbtn{font-size:11.5px;font-weight:500;color:#8493A2;background:none;border:1px solid transparent;
@@ -649,6 +653,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
             <div class="setrow">
               <div class="setlab">Voice quality</div>
               <button class="chip" id="natTgl" style="font-size:12.5px;padding:9px 14px"></button>
+              <button class="chip" id="fbTgl" style="font-size:12.5px;padding:9px 14px;margin-top:8px"></button>
               <div class="note" id="natNote" style="margin-top:9px"></div>
               <button class="btn ghost" id="testNat" style="margin-top:12px;padding:9px 14px;font-size:12.5px">
                 Play a random caller voice</button>
@@ -656,7 +661,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
             </div>
 
             <details class="setrow">
-              <summary class="setlab" style="cursor:pointer">Browser voices, if the natural one is off</summary>
+              <summary class="setlab" style="cursor:pointer">Browser voices — only used if the two settings above allow it</summary>
               <div style="padding-top:12px">
                 <div class="f"><span class="tag">Male callers</span><select class="in" id="voiceM"></select></div>
                 <button class="btn ghost" id="testM" style="margin-bottom:12px;padding:8px 13px;font-size:12px">Test male voice</button>
@@ -945,7 +950,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0821-37";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0821-38";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -1745,6 +1750,9 @@ let callLive=false, silenceT=null, muted=false;
 let pauseMs = +(localStorage.getItem("oc_pause")||1600);
 let sendMode = localStorage.getItem("oc_sendmode")||"manual";
 let naturalOn = localStorage.getItem("oc_natural")!=="0";
+/* Off by default: a silent failure that quietly downgrades the training is worse
+   than a loud one that stops it. Opt in per browser if you want the safety net. */
+let browserFallback = localStorage.getItem("oc_browserfallback")==="1";
 
 function ttsFetch(t, session){
   return fetch(SUPABASE_URL+"/functions/v1/tts",{
@@ -1774,24 +1782,52 @@ async function serverSpeak(t){
 }
 
 function numberHeavy(t){ return /\d{4,}|\d[\s.,-]*\d[\s.,-]*\d[\s.,-]*\d/.test(t||""); }
+
+/* Why a failure no longer quietly drops to the browser voice:
+   the whole point of the exercise is a caller who sounds like a person. A robotic
+   voice changes what is being practised — it is easier to stay calm with a robot,
+   and the trainee never hears the impatience the scoring rubric marks them on.
+   Worse, the old behaviour was silent, so a broken key could go unnoticed for
+   weeks while everyone trained against the wrong thing.
+
+   So: ElevenLabs or nothing, and the failure is loud. The dispatcher can still
+   read the caller's line on screen, and one click turns the browser voice on for
+   the rest of the session if they would rather finish the call than fix the key. */
+function ttsWhy(c){
+  if(c==="404") return "the tts function isn't deployed, or isn't named exactly \"tts\"";
+  if(c==="401"||c==="403") return "the tts function is rejecting the request — turn OFF “Verify JWT” in its settings";
+  if(c==="501") return "no ElevenLabs key saved — add ELEVENLABS_API_KEY under Edge Functions → Secrets";
+  if(c==="402") return "the ElevenLabs account is out of credit";
+  if(c==="429") return "ElevenLabs is rate-limiting — too many calls at once";
+  if(c.startsWith("4")||c.startsWith("5")) return "ElevenLabs returned an error ("+c+") — check the function logs";
+  return "the request couldn't reach the tts function ("+c+")";
+}
 function speak(t){
   if(!voiceOn||!job) return;
-  if(naturalOn && !ttsDead){
-    serverSpeak(t).catch(err=>{
-      const c=String(err.message||"");
-      let why;
-      if(c==="404") why="the tts function isn't deployed, or isn't named exactly \"tts\"";
-      else if(c==="401"||c==="403") why="the tts function is rejecting the request — turn OFF “Verify JWT” in its settings";
-      else if(c==="501") why="no voice key saved — add ELEVENLABS_API_KEY or OPENAI_API_KEY under Edge Functions → Secrets";
-      else if(c==="429") why="the voice provider is rate-limiting or out of credit";
-      else if(c.startsWith("4")||c.startsWith("5")) why="the voice provider returned an error ("+c+") — check the function logs";
-      else why="the request couldn't reach the tts function ("+c+")";
-      showErr("That line used the browser voice — "+why+".");
+  if(!naturalOn){ browserSpeak(t); return; }          // deliberately switched off
+  if(ttsDead && browserFallback){ browserSpeak(t); return; }
+
+  serverSpeak(t).catch(err=>{
+    const c=String(err.message||"");
+    if(c==="404"||c==="501"||c==="402") ttsDead=true;  // no point retrying these
+
+    if(browserFallback){
+      showErr("That line used the browser voice — "+ttsWhy(c)+".");
       setTimeout(hideErr, 6000);
-      if(c==="404"||c==="501") ttsDead=true;
       browserSpeak(t);
-    });
-  } else browserSpeak(t);
+      return;
+    }
+    /* Strict mode: stay silent rather than change what is being practised. */
+    speaking=false; drawCapt();
+    showErr("The caller's voice failed — "+ttsWhy(c)+". "+
+      "You can read his line above and carry on, or switch to the browser voice.",
+      {label:"Use the browser voice for now", act:()=>{
+        browserFallback=true;
+        localStorage.setItem("oc_browserfallback","1");
+        hideErr(); paintNat(); browserSpeak(t);
+      }});
+    micOn();
+  });
 }
 
 function hush(){
@@ -1944,8 +1980,40 @@ function go(v){
   if(v==="setup"){ drawSlots(); drawMode(); drawPause(); drawLang(); drawGate(); }
   window.scrollTo(0,0);
 }
-function showErr(m){ const e=$("#callErr"); e.textContent=m; e.classList.remove("hide"); }
-function hideErr(){ $("#callErr").classList.add("hide"); }
+/* An error the person can act on beats an error they can only read. */
+function showErr(m, action){
+  const e=$("#callErr");
+  e.textContent="";
+  e.appendChild(document.createTextNode(m));
+  if(action){
+    const b=document.createElement("button");
+    b.className="errbtn"; b.textContent=action.label;
+    b.onclick=action.act;
+    e.appendChild(b);
+  }
+  e.classList.remove("hide");
+}
+function hideErr(){ $("#callErr").classList.add("hide"); $("#callErr").textContent=""; }
+
+/* Declared here rather than inside init so the error banner's "use the browser
+   voice" button can repaint the settings after flipping the flag. */
+function paintNat(){
+  const tgl=document.getElementById("natTgl"); if(!tgl) return;
+  tgl.className="chip"+(naturalOn?" on":"");
+  tgl.textContent=(naturalOn?"✓ ":"○ ")+"ElevenLabs voices only";
+  const fb=document.getElementById("fbTgl");
+  if(fb){
+    fb.className="chip"+(browserFallback?" on":"");
+    fb.textContent=(browserFallback?"✓ ":"○ ")+"Fall back to the browser voice on failure";
+    fb.classList.toggle("hide",!naturalOn);
+  }
+  const note=document.getElementById("natNote");
+  if(note) note.textContent = !naturalOn
+    ? "Using the browser's built-in voices. These sound robotic on most machines, and a trainee finds it much easier to stay calm with a robot than with a real caller."
+    : browserFallback
+      ? "Callers use ElevenLabs. If it fails, the browser voice takes over — you will still hear the call, but that line is no longer a fair test."
+      : "Callers use ElevenLabs, and nothing else. If it fails the call stops rather than quietly downgrading to a robotic voice you would train against without noticing.";
+}
 
 function drawJobs(){
   const list=$("#jobList");
@@ -2153,7 +2221,9 @@ function start(j){
   callLive=false; muted=false; micOff(); touched=new Set(); stepOpen=null;
   curVoice = Math.random()<0.5 ? "m" : "f";
   curName  = ((ALT_NAMES[j.id]||{})[curVoice]) || "";
-  curVariant = Math.floor(Math.random()*3);
+  /* Four voices per gender in the tts roster. The server takes this modulo the
+     roster length, so widening the roster later needs no change here. */
+  curVariant = Math.floor(Math.random()*4);
   job=j; log=[]; chips={}; secs=0; report=null; heard=""; finalTx=""; busy=false;
   setForm({});
   fillSchedule();
@@ -2563,6 +2633,16 @@ async function speakDictation(item){
       }
     }catch(e){}
   }
+  /* The listening test measures whether they can catch an address at speed from a
+     real voice. A browser voice over-enunciates, which makes the test easier than
+     the job, so strict mode refuses rather than flattering the score. */
+  if(naturalOn && !browserFallback){
+    const el=document.getElementById("typeMsg");
+    if(el) el.textContent="The natural voice is unavailable, so this test is paused — "+
+      "a browser voice is easier to catch than a real caller and would flatter your score. "+
+      "Check ELEVENLABS_API_KEY under Edge Functions → Secrets.";
+    return;
+  }
   if(!canSpeak) return;
   const u=new SpeechSynthesisUtterance(item.t);
   const p=pickVoice(item.v); if(p){u.voice=p;u.lang=p.lang;}
@@ -2935,7 +3015,8 @@ function drawLearn(){
       <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" id="tDone">I'm finished</button>
         <button class="btn ghost" id="tReplay">Play again</button>
-      </div>`;
+      </div>
+      <div class="note" id="typeMsg" style="margin-top:10px"></div>`;
     setTimeout(()=>{const b=document.getElementById("tBox"); if(b) b.focus();},80);
     $("#tDone").onclick=finishTyping;
     $("#tReplay").onclick=()=>speakDictation(typeItem);
@@ -4663,14 +4744,12 @@ function init(){
   document.title="OnCall Locksmith — Dispatcher Academy";
   sb.auth.getSession().then(({data})=>loadMe(data.session));
   sb.auth.onAuthStateChange((_e,session)=>loadMe(session));
-  const paintNat=()=>{
-    $("#natTgl").className="chip"+(naturalOn?" on":"");
-    $("#natTgl").textContent=(naturalOn?"✓ ":"○ ")+"Natural voice (recommended)";
-    $("#natNote").textContent=naturalOn
-      ? "Callers use a real text-to-speech service through your server. If it isn't set up yet, the app quietly falls back to the browser voices below."
-      : "Using the browser's built-in voices. These sound robotic on most machines.";
-  };
   $("#natTgl").onclick=()=>{naturalOn=!naturalOn;localStorage.setItem("oc_natural",naturalOn?"1":"0");ttsDead=false;paintNat();};
+  $("#fbTgl").onclick=()=>{
+    browserFallback=!browserFallback;
+    localStorage.setItem("oc_browserfallback",browserFallback?"1":"0");
+    ttsDead=false; paintNat();
+  };
   paintNat();
   const paintStt=()=>{
     $("#sttTgl").className="chip"+(sttOn?" on":"");
@@ -4682,7 +4761,7 @@ function init(){
   $("#sttTgl").onclick=()=>{sttOn=!sttOn;localStorage.setItem("oc_stt",sttOn?"1":"0");paintStt();};
   paintStt();
   $("#testNat").onclick=async()=>{
-    const g=Math.random()<.5?"m":"f", v=Math.floor(Math.random()*3);
+    const g=Math.random()<.5?"m":"f", v=Math.floor(Math.random()*4);
     const out=$("#natResult");
     out.textContent="Requesting "+(g==="f"?"female":"male")+" voice, variant "+(v+1)+"…";
     try{
@@ -4698,13 +4777,16 @@ function init(){
         out.textContent="Failed ("+r.status+"): "+t.slice(0,140)+
           (r.status===404?" — the tts function isn't deployed under that name."
           :r.status===401?" — turn OFF Verify JWT on the tts function."
-          :r.status===501?" — no ELEVENLABS_API_KEY or OPENAI_API_KEY saved in Secrets.":"");
+          :r.status===402?" — the ElevenLabs account is out of credit."
+          :r.status===429?" — ElevenLabs is rate-limiting."
+          :r.status===501?" — no ELEVENLABS_API_KEY in Secrets, or the key/voice id was rejected.":"");
         return;
       }
       const url=URL.createObjectURL(await r.blob());
       hush(); curAudio=new Audio(url); curAudio.play();
-      out.textContent="Playing "+(g==="f"?"female":"male")+" voice, variant "+(v+1)+
-        ". Press it a few times — if every variant sounds identical, the extra voice IDs aren't set.";
+      out.textContent="Playing "+(g==="f"?"female":"male")+" voice, variant "+(v+1)+" of 4"+
+        ". Press it eight or ten times — you should hear four distinct men and four distinct women. "+
+        "If they repeat, the roster in the tts function still has placeholder voice ids.";
     }catch(e){ out.textContent="Failed: "+(e.message||e); }
   };
   $("#testM").onclick=()=>testVoice("m");
