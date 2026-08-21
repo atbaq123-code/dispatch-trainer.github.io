@@ -465,6 +465,21 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
   box-shadow:0 2px 6px rgba(0,0,0,.25);}
 /* The number a dispatcher reaches for when a new call lands mid-route:
    how long until this man is free. Given room to be read at a glance. */
+/* Coverage panel */
+.covtop{display:flex;align-items:center;gap:16px;margin:10px 0 14px;flex-wrap:wrap;}
+.covbig{font-size:40px;font-weight:700;line-height:1;font-family:Poppins,sans-serif;}
+.covbig small{font-size:18px;font-weight:600;opacity:.7;margin-left:1px;}
+.covlegend{display:flex;flex-wrap:wrap;gap:10px 14px;padding:10px 0 4px;
+  border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);}
+.covkey{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);}
+.covkey i{width:11px;height:11px;border-radius:3px;display:inline-block;opacity:.75;}
+.covrow{margin-top:12px;}
+.covrow b{font-size:13.5px;color:var(--navy);font-weight:600;}
+.covrow.act{background:#F4FBFC;border-left:3px solid var(--teal);
+  padding:10px 12px;border-radius:0 6px 6px 0;}
+.gapmark{width:26px;height:26px;border-radius:50%;background:#A8342A;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;
+  border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);}
 .onwaytag{display:inline-block;font-size:10.5px;font-weight:600;margin-left:6px;
   padding:2px 8px;border-radius:20px;background:#EAF9F1;color:#1F7A4C;vertical-align:1px;}
 .etaline{margin-top:5px;font-size:12.5px;color:var(--navy);}
@@ -964,7 +979,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0821-43";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0821-44";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -3956,60 +3971,233 @@ async function refreshBoard(quiet){
 
 /* ---------- coverage: where nobody is close ---------- */
 let gapLayer=null, gapOn=false;
-const GAP_KM=20;      // roughly 30 minutes of driving
 
 function hav(a,b,c,d){
   const R=6371, dLat=(c-a)*Math.PI/180, dLon=(d-b)*Math.PI/180;
   const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
   return 2*R*Math.asin(Math.sqrt(x));
 }
-function techPoints(){
-  const pts=[];
+/* ============================================================================
+   COVERAGE
+   ---------------------------------------------------------------------------
+   The old version shaded anywhere more than 20 km from the nearest technician,
+   straight line. Three things were wrong with that:
+
+     1. Distance is not the question. "How long until somebody gets there" is.
+     2. It counted a technician with four jobs queued as coverage. He is not
+        coverage — he is busy for the next two hours.
+     3. It reported a percentage over a box drawn around wherever the team
+        happened to be standing, so a tightly clustered team scored beautifully
+        while covering nothing.
+
+   This version estimates a RESPONSE TIME for every cell: driving time from each
+   technician plus the work he has to finish first. The map then answers the real
+   question, names the worst gap in plain English, and suggests who to move.
+============================================================================ */
+
+const ROAD_KMH     = 45;    // urban average including lights and turns
+const DETOUR       = 1.30;  // roads are not straight lines
+const JOB_MINUTES  = 35;    // typical time to clear one queued job
+const STALE_PENALTY= 10;    // his last known position may already be wrong
+const TARGET_MIN   = 30;    // what counts as covered
+
+const BANDS=[
+  {max:15,           col:"#1F7A4C", label:"under 15 min"},
+  {max:30,           col:"#7A9A2E", label:"15–30 min"},
+  {max:45,           col:"#C08A1E", label:"30–45 min"},
+  {max:70,           col:"#C4603A", label:"45–70 min"},
+  {max:Infinity,     col:"#A8342A", label:"over 70 min"}
+];
+const bandFor = m => BANDS.find(b=>m<=b.max);
+
+/* Every technician who could actually respond, with the handicap he carries. */
+function coverageSources(){
+  const out=[];
   techs.forEach(t=>{
-    const lv=liveOf(t);
-    if(lv) pts.push([lv.lat,lv.lng]);
-    else { const st=stopsOf(t)[0]; if(st&&st.lat!=null) pts.push([st.lat,st.lng]); }
+    const a=anchorOf(t); if(!a) return;
+    const load=stopsOf(t).length;
+    out.push({
+      t, lat:a.lat, lng:a.lng, kind:a.kind, load,
+      /* Queued work is the dominant term — a man 5 km away with three jobs on
+         his list reaches you later than a man 20 km away with none. */
+      delay: load*JOB_MINUTES + (a.kind==="live"?0:STALE_PENALTY)
+    });
   });
-  return pts;
+  return out;
 }
+const driveMin = km => (km*DETOUR)/ROAD_KMH*60;
+
+function responseAt(la,ln,src){
+  let best=Infinity, who=null;
+  src.forEach(s=>{
+    const m=driveMin(hav(la,ln,s.lat,s.lng))+s.delay;
+    if(m<best){ best=m; who=s; }
+  });
+  return {min:best, who};
+}
+
 function drawGaps(){
   if(!techMap) return;
   if(gapLayer){ techMap.removeLayer(gapLayer); gapLayer=null; }
   const btn=document.getElementById("gapBtn");
-  if(!gapOn){ if(btn){ btn.textContent="Coverage gaps"; btn.classList.remove("on"); } return; }
-  const pts=techPoints();
-  if(!pts.length){ if(btn){ btn.textContent="Coverage gaps"; btn.classList.remove("on"); }
-    $("#findOut").innerHTML='<div class="note" style="margin-top:12px">Nobody on the board to measure from.</div>';
-    gapOn=false; return; }
+  const off=()=>{ if(btn){ btn.textContent="Coverage gaps"; btn.classList.remove("on"); } };
+  if(!gapOn){ off(); return; }
 
-  const lats=pts.map(p=>p[0]), lngs=pts.map(p=>p[1]);
-  const pad=0.35;
-  const s0=Math.min(...lats)-pad, n0=Math.max(...lats)+pad;
-  const w0=Math.min(...lngs)-pad, e0=Math.max(...lngs)+pad;
-  const rows=16, cols=16, dLat=(n0-s0)/rows, dLng=(e0-w0)/cols;
+  const src=coverageSources();
+  if(!src.length){ off(); gapOn=false;
+    $("#findOut").innerHTML='<div class="note" style="margin-top:12px">Nobody has a position, '+
+      'so there is nothing to measure coverage from.</div>'; return; }
+
+  /* Sizing the grid is the whole game for making the percentage honest.
+
+     Deriving the box from where the TEAM is standing was the original sin: park
+     everyone in one car park and the box shrinks around them, so they score
+     brilliantly while covering nothing. Padding it out instead just caps the
+     score by geometry — a lone technician can never beat about 35% of a box three
+     times his own reach, however good he is.
+
+     So the box comes from where the WORK is: every job on the board, finished or
+     queued, plus wherever the men currently are. Padded by one reach radius, the
+     number then answers a question worth asking — of the ground your jobs
+     actually land on, how much can you get to in time. Cluster the team away from
+     the work and the score falls, which is the correct behaviour. */
+  const reachKm = ROAD_KMH*(TARGET_MIN/60)/DETOUR;
+  const demand=[];
+  techs.forEach(t=>{
+    allStops(t).forEach(st=>{ if(st.lat!=null) demand.push([st.lat,st.lng]); });
+  });
+  src.forEach(p=>demand.push([p.lat,p.lng]));
+  const lats=demand.map(p=>p[0]), lngs=demand.map(p=>p[1]);
+  const padLat  = reachKm/111;
+  const padLng  = padLat/Math.max(0.2,Math.cos((lats[0]||28)*Math.PI/180));
+  const s0=Math.min(...lats)-padLat, n0=Math.max(...lats)+padLat;
+  const w0=Math.min(...lngs)-padLng, e0=Math.max(...lngs)+padLng;
+  const rows=22, cols=22, dLat=(n0-s0)/rows, dLng=(e0-w0)/cols;
 
   gapLayer=L.layerGroup().addTo(techMap);
-  let uncovered=0, total=0;
+  const cells=[];
+  let covered=0;
   for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
     const la=s0+dLat*(r+.5), ln=w0+dLng*(c+.5);
-    let best=Infinity;
-    pts.forEach(p=>{ const d=hav(la,ln,p[0],p[1]); if(d<best) best=d; });
-    total++;
-    if(best>GAP_KM){
-      uncovered++;
-      const heat=Math.min(1,(best-GAP_KM)/25);
-      L.rectangle([[s0+dLat*r,w0+dLng*c],[s0+dLat*(r+1),w0+dLng*(c+1)]],
-        {stroke:false, fillColor:"#DD5240", fillOpacity:.10+heat*.24, interactive:false}).addTo(gapLayer);
-    }
+    const {min,who}=responseAt(la,ln,src);
+    cells.push({la,ln,r,c,min,who});
+    if(min<=TARGET_MIN) covered++;
+    const band=bandFor(min);
+    /* Everything is shaded, not just the gaps — seeing where you are strong is
+       half of seeing where you are weak. */
+    L.rectangle([[s0+dLat*r,w0+dLng*c],[s0+dLat*(r+1),w0+dLng*(c+1)]],
+      {stroke:false, fillColor:band.col,
+       fillOpacity: min<=15?.10 : min<=30?.16 : min<=45?.24 : min<=70?.30 : .36,
+       interactive:false}).addTo(gapLayer);
   }
   if(gapLayer.bringToBack) gapLayer.bringToBack();
-  if(btn){ btn.textContent="Hide gaps"; btn.classList.add("on"); }
+  if(btn){ btn.textContent="Hide coverage"; btn.classList.add("on"); }
+
+  const pct=Math.round(covered/cells.length*100);
+  const worst=cells.slice().sort((a,b)=>b.min-a.min);
+
+  /* Cluster the worst cells so the advice names one area rather than scattering
+     across a dozen individually-bad squares. */
+  const hot=worst.filter(x=>x.min>TARGET_MIN).slice(0,Math.max(6,Math.round(cells.length*0.06)));
+  const centre = hot.length ? {
+    la: hot.reduce((a,x)=>a+x.la,0)/hot.length,
+    ln: hot.reduce((a,x)=>a+x.ln,0)/hot.length,
+    min: hot.reduce((a,x)=>a+x.min,0)/hot.length
+  } : null;
+
+  /* Who should move, and is it worth it? Try each technician at the gap centre
+     and keep whichever relocation covers the most ground. Men carrying least are
+     the realistic candidates, so the load penalty does that work for us. */
+  let advice=null;
+  if(centre && src.length){
+    const baseline=covered;
+    let bestGain=0, bestWho=null, bestKm=0;
+    src.forEach(s=>{
+      const moved=src.map(o=>o===s?{...o,lat:centre.la,lng:centre.ln}:o);
+      let c2=0;
+      cells.forEach(x=>{ if(responseAt(x.la,x.ln,moved).min<=TARGET_MIN) c2++; });
+      const gain=c2-baseline;
+      if(gain>bestGain){ bestGain=gain; bestWho=s; bestKm=hav(s.lat,s.lng,centre.la,centre.ln); }
+    });
+    /* Only advise on a move that actually pays. A one-cell gain is grid noise,
+       and telling a dispatcher to drive a man across the county for it would
+       destroy trust in everything else on this panel. */
+    const MIN_WORTH = Math.max(2, Math.round(cells.length*0.03));
+    if(bestWho && bestGain>=MIN_WORTH && bestKm>=2)
+      advice={name:bestWho.t.name, load:bestWho.load, km:Math.round(bestKm),
+              pts:Math.round(bestGain/cells.length*100)};
+  }
+
+  if(centre){
+    L.marker([centre.la,centre.ln],{icon:L.divIcon({className:"",
+      html:'<div class="gapmark">!</div>',iconSize:[26,26],iconAnchor:[13,13]})})
+      .addTo(gapLayer).bindPopup("Weakest coverage — about "+Math.round(centre.min)+" min response");
+  }
+
+  const busy=src.filter(s=>s.load>=2);
+  paintCoverage({pct, cells, centre, advice, src, busy});
+  if(centre) nameGap(centre);
+}
+
+/* Reverse geocoding the gap centre turns "a red patch north-east" into a place
+   name a dispatcher can act on. Cached like every other lookup. */
+function nameGap(centre){
+  const key=revKey(centre.la,centre.ln);
+  if(revCache[key]!==undefined){ applyGapName(revCache[key]); return; }
+  revCache[key]=null;
+  geoCall({op:"reverse",lat:centre.la,lng:centre.ln})
+    .then(d=>{ revCache[key]=d.label||null; applyGapName(revCache[key]); })
+    .catch(()=>{});
+}
+function applyGapName(label){
+  const el=document.getElementById("gapName");
+  if(el && label) el.textContent = " — around "+label;
+}
+
+function paintCoverage(o){
+  const {pct, centre, advice, src, busy}=o;
+  const verdict = pct>=85 ? "Strong" : pct>=65 ? "Workable" : pct>=45 ? "Thin" : "Poor";
+  const vcol    = pct>=85 ? "#1F7A4C" : pct>=65 ? "#7A9A2E" : pct>=45 ? "#C08A1E" : "#A8342A";
+
   $("#findOut").innerHTML=`<div class="panel" style="margin-top:12px">
-    <div class="lbl">Coverage</div>
-    <div style="font-size:14px">Shaded areas are more than about ${GAP_KM} km from your nearest
-      technician — roughly half an hour of driving. Darker means further.</div>
-    <div class="note" style="margin-top:8px">${Math.round((1-uncovered/total)*100)}% of the area
-      around your team is covered, measured straight line from ${pts.length} position${pts.length>1?"s":""}.</div>
+    <div class="lbl">Coverage — how long until somebody arrives</div>
+
+    <div class="covtop">
+      <div class="covbig" style="color:${vcol}">${pct}<small>%</small></div>
+      <div>
+        <div style="font-weight:600;color:var(--navy)">${verdict} coverage</div>
+        <div class="note">of the area your jobs actually land in, reachable within
+          ${TARGET_MIN} minutes — counting both the drive and the work each man
+          has to clear first.</div>
+      </div>
+    </div>
+
+    <div class="covlegend">${BANDS.map(b=>
+      `<span class="covkey"><i style="background:${b.col}"></i>${b.label}</span>`).join("")}</div>
+
+    ${centre?`<div class="covrow">
+      <b>Weakest area<span id="gapName"></span></b>
+      <div class="note">About ${Math.round(centre.min)} minutes before anyone could be there.</div>
+    </div>`:`<div class="covrow"><b>No real gaps</b>
+      <div class="note">Everywhere around your team is inside ${TARGET_MIN} minutes.</div></div>`}
+
+    ${advice?`<div class="covrow act">
+      <b>Move ${esc(advice.name)} about ${advice.km} km toward it</b>
+      <div class="note">That would lift coverage by roughly ${advice.pts} points.${
+        advice.load? " He has "+advice.load+" job"+(advice.load===1?"":"s")+" to clear first.":
+                     " He is free now."}</div>
+    </div>`:""}
+
+    ${busy.length?`<div class="covrow">
+      <b>${busy.length} of ${src.length} counting for little</b>
+      <div class="note">${busy.map(s=>esc(s.t.name)+" ("+s.load+")").join(", ")} —
+        each queued job pushes their realistic arrival out by about ${JOB_MINUTES} minutes,
+        so they cover far less ground than the map alone suggests.</div>
+    </div>`:""}
+
+    <div class="note" style="margin-top:10px;opacity:.75">Estimated from straight-line distance
+      with a ${Math.round((DETOUR-1)*100)}% road allowance at ${ROAD_KMH} km/h. Water, bridges and
+      rush hour are not modelled, so treat it as a guide rather than a promise.</div>
   </div>`;
 }
 
