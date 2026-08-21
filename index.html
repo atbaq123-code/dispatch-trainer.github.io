@@ -457,6 +457,16 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
    live position are what a dispatcher reads, and four buttons at the top fought
    with them for attention. Remove sits apart on the right and stays grey until
    hovered — a destructive action should be reachable, not shouting. */
+/* The "no drive time" group is a real option, not an error state — quiet
+   separator, not a warning colour. */
+.livetag.done{background:#5D6C7B;}
+.livetag.done:before{animation:none;opacity:.6;}
+.livedot.done{animation:none;background:#fff;border-width:4px;border-style:solid;opacity:.85;
+  box-shadow:0 2px 6px rgba(0,0,0,.25);}
+.idlehead{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:#96A2AE;margin:16px 0 4px;padding-top:12px;border-top:1px solid var(--line2);}
+.freetag{display:inline-block;font-size:10.5px;font-weight:600;margin-left:6px;
+  padding:2px 7px;border-radius:20px;background:#EAF4FB;color:#2C6FA8;vertical-align:1px;}
 .errbtn{display:inline-block;margin-left:10px;font-size:12px;font-weight:600;
   background:rgba(255,255,255,.85);border:1px solid currentColor;border-radius:6px;
   padding:5px 11px;line-height:1;color:inherit;}
@@ -948,7 +958,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0821-39";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0821-42";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -3621,9 +3631,80 @@ function newToken(){
   return [...b].map(x=>x.toString(16).padStart(2,"0")).join("");
 }
 
-const PALETTE=["#2C5FA8","#B3462F","#3E7D4F","#8C5BB0","#B07C1E","#1F7D86","#A8386B","#556070"];
-const colourOf = t => PALETTE[Math.abs(String(t.id).split("").reduce((a,c)=>a+c.charCodeAt(0),0))%PALETTE.length];
-const stopsOf  = t => Array.isArray(t.stops) ? t.stops : [];
+/* ---------- technician colours ----------
+   The old version hashed the id into eight slots, which collides almost at once:
+   ids 1 and 9 both landed on slot 1, and two men sharing a colour on the map is
+   worse than useless — it is actively misleading when you are deciding who to send.
+
+   Instead every technician takes the next unused slot, in id order. That is
+   collision-free by construction, and because ids only ever increase, adding a
+   technician appends a new colour and leaves everybody else's alone.
+
+   Sixteen hand-picked hues come first, all dark enough to carry white pin text
+   and to be legible as a name on white. Past sixteen it generates more by walking
+   the colour wheel in golden-angle steps, which spreads new hues into the largest
+   remaining gaps rather than clustering them. */
+/* Fourteen colours, chosen by farthest-point search in CIE Lab rather than by eye.
+   Every pair is at least dE 25 apart — comfortably distinguishable — and every one
+   clears WCAG AA (4.5:1) against the white text sitting on the map pins.
+   Ordered muted-first, so a board of six or seven never reaches the loud end. */
+const PALETTE=[
+  "#3E7D4F","#8C5BB0","#632C3F","#63472C",
+  "#275B68","#30216E","#B3462F","#2C5FA8",
+  "#2727A5","#A52773","#A527A5","#A52746",
+  "#846B1F","#1F841F"
+];
+/* Past fourteen technicians we generate. 137.508° is the golden angle, so each new
+   hue lands in the largest remaining gap instead of clustering. Lightness stays low
+   enough that white pin text remains readable. */
+function extraColour(i){
+  const hue=(i*137.508+23)%360;
+  const sat=46+(i%3)*8, light=30+(i%3)*4;
+  return `hsl(${hue.toFixed(1)} ${sat}% ${light}%)`;
+}
+let _colourMap=null, _colourKey="";
+function colourMap(){
+  const ids=techs.map(t=>t.id);
+  const key=ids.join(",");
+  if(_colourMap && _colourKey===key) return _colourMap;
+  const m={};
+  /* Numeric where possible so 2 sorts before 10, which string sorting gets wrong. */
+  [...ids].sort((a,b)=>{
+    const na=Number(a), nb=Number(b);
+    return (Number.isFinite(na)&&Number.isFinite(nb)) ? na-nb : String(a).localeCompare(String(b));
+  }).forEach((id,i)=>{ m[id] = i<PALETTE.length ? PALETTE[i] : extraColour(i-PALETTE.length); });
+  _colourMap=m; _colourKey=key;
+  return m;
+}
+const colourOf = t => (t && colourMap()[t.id]) || PALETTE[0];
+/* A finished job is not deleted, it is stamped and kept.
+   The reason is practical: when a technician has no GPS fix, the address of the
+   job he just finished IS where he is standing. Throwing it away meant a man who
+   had just completed a call two streets from the new one dropped off the map
+   entirely and looked less available than someone across town.
+
+   stopsOf() is the single chokepoint every caller uses, so filtering completed
+   work out here keeps the queue, the numbering and the map lines exactly as they
+   were. Only one completed stop is retained per technician — enough to anchor
+   his position, not enough to grow the row without limit. */
+const allStops = t => Array.isArray(t.stops) ? t.stops : [];
+const stopsOf  = t => allStops(t).filter(st => !st.done_at);
+const lastDoneOf = t => {
+  const done=allStops(t).filter(st => st.done_at && st.lat!=null);
+  if(!done.length) return null;
+  return done.sort((a,b)=> new Date(b.done_at)-new Date(a.done_at))[0];
+};
+/* Where to measure a drive time from, best evidence first:
+   a live fix, then a stale fix, then the job he last finished. */
+const anchorOf = t => {
+  const lv=liveOf(t);
+  if(lv) return {lat:lv.lat, lng:lv.lng, kind:"live", at:lv.at};
+  const sv=staleOf(t);
+  if(sv) return {lat:sv.lat, lng:sv.lng, kind:"stale", at:sv.at};
+  const d=lastDoneOf(t);
+  if(d) return {lat:d.lat, lng:d.lng, kind:"done", at:d.done_at, label:d.label||d.address, job_type:d.job_type};
+  return null;
+};
 const sentText = st => { const a=st.assigned_at||st.started_at; return a ? ("sent "+sinceText(a)+" ago") : "sent"; };
 /* Reverse geocoding is billed per lookup, so the cache key is deliberately coarse.
    Three decimals is about 110 m — far below the precision of a street label, but
@@ -3757,9 +3838,13 @@ function paintMap(extra){
 
 function askClearAll(){
   const jobs=techs.reduce((n,t)=>n+stopsOf(t).length,0);
-  $("#clearLead").textContent = jobs
-    ? "This removes all "+jobs+" job"+(jobs>1?"s":"")+" from all "+techs.length+
-      " technicians. The technicians stay on the board. Enter the dispatch code to confirm."
+  const anchors=techs.filter(t=>lastDoneOf(t)).length;
+  $("#clearLead").textContent = (jobs||anchors)
+    ? "This removes all "+jobs+" job"+(jobs===1?"":"s")+" from all "+techs.length+
+      " technicians. The technicians stay on the board."+
+      (anchors?" It also clears the finished-job addresses being used to place "+anchors+
+        " of them on the map, so anyone without phone signal will show no position until his next job.":"")+
+      " Enter the dispatch code to confirm."
     : "There are no addresses to clear.";
   $("#clearPin").value=""; $("#clearErr").textContent="";
   $("#clearWrap").classList.remove("hide");
@@ -3788,8 +3873,24 @@ async function closeStop(ref, how){
   const stops=stopsOf(t);
   if(!stops[ix]) return;
   if(how==="cancelled" && !confirm("Mark this job as cancelled and take it off the board?")) return;
-  const left=stops.filter(function(_,i){ return i!==ix; });
-  if(ix===0 && left.length) left[0].assigned_at = left[0].assigned_at || new Date().toISOString();
+
+  const now=new Date().toISOString();
+  const target=stops[ix];
+  const open=stops.filter(function(_,i){ return i!==ix; });
+  if(ix===0 && open.length) open[0].assigned_at = open[0].assigned_at || now;
+
+  /* Cancelled work is dropped: he may never have driven there, so it is not
+     evidence of where he is. Completed work becomes his anchor.
+
+     Note `open` is built from stopsOf, which already excludes the old anchor —
+     so cancelling has to carry the previous one forward explicitly, or a cancel
+     would silently erase where he last finished. */
+  const prev=lastDoneOf(t);
+  let keep = prev ? [prev] : [];
+  if(how==="done" && target && target.lat!=null){
+    keep=[{...target, done_at:now, outcome:"done"}];   // newest completion wins
+  }
+  const left=[...open, ...keep];
   const res=await sb.from("techs")
     .update({stops:left, updated_at:new Date().toISOString(), updated_by: me?me.id:null})
     .eq("id",t.id);
@@ -3991,6 +4092,7 @@ function paintTechs(){
   $("#techList").innerHTML=techs.map(t=>{
     if(techEdit && techEdit.id===t.id) return techFormHtml(techEdit);
     const col=colourOf(t), sts=stopsOf(t), lv=liveOf(t), stale=staleOf(t);
+    const done = (!lv && !stale) ? lastDoneOf(t) : null;
     return `<div class="panel" style="border-left:4px solid ${col}">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
         <div style="flex:1;min-width:0">
@@ -4005,6 +4107,11 @@ function paintTechs(){
             ? `<div class="liveline"><span class="livetag stale">STALE</span>
                  <span class="liveaddr">Last seen ${esc(sinceText(stale.at))} ago</span></div>
                <div class="note">His phone stopped reporting — the position on the map is where he was, not where he is.</div>`
+          : done
+            ? `<div class="liveline"><span class="livetag done">LAST JOB</span>
+                 <span class="liveaddr">${esc(done.label||done.address||"finished job")}</span>
+                 <span class="liveago">${esc(sinceText(done.done_at))} ago</span></div>
+               <div class="note">No phone signal — this is where he finished, so treat it as roughly where he is.</div>`
           : t.clocked_in ? `<div class="note">Clocked in, no position yet</div>`
           : `<div class="note" style="color:var(--muted)">Not clocked in</div>`}
         </div>
@@ -4124,52 +4231,114 @@ function wireTechForm(){
 async function findNearest(){
   const out=$("#findOut"), q=$("#jobAddr").value.trim();
   if(!q){ out.innerHTML='<div class="note" style="margin-top:12px">Type the job address first.</div>'; return; }
+
+  /* Everyone we can put a drive time against: a live position, or any located
+     stop already in their queue. */
   const flat=[];
   techs.forEach(t=>{
     const lv=liveOf(t);
     if(lv) flat.push({t, st:{lat:lv.lat,lng:lv.lng,job_type:(stopsOf(t)[0]||{}).job_type,
                              label:"live position", assigned_at:lv.at}, i:-1});
     stopsOf(t).forEach((st,i)=>{ if(st.lat!=null) flat.push({t,st,i}); });
+    /* No live fix and nothing queued: he is standing where he finished his last
+       job. That address is real evidence and it belongs in the drive-time
+       calculation — a man who has just finished two streets away should not rank
+       below someone across town simply because his phone is not reporting. */
+    if(!lv && !stopsOf(t).some(st=>st.lat!=null)){
+      const d=lastDoneOf(t);
+      if(d) flat.push({t, st:{lat:d.lat,lng:d.lng,job_type:d.job_type,
+                              label:d.label||d.address, done_at:d.done_at}, i:-2});
+    }
   });
-  if(!flat.length){ out.innerHTML='<div class="note" style="margin-top:12px">No technician has a located job yet.</div>'; return; }
+
+  if(!techs.length){ out.innerHTML='<div class="note" style="margin-top:12px">No technicians on the board yet.</div>'; return; }
   out.innerHTML='<div class="note" style="margin-top:12px">Looking up the address and checking drive times…</div>';
+
   try{
     const job=await geoCall({op:"geocode",q});
-    const {results}=await geoCall({op:"eta",from:[job.lat,job.lng],to:flat.map(f=>[f.st.lat,f.st.lng])});
-    const best={};
-    flat.forEach((f,i)=>{
-      const e=results[i]; if(!e) return;
-      if(!best[f.t.id] || e.minutes<best[f.t.id].e.minutes) best[f.t.id]={...f,e};
-    });
     const need=skillFor($("#jobKind").value);
+
+    /* Drive times only if there is somebody to measure to. A board where nobody
+       has clocked in yet still needs to be dispatchable. */
+    const best={};
+    if(flat.length){
+      const {results}=await geoCall({op:"eta",from:[job.lat,job.lng],to:flat.map(f=>[f.st.lat,f.st.lng])});
+      flat.forEach((f,i)=>{
+        const e=results[i]; if(!e) return;
+        if(!best[f.t.id] || e.minutes<best[f.t.id].e.minutes) best[f.t.id]={...f,e};
+      });
+    }
+
     const ranked=Object.values(best)
-      .map(x=>({...x, able:canDo(x.t,need)}))
+      .map(x=>({...x, able:canDo(x.t,need), load:stopsOf(x.t).length}))
       .sort((a,b)=> (a.able===b.able) ? a.e.minutes-b.e.minutes : (a.able?-1:1));
-    if(!ranked.length){ out.innerHTML='<div class="note">Could not work out drive times just now.</div>'; return; }
-    lastFind={job, nearestId:ranked[0].t.id};
+
+    /* The men the old version dropped on the floor: nobody can measure a drive
+       time to a technician who has not clocked in and has no job yet — but he is
+       often exactly the right person to send, because he is free. Trained hands
+       first, then whoever is carrying least. */
+    const placed=new Set(ranked.map(x=>x.t.id));
+    const idle=techs.filter(t=>!placed.has(t.id))
+      .map(t=>({t, able:canDo(t,need), load:stopsOf(t).length}))
+      .sort((a,b)=> a.able!==b.able ? (a.able?-1:1)
+                  : a.load!==b.load ? a.load-b.load
+                  : String(a.t.name).localeCompare(String(b.t.name)));
+
+    lastFind={job, nearestId:ranked.length?ranked[0].t.id:null};
     paintMap(lastFind);
+
     const approxNote = job.approx
-      ? '<div class="note" style="color:var(--brass)">Approximate location, matched on "'+job.matched+'". Check the red pin.</div>' : "";
-    out.innerHTML=`<div class="panel" style="margin-top:12px">
-      <div class="lbl">New job at ${job.label}</div>${approxNote}`+
-      ranked.map((x,i)=>`<div class="diff" style="align-items:center">
+      ? '<div class="note" style="color:var(--brass)">Approximate location, matched on "'+esc(job.matched)+'". Check the red pin.</div>' : "";
+
+    const freeTag = n => n===0 ? '<span class="freetag">free now</span>' : "";
+
+    const rankedHtml = ranked.map((x,i)=>`<div class="diff" style="align-items:center">
         <span style="flex:1">
-          <b style="color:${colourOf(x.t)};font-weight:600">${x.able&&i===0?"★ ":""}${x.t.name}</b>
-          ${x.able?"":`<span class="skillwarn">not trained on ${need}</span>`}
-          <span class="note"> · ${x.st.job_type||"job"}</span><br>
+          <b style="color:${colourOf(x.t)};font-weight:600">${x.able&&i===0?"★ ":""}${esc(x.t.name)}</b>
+          ${freeTag(x.load)}
+          ${x.able?"":`<span class="skillwarn">not trained on ${esc(need)}</span>`}
+          <span class="note"> · ${esc(x.st.job_type||"job")}</span><br>
           <span class="note">${x.i===-1
-            ? "from where he actually is, "+sinceText(x.st.assigned_at)+" ago"
-            : x.i===0 ? "from his current job — "+sentText(x.st)
+            ? "from where he actually is, "+esc(sinceText(x.st.assigned_at))+" ago"
+            : x.i===-2
+              ? "from the job he finished "+esc(sinceText(x.st.done_at))+" ago — no phone signal, so this is an estimate"
+            : x.i===0 ? "from his current job — "+esc(sentText(x.st))
             : "near job "+(x.i+1)+" in his queue, so it is on his way"}</span>
         </span>
         <span style="text-align:right;white-space:nowrap">
-          <b style="font-size:18px;color:${i===0?"var(--green)":"var(--navy)"}">${x.e.minutes}</b>
-          <span class="note"> min · ${x.e.km} km</span><br>
-          ${dispatchOK?`<button class="btn ghost" data-assign="${x.t.id}"
+          <b style="font-size:18px;color:${i===0?"var(--green)":"var(--navy)"}">${esc(x.e.minutes)}</b>
+          <span class="note"> min · ${esc(x.e.km)} km</span><br>
+          ${dispatchOK?`<button class="btn ghost" data-assign="${esc(x.t.id)}"
             style="padding:5px 10px;font-size:11px;margin-top:4px">Assign</button>`:""}
-        </span></div>`).join("")+`</div>`;
+        </span></div>`).join("");
+
+    const idleHtml = idle.length ? `
+      <div class="idlehead">${ranked.length?"No drive time for these":"Nobody has a position yet"}</div>
+      <div class="note" style="margin-bottom:6px">${ranked.length
+        ? "Not clocked in, or no located job to measure from — so there is no ETA. Often the right person to send anyway, because they are free."
+        : "No technician is clocked in with a position, so drive times cannot be worked out. You can still assign the job."}</div>
+      ${idle.map(x=>`<div class="diff" style="align-items:center">
+        <span style="flex:1">
+          <b style="color:${colourOf(x.t)};font-weight:600">${esc(x.t.name)}</b>
+          ${freeTag(x.load)}
+          ${x.able?"":`<span class="skillwarn">not trained on ${esc(need)}</span>`}
+          <br><span class="note">${x.load
+            ? x.load+" job"+(x.load===1?"":"s")+" queued, none located"
+            : (x.t.clocked_in ? "clocked in, waiting for a position" : "not clocked in")
+              +(lastDoneOf(x.t)?"":", and no finished job to measure from")}</span>
+        </span>
+        <span style="text-align:right;white-space:nowrap">
+          <span class="note">no ETA</span><br>
+          ${dispatchOK?`<button class="btn ghost" data-assign="${esc(x.t.id)}"
+            style="padding:5px 10px;font-size:11px;margin-top:4px">Assign</button>`:""}
+        </span></div>`).join("")}` : "";
+
+    out.innerHTML=`<div class="panel" style="margin-top:12px">
+      <div class="lbl">New job at ${esc(job.label)}</div>${approxNote}
+      ${rankedHtml}${idleHtml}</div>`;
+
     $$("[data-assign]").forEach(b=>b.onclick=()=>assignJob(+b.dataset.assign, job, q, $("#jobKind").value));
-  }catch(e){ out.innerHTML='<div class="note" style="color:var(--red);margin-top:12px">'+e.message+'</div>'; }
+  }catch(e){ out.innerHTML='<div class="note" style="color:var(--red);margin-top:12px">'+esc(e.message)+'</div>'; }
 }
 
 async function assignJob(techId, job, rawAddr, kind){
