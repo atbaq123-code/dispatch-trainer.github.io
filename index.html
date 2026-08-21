@@ -463,6 +463,12 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .livetag.done:before{animation:none;opacity:.6;}
 .livedot.done{animation:none;background:#fff;border-width:4px;border-style:solid;opacity:.85;
   box-shadow:0 2px 6px rgba(0,0,0,.25);}
+/* The number a dispatcher reaches for when a new call lands mid-route:
+   how long until this man is free. Given room to be read at a glance. */
+.onwaytag{display:inline-block;font-size:10.5px;font-weight:600;margin-left:6px;
+  padding:2px 8px;border-radius:20px;background:#EAF9F1;color:#1F7A4C;vertical-align:1px;}
+.etaline{margin-top:5px;font-size:12.5px;color:var(--navy);}
+.etaline b{font-weight:600;color:#1F7A4C;}
 .idlehead{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
   color:#96A2AE;margin:16px 0 4px;padding-top:12px;border-top:1px solid var(--line2);}
 .freetag{display:inline-block;font-size:10.5px;font-weight:600;margin-left:6px;
@@ -958,7 +964,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0821-42";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0821-43";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -3726,6 +3732,42 @@ const liveAddr = t => {
   const lv=liveOf(t); if(!lv) return null;
   return revCache[revKey(lv.lat,lv.lng)]||null;
 };
+
+/* ---------- how far he still has to drive ----------
+   A live position plus the address of the job he is heading to gives the one
+   number a dispatcher actually wants when a new call lands: how long until this
+   man is free. "Sent 20 minutes ago" does not answer that — he may be parked
+   outside already, or still forty minutes out in traffic.
+
+   Two guards on cost, because this is a billed lookup per technician rather than
+   a single batched one: the cache key rounds his position to about 110 m, and a
+   given technician is not re-measured more often than every 90 seconds however
+   much he moves. A stale-by-a-minute ETA is fine; a stale-by-an-hour one is not,
+   which is why it is not simply cached forever. */
+const etaCache={}, etaAsked={};
+const ETA_MIN_GAP = 90*1000;
+const etaKey = (lv,st) =>
+  lv.lat.toFixed(3)+","+lv.lng.toFixed(3)+"|"+st.lat.toFixed(4)+","+st.lng.toFixed(4);
+
+function etaToStop(t){
+  const lv=liveOf(t); if(!lv) return null;
+  const st=stopsOf(t)[0]; if(!st || st.lat==null) return null;
+  return etaCache[etaKey(lv,st)] || null;
+}
+async function etaFor(t){
+  const lv=liveOf(t); if(!lv) return;
+  const st=stopsOf(t)[0]; if(!st || st.lat==null) return;
+  const key=etaKey(lv,st);
+  if(etaCache[key]!==undefined) return;                       // already known or in flight
+  if(Date.now()-(etaAsked[t.id]||0) < ETA_MIN_GAP) return;    // he is moving; do not re-bill
+  etaAsked[t.id]=Date.now();
+  etaCache[key]=null;
+  try{
+    const {results}=await geoCall({op:"eta",from:[lv.lat,lv.lng],to:[[st.lat,st.lng]]});
+    const e=results && results[0];
+    if(e) { etaCache[key]={minutes:e.minutes, km:e.km, at:Date.now()}; paintTechs(); }
+  }catch(e){ /* leave it null — the card simply omits the line */ }
+}
 const posAge = t => (t.live_at ? Date.now()-new Date(t.live_at).getTime() : Infinity);
 const FRESH_MS = 15*60000;
 const liveOf = t => (t.clocked_in && t.live_lat!=null && posAge(t) < FRESH_MS)
@@ -3905,7 +3947,7 @@ async function refreshBoard(quiet){
   const {data}=await sb.from("techs").select("*").order("name");
   if(data){
     techs=data;
-    techs.forEach(reverseFor);
+    techs.forEach(t=>{ reverseFor(t); etaFor(t); });
     paintTechs(); paintMap(lastFind);
   }
   if(!quiet && lab){ lab.textContent="Updated";
@@ -3987,7 +4029,7 @@ async function drawTechs(){
   if(error){ $("#techList").innerHTML='<div class="note">Could not load: '+esc(error.message)+'</div>'; return; }
   techs=data||[];
   paintTechs(); paintMap(lastFind);
-  techs.forEach(reverseFor);
+  techs.forEach(t=>{ reverseFor(t); etaFor(t); });
   watchTechs();
 }
 
@@ -4012,7 +4054,7 @@ function watchTechs(){
             const i=techs.findIndex(t=>t.id===row.id);
             if(i<0) techs.push(row); else techs[i]=row;
             techs.sort((a,b)=>String(a.name).localeCompare(String(b.name)));
-            reverseFor(row);
+            reverseFor(row); etaFor(row);
           }
           if(boardOpen()){ paintTechs(); paintMap(lastFind); }
         })
@@ -4093,6 +4135,7 @@ function paintTechs(){
     if(techEdit && techEdit.id===t.id) return techFormHtml(techEdit);
     const col=colourOf(t), sts=stopsOf(t), lv=liveOf(t), stale=staleOf(t);
     const done = (!lv && !stale) ? lastDoneOf(t) : null;
+    const eta = etaToStop(t);
     return `<div class="panel" style="border-left:4px solid ${col}">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
         <div style="flex:1;min-width:0">
@@ -4123,6 +4166,12 @@ function paintTechs(){
             <div class="note">${esc(st.label||st.address||"no address")}</div>
             <div class="note" style="color:${i?"var(--muted)":"var(--teal)"}">
               ${esc(sentText(st))}${i===0?(lv?" · heading there":" · current job"):" · queued"}</div>
+            ${i===0&&eta?`<div class="etaline">
+              <b>${eta.minutes<=2?"Arriving now":esc(eta.minutes)+" min out"}</b>
+              ${eta.minutes<=2?"":`<span class="note"> · ${esc(eta.km)} km still to drive</span>`}
+              </div>`:""}
+            ${i===0&&lv&&!eta&&stopsOf(t)[0]&&stopsOf(t)[0].lat!=null
+              ?`<div class="note" style="opacity:.6">working out how far he still has to go…</div>`:""}
           </span>
           ${dispatchOK?`<span class="stopacts">
             <button class="stopbtn done" data-done="${esc(t.id)}:${i}" title="Job finished">&#10003;</button>
@@ -4234,21 +4283,18 @@ async function findNearest(){
 
   /* Everyone we can put a drive time against: a live position, or any located
      stop already in their queue. */
+  /* Two different questions, and the old version answered only one of them:
+       1. How far is this man from the new job RIGHT NOW?   -> the anchor point
+       2. Does the new job sit on the route he is already driving?  -> his queue
+     Previously the smallest of all those numbers became "his" ETA, so a man
+     across town could show 4 minutes because his third queued job happened to be
+     next door. That reads as "send him", and it is wrong. */
   const flat=[];
   techs.forEach(t=>{
-    const lv=liveOf(t);
-    if(lv) flat.push({t, st:{lat:lv.lat,lng:lv.lng,job_type:(stopsOf(t)[0]||{}).job_type,
-                             label:"live position", assigned_at:lv.at}, i:-1});
+    const a=anchorOf(t);
+    if(a) flat.push({t, st:{lat:a.lat, lng:a.lng, kind:a.kind, at:a.at,
+                            label:a.label||"live position"}, i:-1, anchor:true});
     stopsOf(t).forEach((st,i)=>{ if(st.lat!=null) flat.push({t,st,i}); });
-    /* No live fix and nothing queued: he is standing where he finished his last
-       job. That address is real evidence and it belongs in the drive-time
-       calculation — a man who has just finished two streets away should not rank
-       below someone across town simply because his phone is not reporting. */
-    if(!lv && !stopsOf(t).some(st=>st.lat!=null)){
-      const d=lastDoneOf(t);
-      if(d) flat.push({t, st:{lat:d.lat,lng:d.lng,job_type:d.job_type,
-                              label:d.label||d.address, done_at:d.done_at}, i:-2});
-    }
   });
 
   if(!techs.length){ out.innerHTML='<div class="note" style="margin-top:12px">No technicians on the board yet.</div>'; return; }
@@ -4260,17 +4306,30 @@ async function findNearest(){
 
     /* Drive times only if there is somebody to measure to. A board where nobody
        has clocked in yet still needs to be dispatchable. */
-    const best={};
+    const byTech={};
     if(flat.length){
       const {results}=await geoCall({op:"eta",from:[job.lat,job.lng],to:flat.map(f=>[f.st.lat,f.st.lng])});
       flat.forEach((f,i)=>{
         const e=results[i]; if(!e) return;
-        if(!best[f.t.id] || e.minutes<best[f.t.id].e.minutes) best[f.t.id]={...f,e};
+        const g = byTech[f.t.id] = byTech[f.t.id] || {t:f.t, anchor:null, queue:[]};
+        if(f.anchor) g.anchor={...f,e};
+        else g.queue.push({...f,e});
       });
     }
 
-    const ranked=Object.values(best)
-      .map(x=>({...x, able:canDo(x.t,need), load:stopsOf(x.t).length}))
+    /* The headline is always distance from where he is. Only if there is no
+       position at all does the nearest queued job stand in for it. */
+    const ONWAY_MIN = 12;
+    const ranked=Object.values(byTech).map(g=>{
+      const nearestQ = g.queue.slice().sort((a,b)=>a.e.minutes-b.e.minutes)[0] || null;
+      const head = g.anchor || nearestQ;
+      if(!head) return null;
+      return {
+        t:g.t, e:head.e, from:head, headIsAnchor:!!g.anchor, nearestQ,
+        onWay: nearestQ && nearestQ.e.minutes<=ONWAY_MIN,
+        able:canDo(g.t,need), load:stopsOf(g.t).length
+      };
+    }).filter(Boolean)
       .sort((a,b)=> (a.able===b.able) ? a.e.minutes-b.e.minutes : (a.able?-1:1));
 
     /* The men the old version dropped on the floor: nobody can measure a drive
@@ -4297,13 +4356,20 @@ async function findNearest(){
           <b style="color:${colourOf(x.t)};font-weight:600">${x.able&&i===0?"★ ":""}${esc(x.t.name)}</b>
           ${freeTag(x.load)}
           ${x.able?"":`<span class="skillwarn">not trained on ${esc(need)}</span>`}
-          <span class="note"> · ${esc(x.st.job_type||"job")}</span><br>
-          <span class="note">${x.i===-1
-            ? "from where he actually is, "+esc(sinceText(x.st.assigned_at))+" ago"
-            : x.i===-2
-              ? "from the job he finished "+esc(sinceText(x.st.done_at))+" ago — no phone signal, so this is an estimate"
-            : x.i===0 ? "from his current job — "+esc(sentText(x.st))
-            : "near job "+(x.i+1)+" in his queue, so it is on his way"}</span>
+          ${x.onWay?'<span class="onwaytag">on his route</span>':""}<br>
+          <span class="note">${
+            x.headIsAnchor
+              ? (x.from.st.kind==="live"
+                  ? "from where he is now, reported "+esc(sinceText(x.from.st.at))+" ago"
+                  : x.from.st.kind==="stale"
+                    ? "from his last known position, "+esc(sinceText(x.from.st.at))+" ago — his phone has gone quiet, so treat this as rough"
+                    : "from the job he finished "+esc(sinceText(x.from.st.at))+" ago — no phone signal, so this is an estimate")
+              : "no position for him, so measured from job "+(x.from.i+1)+" in his queue"}</span>
+          ${x.onWay&&x.nearestQ ? `<div class="note" style="color:#1F7A4C">
+              Passes within ${esc(x.nearestQ.e.minutes)} min of ${
+                x.nearestQ.i===0?"the job he is heading to":"job "+(x.nearestQ.i+1)+" in his queue"
+              } — worth adding to his run.</div>` : ""}
+          ${x.headIsAnchor&&x.load ? `<div class="note">${x.load} job${x.load===1?"":"s"} still on his list</div>`:""}
         </span>
         <span style="text-align:right;white-space:nowrap">
           <b style="font-size:18px;color:${i===0?"var(--green)":"var(--navy)"}">${esc(x.e.minutes)}</b>
