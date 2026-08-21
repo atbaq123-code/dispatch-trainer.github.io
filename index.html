@@ -416,14 +416,58 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .stopline{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px dotted var(--line2);}
 .stopno{width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
-.pin{position:relative;background:var(--navy);color:#fff;font-size:11px;font-weight:700;
-  padding:6px 11px 7px;border-radius:16px 16px 16px 3px;white-space:nowrap;border:2px solid #fff;
-  box-shadow:0 4px 12px rgba(20,30,45,.4);letter-spacing:.01em;
-  transform:translate(6px,-100%) rotate(-1deg);transform-origin:0 100%;}
-.pin:after{content:"";position:absolute;left:-7px;bottom:-8px;width:9px;height:9px;
-  background:inherit;border-left:2px solid #fff;border-bottom:2px solid #fff;
-  border-radius:0 0 0 3px;transform:rotate(45deg) skew(-6deg,-6deg);}
-.pin.job{background:var(--red);}
+/* ---------- map markers ----------
+   A white chip rather than a solid colour block: over street tiles, dark text on
+   white stays readable at any zoom, while the technician's colour still carries
+   identity through the dot, the name and the route line. */
+.mtech,.mstop{width:0!important;height:0!important;overflow:visible;}
+
+.mchip{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:6px;white-space:nowrap;
+  background:#fff;border-radius:20px;padding:4px 9px 4px 7px;
+  font-family:Inter,sans-serif;font-size:11.5px;font-weight:600;line-height:1;
+  box-shadow:0 3px 10px rgba(20,30,45,.28),0 0 0 1px rgba(20,30,45,.07);}
+.mchip:after{content:"";position:absolute;left:50%;bottom:-4px;width:8px;height:8px;
+  margin-left:-4px;background:#fff;transform:rotate(45deg);
+  box-shadow:2px 2px 4px rgba(20,30,45,.12);}
+.mchip i{width:8px;height:8px;border-radius:50%;flex:none;}
+.mchip .ld{background:#EEF2F6;color:#5D6C7B;border-radius:10px;padding:2px 6px;
+  font-size:10px;font-weight:700;}
+.mchip .ld.free{background:#EAF9F1;color:#1F7A4C;}
+
+/* Not reporting: the chip fades back so a live man always wins the eye. */
+.mchip.stale,.mchip.done{background:#F4F6F8;}
+.mchip.stale span,.mchip.done span{opacity:.72;font-weight:500;}
+.mchip.stale i,.mchip.done i{opacity:.5;box-shadow:0 0 0 2px #fff inset;}
+.mchip.stale:after,.mchip.done:after{background:#F4F6F8;}
+
+.mchip.job{background:var(--red);box-shadow:0 3px 12px rgba(200,60,40,.45);}
+.mchip.job span{color:#fff;font-weight:700;letter-spacing:.02em;}
+.mchip.job i{background:#fff;}
+.mchip.job:after{background:var(--red);}
+
+.mdot{position:absolute;left:-7px;top:-7px;width:14px;height:14px;border-radius:50%;
+  border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);}
+.mdot.live{animation:livepulse 2s infinite;}
+/* A dashed border on a 14 px circle renders as a star, not a dash — so a stale
+   position is signalled by weight and stillness instead: no pulse, faded, and a
+   hollow centre so it reads as "was here" rather than "is here". */
+.mdot.stale{opacity:.6;background:#fff!important;border-width:4px;
+  box-shadow:0 2px 5px rgba(0,0,0,.22);}
+.mdot.done{border-width:3px;border-style:solid;}
+.mdot.job{background:var(--red);width:16px;height:16px;left:-8px;top:-8px;}
+
+/* Jobs are numbered discs, not name repeats — the number is the running order. */
+.jdot{position:absolute;left:-11px;top:-11px;width:22px;height:22px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:Inter,sans-serif;font-size:11px;font-weight:700;color:#fff;
+  border:2.5px solid;box-shadow:0 2px 7px rgba(20,30,45,.32);}
+.jdot.cur{width:26px;height:26px;left:-13px;top:-13px;font-size:12px;}
+.jeta{position:absolute;left:50%;top:16px;transform:translateX(-50%);
+  font-family:Inter,sans-serif;font-size:10px;font-weight:700;white-space:nowrap;
+  background:rgba(255,255,255,.94);border-radius:8px;padding:1px 5px;
+  box-shadow:0 1px 4px rgba(20,30,45,.2);}
+@media (prefers-reduced-motion:reduce){ .mdot.live{animation:none;} }
 .wrapup{position:fixed;inset:0;z-index:60;background:rgba(24,32,45,.55);
   display:flex;align-items:center;justify-content:center;padding:20px;animation:rise .25s ease both}
 .wrapcard{background:#fff;border-radius:14px;max-width:440px;width:100%;padding:26px;
@@ -433,15 +477,11 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .wrapmiss div{padding:5px 0;font-size:14px;color:var(--navy)}
 .leaflet-container{font-family:'Poppins',system-ui,sans-serif;border-radius:10px;}
 .leaflet-control-attribution{font-size:9px;opacity:.75;}
-.pin.near{background:var(--green);}
-.livedot{width:16px;height:16px;border-radius:50%;border:3px solid #fff;
-  box-shadow:0 0 0 4px rgba(47,164,92,.35),0 2px 6px rgba(0,0,0,.35);animation:livepulse 2s infinite;}
-@keyframes livepulse{0%{box-shadow:0 0 0 4px rgba(47,164,92,.35),0 2px 6px rgba(0,0,0,.35)}
-  70%{box-shadow:0 0 0 14px rgba(47,164,92,0),0 2px 6px rgba(0,0,0,.35)}
-  100%{box-shadow:0 0 0 4px rgba(47,164,92,0),0 2px 6px rgba(0,0,0,.35)}}
-.livedot.stale{animation:none;opacity:.42;border-style:dashed;
-  box-shadow:0 0 0 4px rgba(176,124,30,.28),0 2px 6px rgba(0,0,0,.25);}
-@media (prefers-reduced-motion:reduce){ .livedot{animation:none;} }
+/* Halo pulse on a live technician's dot — the one piece of motion on the map,
+   reserved for "this position is current". */
+@keyframes livepulse{0%{box-shadow:0 0 0 3px rgba(47,164,92,.38),0 2px 6px rgba(0,0,0,.3)}
+  70%{box-shadow:0 0 0 13px rgba(47,164,92,0),0 2px 6px rgba(0,0,0,.3)}
+  100%{box-shadow:0 0 0 3px rgba(47,164,92,0),0 2px 6px rgba(0,0,0,.3)}}
 .updatebar{position:fixed;left:12px;right:12px;bottom:12px;z-index:60;background:var(--navy);
   color:#fff;border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;
   flex-wrap:wrap;box-shadow:0 8px 24px rgba(0,0,0,.28);font-size:13px;}
@@ -461,8 +501,6 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
    separator, not a warning colour. */
 .livetag.done{background:#5D6C7B;}
 .livetag.done:before{animation:none;opacity:.6;}
-.livedot.done{animation:none;background:#fff;border-width:4px;border-style:solid;opacity:.85;
-  box-shadow:0 2px 6px rgba(0,0,0,.25);}
 /* The number a dispatcher reaches for when a new call lands mid-route:
    how long until this man is free. Given room to be read at a glance. */
 /* Coverage panel */
@@ -979,7 +1017,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0821-44";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0821-45";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -3848,42 +3886,83 @@ function ensureMap(){
   drawMapStyles();
 }
 
+/* A chip has room for a word, not a full name. First name alone where that is
+   unambiguous; add the surname initial only when two men share one. Two Marcuses
+   on a map both labelled "Marcus" is worse than no label at all. */
+function shortName(t){
+  const parts=String(t.name||"").trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return "?";
+  const first=parts[0];
+  const clash=techs.some(o=>o.id!==t.id &&
+    String(o.name||"").trim().split(/\s+/)[0]?.toLowerCase()===first.toLowerCase());
+  if(!clash) return first;
+  const surname=parts[1];
+  return surname ? first+" "+surname[0].toUpperCase()+"." : first;
+}
+
 function paintMap(extra){
   ensureMap();
   if(!techMap) return;
   techLayer.clearLayers();
   const pts=[];
+  /* The old map wrote the technician's full name on every one of his stops, so
+     three men with three jobs each produced nine long name bubbles fighting for
+     the same space. Identity and destination are different things and now look
+     different: the MAN carries a name chip, his JOBS are numbered discs in his
+     colour. You read the chip once and the numbers give you the running order. */
   techs.forEach(t=>{
     const col=colourOf(t), line=[];
-    stopsOf(t).forEach((st,i)=>{
+    const sts=stopsOf(t);
+    const eta=etaToStop(t);
+
+    sts.forEach((st,i)=>{
       if(st.lat==null) return;
-      const html='<div class="pin" style="background:'+col+'">'+esc(t.name)+(i?" ②③④⑤".trim()[i]||(" "+(i+1)):"")+'</div>';
-      L.marker([st.lat,st.lng],{icon:L.divIcon({className:"",html,iconSize:null})}).addTo(techLayer)
-       .bindPopup("<b>"+esc(t.name)+"</b> — stop "+(i+1)+"<br>"+esc(st.job_type||"")+"<br>"+
+      /* The one he is driving to is filled and larger; everything behind it is
+         outlined, so the current job reads first at a glance. */
+      const cur=i===0;
+      const html=
+        '<div class="jdot'+(cur?" cur":"")+'" style="'+
+          (cur?"background:"+col+";border-color:#fff"
+              :"background:#fff;border-color:"+col+";color:"+col)+
+        '">'+(i+1)+'</div>'+
+        (cur&&eta?'<div class="jeta" style="color:'+col+'">'+
+          (eta.minutes<=2?"arriving":esc(eta.minutes)+" min")+'</div>':"");
+      L.marker([st.lat,st.lng],{icon:L.divIcon({className:"mstop",html,iconSize:[0,0]})}).addTo(techLayer)
+       .bindPopup("<b>"+esc(t.name)+"</b> \u2014 stop "+(i+1)+" of "+sts.length+"<br>"+esc(st.job_type||"")+"<br>"+
                   esc(st.label||st.address||"")+"<br><i>"+esc(sentText(st))+(i?" &middot; queued":" &middot; current")+"</i>");
       line.push([st.lat,st.lng]); pts.push([st.lat,st.lng]);
     });
-    const lv=liveOf(t);
-    if(lv){
-      L.marker([lv.lat,lv.lng],{icon:L.divIcon({className:"",
-        html:'<div class="livedot" style="background:'+col+'"></div>',iconSize:[16,16],iconAnchor:[8,8]})})
-        .addTo(techLayer).bindPopup("<b>"+esc(t.name)+"</b><br>"+esc(liveAddr(t)||"live position")+"<br><i>"+esc(sinceText(lv.at))+" ago</i>");
-      pts.push([lv.lat,lv.lng]);
-      if(line.length) L.polyline([[lv.lat,lv.lng],line[0]],{color:col,weight:2,opacity:.55}).addTo(techLayer);
+
+    /* Exactly one chip per technician, at the best position we have for him. */
+    const a=anchorOf(t);
+    if(a){
+      const kind=a.kind;                                  // live | stale | done
+      const chip=
+        '<div class="mchip '+kind+'">'+
+          '<i style="background:'+col+'"></i>'+
+          '<span style="color:'+col+'">'+esc(shortName(t))+'</span>'+
+          (sts.length?'<b class="ld">'+sts.length+'</b>':'<b class="ld free">free</b>')+
+        '</div>'+
+        '<div class="mdot '+kind+'" style="'+(kind==="done"
+          ? "border-color:"+col+";background:#fff"
+          : "background:"+col)+'"></div>';
+      const why = kind==="live"  ? esc(liveAddr(t)||"live position")+"<br><i>"+esc(sinceText(a.at))+" ago</i>"
+                : kind==="stale" ? "Last known position<br><i>"+esc(sinceText(a.at))+" ago \u2014 not current</i>"
+                :                  "Finished a job here<br><i>"+esc(sinceText(a.at))+" ago</i>";
+      L.marker([a.lat,a.lng],{icon:L.divIcon({className:"mtech",html:chip,iconSize:[0,0]}),
+        zIndexOffset:500}).addTo(techLayer)
+        .bindPopup("<b>"+esc(t.name)+"</b><br>"+why+
+          (sts.length?"<br>"+sts.length+" job"+(sts.length===1?"":"s")+" on his list":"<br>No jobs assigned"));
+      pts.push([a.lat,a.lng]);
+      if(kind!=="done" && line.length)
+        L.polyline([[a.lat,a.lng],line[0]],{color:col,weight:2.5,opacity:.6}).addTo(techLayer);
     }
-    const sv=staleOf(t);
-    if(sv){
-      L.marker([sv.lat,sv.lng],{icon:L.divIcon({className:"",
-        html:'<div class="livedot stale" style="background:'+col+'"></div>',iconSize:[16,16],iconAnchor:[8,8]})})
-        .addTo(techLayer).bindPopup("<b>"+esc(t.name)+"</b><br>Last known position<br><i>"+
-          esc(sinceText(sv.at))+" ago — not current</i>");
-      pts.push([sv.lat,sv.lng]);
-    }
-    if(line.length>1) L.polyline(line,{color:col,weight:2,dashArray:"5,6",opacity:.7}).addTo(techLayer);
+    if(line.length>1) L.polyline(line,{color:col,weight:2,dashArray:"5,6",opacity:.65}).addTo(techLayer);
   });
   if(extra && extra.job){
-    L.marker([extra.job.lat,extra.job.lng],{icon:L.divIcon({className:"",
-      html:'<div class="pin job">NEW JOB</div>',iconSize:null})}).addTo(techLayer)
+    L.marker([extra.job.lat,extra.job.lng],{icon:L.divIcon({className:"mtech",
+      html:'<div class="mchip job"><i></i><span>New job</span></div><div class="mdot job"></div>',
+      iconSize:[0,0]}),zIndexOffset:900}).addTo(techLayer)
       .bindPopup("<b>New job</b><br>"+esc(extra.job.label));
     pts.push([extra.job.lat,extra.job.lng]);
   }
