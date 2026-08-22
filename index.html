@@ -1027,7 +1027,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0822-53";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0822-54";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -4205,11 +4205,41 @@ let covRect=null, covHandles=[];
 
 function saveCovArea(a){
   covArea=a;
+  /* Written locally first so the map responds immediately, then pushed to the
+     database in the background. The local copy is what makes it instant; the
+     database copy is what makes it the company's area rather than this laptop's. */
   try{ a ? localStorage.setItem("oc_covarea",JSON.stringify(a))
          : localStorage.removeItem("oc_covarea"); }catch(e){}
   waterKey="";                       // the area moved, so the water mask is stale
   drawGaps();
   paintCovEdit();
+  pushCovArea(a);
+}
+
+/* Shared across dispatchers and devices.
+   A coverage area set on the office desktop should be the same one the
+   supervisor sees on his phone — it describes the business, not the browser.
+   Everything here fails quietly: if the settings table does not exist, or the
+   write is refused, the local copy still works exactly as before and the
+   dispatcher sees no error about a feature he did not ask for. */
+async function pushCovArea(a){
+  try{
+    if(!me || isGuest || !dispatchOK) return;
+    if(a) await sb.from("app_settings").upsert({key:"coverage_area",value:a},{onConflict:"key"});
+    else  await sb.from("app_settings").delete().eq("key","coverage_area");
+  }catch(e){ console.warn("coverage area not shared:",e.message); }
+}
+async function pullCovArea(){
+  try{
+    const {data,error}=await sb.from("app_settings")
+      .select("value").eq("key","coverage_area").maybeSingle();
+    if(error||!data||!data.value) return;
+    const a=data.value;
+    if(typeof a.s!=="number"||typeof a.n!=="number"||a.n<=a.s||a.e<=a.w) return;
+    covArea=a;
+    try{ localStorage.setItem("oc_covarea",JSON.stringify(a)); }catch(e){}
+    waterKey="";
+  }catch(e){ /* table absent — the local copy carries on */ }
 }
 
 /* Corner handles rather than a drag-to-draw gesture: the area usually needs
@@ -4546,8 +4576,8 @@ function paintCoverage(o){
 
     <div class="covarea">
       <span class="note" style="flex:1;min-width:150px">${covArea
-        ? "Measuring the area you set. Drag the teal corners on the map to resize it."
-        : "Measuring an area worked out from where your jobs are."}</span>
+        ? "Measuring the area you set — it stays this way for everyone until you change it. Drag the teal corners to resize."
+        : "Measuring an area worked out from where your jobs are. Set your own and it will be remembered."}</span>
       <button class="btn ghost" id="covUseView" style="padding:6px 11px;font-size:11.5px">Use this view</button>
       ${covArea?`<button class="btn ghost" id="covReset"
         style="padding:6px 11px;font-size:11.5px">Back to automatic</button>`:""}
@@ -4616,6 +4646,7 @@ async function drawTechs(){
   $("#refreshBtn").onclick=()=>refreshBoard(false);
   $("#gapBtn").onclick=()=>{ gapOn=!gapOn; ensureMap(); drawGaps(); };
   $("#addTechBtn").onclick=()=>{ techEdit={new:true, stops:[{}]}; paintTechs(); };
+  pullCovArea().then(()=>{ if(gapOn) drawGaps(); });
   const {data,error}=await sb.from("techs").select("*").order("name");
   if(error){ $("#techList").innerHTML='<div class="note">Could not load: '+esc(error.message)+'</div>'; return; }
   techs=data||[];
