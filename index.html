@@ -507,6 +507,13 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 /* The number a dispatcher reaches for when a new call lands mid-route:
    how long until this man is free. Given room to be read at a glance. */
 /* Coverage panel */
+/* The coverage area the dispatcher has set: dashed teal box with grab handles
+   at the corners, deliberately distinct from anything that represents a person. */
+.covarea{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;
+  padding-top:12px;border-top:1px solid var(--line2);}
+.covgrip{width:14px;height:14px;border-radius:3px;background:#fff;
+  border:2.5px solid #2BAFBD;box-shadow:0 1px 5px rgba(0,0,0,.3);cursor:move;}
+.covgrip:hover{background:#2BAFBD;}
 .covtop{display:flex;align-items:center;gap:16px;margin:10px 0 14px;flex-wrap:wrap;}
 .covbig{font-size:40px;font-weight:700;line-height:1;font-family:Poppins,sans-serif;}
 .covbig small{font-size:18px;font-weight:600;opacity:.7;margin-left:1px;}
@@ -1020,7 +1027,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0822-51";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0822-53";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -3932,7 +3939,22 @@ function drawMapStyles(){
 
 function ensureMap(){
   if(techMap || !window.L) return;
-  techMap=L.map("techMap",{scrollWheelZoom:false,zoomControl:true}).setView([28.05,-82.45],10);
+  techMap=L.map("techMap",{
+    zoomControl:true,
+    scrollWheelZoom:true,      // was off, which made the map feel broken on a desktop
+    /* Half-steps rather than whole ones. A dispatch map is read at a particular
+       scale — one notch used to jump from "the whole bay" to "one street". */
+    zoomSnap:0.5, zoomDelta:0.5, wheelPxPerZoomLevel:120,
+    /* Two fingers to pan on a phone, so scrolling the page past the map does not
+       drag the map instead. */
+    dragging:!L.Browser.mobile, tap:true
+  }).setView([28.05,-82.45],10);
+  if(L.Browser.mobile){
+    /* On a touch screen the map stays draggable with one finger once the person
+       has actually touched it — it just does not steal the first scroll. */
+    techMap.dragging.enable();
+    techMap.options.tapTolerance=20;
+  }
   applyStyle();
   techLayer=L.layerGroup().addTo(techMap);
   drawMapStyles();
@@ -4151,6 +4173,163 @@ const BANDS=[
 ];
 const bandFor = m => BANDS.find(b=>m<=b.max);
 
+/* ---------------------------------------------------------------------------
+   WATER
+   ---------------------------------------------------------------------------
+   Tampa Bay broke this model twice over. A straight-line grid shaded open water
+   as covered, and then counted it in the denominator — so a third of the "area
+   you serve" was sea nobody will ever call from, and the percentage was junk.
+
+   There is no offline coastline dataset small enough to ship inside one HTML
+   file, so the mask is read off the basemap itself. A handful of CARTO tiles are
+   drawn to a canvas and the pixels sampled: their light style paints water a
+   distinct blue-grey against near-white land. CARTO serves these with CORS, so
+   the canvas stays readable.
+
+   Two separate corrections come out of it:
+     1. Water cells are dropped from the map and from the percentage entirely.
+     2. A technician on the far shore is no longer "12 minutes away" across open
+        water. Crossing the bay means a bridge, and bridges cost.
+
+   It fails safe. If the tiles will not load, or the canvas is tainted, the mask
+   is skipped, the old behaviour returns, and the panel says so rather than
+   quietly reporting a number built on sea.
+--------------------------------------------------------------------------- */
+/* ---------- the area coverage is measured over ----------
+   By default this is worked out from where the jobs are, which is a reasonable
+   guess and nothing more. A dispatcher knows his own patch: which suburbs he
+   actually serves, where he will not send a van, how far out is worth chasing.
+   Once he sets an area it is remembered and the guess is not used again. */
+let covArea = (()=>{ try{ return JSON.parse(localStorage.getItem("oc_covarea")||"null"); }catch(e){ return null; } })();
+let covRect=null, covHandles=[];
+
+function saveCovArea(a){
+  covArea=a;
+  try{ a ? localStorage.setItem("oc_covarea",JSON.stringify(a))
+         : localStorage.removeItem("oc_covarea"); }catch(e){}
+  waterKey="";                       // the area moved, so the water mask is stale
+  drawGaps();
+  paintCovEdit();
+}
+
+/* Corner handles rather than a drag-to-draw gesture: the area usually needs
+   nudging, not redrawing, and a stray drag on a map full of technicians should
+   never wipe it. */
+function paintCovEdit(){
+  covHandles.forEach(h=>techMap.removeLayer(h)); covHandles=[];
+  if(covRect){ techMap.removeLayer(covRect); covRect=null; }
+  if(!techMap || !gapOn || !covArea) return;
+
+  const a=covArea;
+  covRect=L.rectangle([[a.s,a.w],[a.n,a.e]],
+    {color:"#2BAFBD",weight:2,dashArray:"6,5",fill:false,interactive:false}).addTo(techMap);
+
+  const corners=[["s","w"],["s","e"],["n","w"],["n","e"]];
+  corners.forEach(([ns,we])=>{
+    const m=L.marker([a[ns],a[we]],{
+      draggable:true, zIndexOffset:1200,
+      icon:L.divIcon({className:"",html:'<div class="covgrip"></div>',iconSize:[18,18],iconAnchor:[9,9]})
+    }).addTo(techMap);
+    m.on("drag",e=>{
+      const p=e.target.getLatLng();
+      const next={...covArea, [ns]:p.lat, [we]:p.lng};
+      /* Dragging a corner past its opposite would invert the box, so the edges
+         are kept apart rather than letting it fold inside out. */
+      if(next.n-next.s < 0.02 || next.e-next.w < 0.02) return;
+      covArea=next;
+      covRect.setBounds([[covArea.s,covArea.w],[covArea.n,covArea.e]]);
+    });
+    m.on("dragend",()=>saveCovArea(covArea));
+    covHandles.push(m);
+  });
+}
+
+function useCurrentView(){
+  if(!techMap) return;
+  const b=techMap.getBounds();
+  saveCovArea({s:b.getSouth(), w:b.getWest(), n:b.getNorth(), e:b.getEast()});
+}
+
+const WATER_TILE = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png";
+let waterMask=null, waterKey="", waterLoading=false;
+
+const lng2px = (lng,z) => (lng+180)/360*Math.pow(2,z)*256;
+const lat2px = (lat,z) => {
+  const r=lat*Math.PI/180;
+  return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z)*256;
+};
+
+/* CARTO Positron: land sits near-white and slightly warm, water is a cooler
+   blue-grey. Blue must lead red by a clear margin AND the channels must climb
+   r→g→b, which rules out the neutral greys used for roads and buildings. */
+function isWaterPixel(r,g,b,a){
+  if(a<200) return false;
+  if(b-r < 5) return false;
+  if(!(b>=g && g>=r)) return false;
+  const lum=(r+g+b)/3;
+  return lum>150 && lum<240;
+}
+
+async function buildWaterMask(s0,w0,n0,e0){
+  /* Pick the deepest zoom that still fits the area in a few tiles. More zoom is
+     more detail, but every step doubles the tiles we have to fetch. */
+  let z=11;
+  for(; z>4; z--){
+    const w=Math.abs(lng2px(e0,z)-lng2px(w0,z))/256;
+    const h=Math.abs(lat2px(s0,z)-lat2px(n0,z))/256;
+    if(w<=4 && h<=4) break;
+  }
+  const x0=Math.floor(lng2px(w0,z)/256), x1=Math.floor(lng2px(e0,z)/256);
+  const y0=Math.floor(lat2px(n0,z)/256), y1=Math.floor(lat2px(s0,z)/256);
+  const cols=x1-x0+1, rows=y1-y0+1;
+  if(cols*rows>25) throw new Error("area too large to mask");
+
+  const cv=document.createElement("canvas");
+  cv.width=cols*256; cv.height=rows*256;
+  const cx=cv.getContext("2d",{willReadFrequently:true});
+
+  const subs="abcd";
+  await Promise.all(Array.from({length:cols*rows},(_,i)=>{
+    const gx=x0+(i%cols), gy=y0+Math.floor(i/cols);
+    const url=WATER_TILE.replace("{s}",subs[i%4]).replace("{z}",z)
+                        .replace("{x}",gx).replace("{y}",gy);
+    return new Promise(res=>{
+      const img=new Image();
+      img.crossOrigin="anonymous";
+      img.onload=()=>{ try{ cx.drawImage(img,(gx-x0)*256,(gy-y0)*256); }catch(e){} res(); };
+      img.onerror=()=>res();                 // a missing tile just reads as land
+      img.src=url;
+    });
+  }));
+
+  const px=cx.getImageData(0,0,cv.width,cv.height).data;   // throws if tainted
+  const ox=x0*256, oy=y0*256;
+  return {
+    z, ox, oy, w:cv.width, h:cv.height,
+    at(lat,lng){
+      const X=Math.round(lng2px(lng,this.z)-this.ox);
+      const Y=Math.round(lat2px(lat,this.z)-this.oy);
+      if(X<0||Y<0||X>=this.w||Y>=this.h) return false;
+      const i=(Y*this.w+X)*4;
+      return isWaterPixel(px[i],px[i+1],px[i+2],px[i+3]);
+    }
+  };
+}
+
+/* How much of the straight line between two points is water. A technician on the
+   far side of the bay is not twelve minutes away; he is however long the bridge
+   takes, plus the run to reach it. */
+function waterFraction(la1,ln1,la2,ln2){
+  if(!waterMask) return 0;
+  let wet=0;
+  const N=10;
+  for(let i=1;i<N;i++){
+    const t=i/N;
+    if(waterMask.at(la1+(la2-la1)*t, ln1+(ln2-ln1)*t)) wet++;
+  }
+  return wet/(N-1);
+}
+
 /* Coverage is about PRESENCE, not availability.
    An earlier version subtracted a penalty for every job a technician had queued,
    which made a busy team read as 0% covered. That is the wrong question. A lock
@@ -4170,10 +4349,21 @@ function coverageSources(){
 }
 const driveMin = km => (km*DETOUR)/ROAD_KMH*60;
 
+/* Crossing water costs the detour to reach a bridge, not the crossing itself.
+   Kept deliberately modest, because the size of that detour depends entirely on
+   where the nearest bridge is and we have no road data to tell us. Tampa to
+   St Petersburg is barely penalised and should be — the straight line there runs
+   almost exactly along the Howard Frankland. Somewhere with no crossing nearby
+   is under-penalised, which is the safer way to be wrong: a slightly optimistic
+   estimate beats sending the wrong man because the model invented an hour. */
+const BRIDGE_MIN = 10;    // reaching a crossing, not driving it
+
 function responseAt(la,ln,src){
   let best=Infinity, who=null;
   src.forEach(s=>{
-    const m=driveMin(hav(la,ln,s.lat,s.lng));
+    let m=driveMin(hav(la,ln,s.lat,s.lng));
+    const wet=waterFraction(la,ln,s.lat,s.lng);
+    if(wet>0) m += BRIDGE_MIN*wet + m*wet*0.35;  // getting to the bridge, then the extra miles
     if(m<best){ best=m; who=s; }
   });
   return {min:best, who};
@@ -4183,13 +4373,22 @@ function drawGaps(){
   if(!techMap) return;
   if(gapLayer){ techMap.removeLayer(gapLayer); gapLayer=null; }
   const btn=document.getElementById("gapBtn");
-  const off=()=>{ if(btn){ btn.textContent="Coverage gaps"; btn.classList.remove("on"); } };
+  const off=()=>{ if(btn){ btn.textContent="Coverage gaps"; btn.classList.remove("on"); }
+                  covHandles.forEach(h=>techMap.removeLayer(h)); covHandles=[];
+                  if(covRect){ techMap.removeLayer(covRect); covRect=null; } };
   if(!gapOn){ off(); return; }
 
   const src=coverageSources();
   if(!src.length){ off(); gapOn=false;
     $("#findOut").innerHTML='<div class="note" style="margin-top:12px">Nobody has a position, '+
       'so there is nothing to measure coverage from.</div>'; return; }
+
+  /* A dispatcher knows his own patch better than any heuristic does. If he has
+     set an area, that is the area — auto-fitting is only a starting guess. */
+  if(covArea){
+    const a=covArea, R=22, C=22;
+    return drawGapsFor(src,a.s,a.w,a.n,a.e,R,C,(a.n-a.s)/R,(a.e-a.w)/C,btn,off);
+  }
 
   /* Sizing the grid is the whole game for making the percentage honest.
 
@@ -4216,12 +4415,29 @@ function drawGaps(){
   const s0=Math.min(...lats)-padLat, n0=Math.max(...lats)+padLat;
   const w0=Math.min(...lngs)-padLng, e0=Math.max(...lngs)+padLng;
   const rows=22, cols=22, dLat=(n0-s0)/rows, dLng=(e0-w0)/cols;
+  return drawGapsFor(src,s0,w0,n0,e0,rows,cols,dLat,dLng,btn,off);
+}
+
+function drawGapsFor(src,s0,w0,n0,e0,rows,cols,dLat,dLng,btn,off){
+  /* Load the water mask once per area, then redraw. Until it arrives the map is
+     drawn without it rather than not drawn at all. */
+  const areaKey=[s0,w0,n0,e0].map(v=>v.toFixed(3)).join(",");
+  if(waterKey!==areaKey && !waterLoading){
+    waterLoading=true;
+    buildWaterMask(s0,w0,n0,e0)
+      .then(m=>{ waterMask=m; waterKey=areaKey; })
+      .catch(e=>{ waterMask=null; waterKey=areaKey; console.warn("water mask unavailable:",e.message); })
+      .finally(()=>{ waterLoading=false; if(gapOn) drawGaps(); });
+  }
 
   gapLayer=L.layerGroup().addTo(techMap);
   const cells=[];
-  let covered=0;
+  let covered=0, wetCells=0;
   for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
     const la=s0+dLat*(r+.5), ln=w0+dLng*(c+.5);
+    /* Open water is not a gap in your coverage. Nobody is going to be locked out
+       in the middle of the bay, so it is neither shaded nor counted. */
+    if(waterMask && waterMask.at(la,ln)){ wetCells++; continue; }
     const {min,who}=responseAt(la,ln,src);
     cells.push({la,ln,r,c,min,who});
     if(min<=TARGET_MIN) covered++;
@@ -4233,10 +4449,13 @@ function drawGaps(){
        fillOpacity: min<=TARGET_MIN?.13 : min<=45?.24 : min<=70?.30 : .36,
        interactive:false}).addTo(gapLayer);
   }
+  if(!cells.length){ off(); gapOn=false;
+    $("#findOut").innerHTML='<div class="note" style="margin-top:12px">Nothing to measure — '+
+      'every cell in this area read as water.</div>'; return; }
   if(gapLayer.bringToBack) gapLayer.bringToBack();
   if(btn){ btn.textContent="Hide coverage"; btn.classList.add("on"); }
 
-  const pct=Math.round(covered/cells.length*100);
+  const pct=Math.round(covered/cells.length*100);   // land only — water was skipped
   const worst=cells.slice().sort((a,b)=>b.min-a.min);
 
   /* Cluster the worst cells so the advice names one area rather than scattering
@@ -4278,7 +4497,9 @@ function drawGaps(){
   }
 
   const busy=src.filter(s=>s.load>=2);   // one job in hand is normal; two or more is a queue
-  paintCoverage({pct, cells, centre, advice, src, busy});
+  paintCoverage({pct, cells, centre, advice, src, busy, wetCells,
+                 total:wetCells+cells.length, masked:!!waterMask, loading:waterLoading});
+  paintCovEdit();
   if(centre) nameGap(centre);
 }
 
@@ -4298,7 +4519,8 @@ function applyGapName(label){
 }
 
 function paintCoverage(o){
-  const {pct, centre, advice, src, busy}=o;
+  const {pct, centre, advice, src, busy, wetCells, total, masked, loading}=o;
+  const wetPct = total ? Math.round(wetCells/total*100) : 0;
   /* Stale and finished-job anchors still count as presence — he is very likely
      still in that area — but the footnote should say how much of the picture
      rests on them rather than on live positions. */
@@ -4313,7 +4535,7 @@ function paintCoverage(o){
       <div class="covbig" style="color:${vcol}">${pct}<small>%</small></div>
       <div>
         <div style="font-weight:600;color:var(--navy)">${verdict} coverage</div>
-        <div class="note">of the area your jobs actually land in, within
+        <div class="note">of the <b>land</b> your jobs actually land in, within
           ${TARGET_MIN} minutes' drive of a technician. Somebody being busy does not
           take the ground away — a job gets queued, not refused.</div>
       </div>
@@ -4321,6 +4543,15 @@ function paintCoverage(o){
 
     <div class="covlegend">${BANDS.map(b=>
       `<span class="covkey"><i style="background:${b.col}"></i>${b.label}</span>`).join("")}</div>
+
+    <div class="covarea">
+      <span class="note" style="flex:1;min-width:150px">${covArea
+        ? "Measuring the area you set. Drag the teal corners on the map to resize it."
+        : "Measuring an area worked out from where your jobs are."}</span>
+      <button class="btn ghost" id="covUseView" style="padding:6px 11px;font-size:11.5px">Use this view</button>
+      ${covArea?`<button class="btn ghost" id="covReset"
+        style="padding:6px 11px;font-size:11.5px">Back to automatic</button>`:""}
+    </div>
 
     ${centre?`<div class="covrow">
       <b>Weakest area<span id="gapName"></span></b>
@@ -4343,11 +4574,34 @@ function paintCoverage(o){
         promise a caller a time.</div>
     </div>`:""}
 
+    ${masked && wetCells
+      ? `<div class="covrow">
+          <b>${wetPct}% of this area is water, and was left out</b>
+          <div class="note">Read off the map itself, so nobody is counted as being
+            covered — or missing — in the middle of the bay. Crossing water also adds
+            a bridge penalty, because a technician on the far shore is not as close
+            as a straight line makes him look.</div>
+        </div>`
+      : loading
+        ? `<div class="covrow"><b>Checking for water…</b>
+            <div class="note">The figures below still count open water as land until this finishes.</div></div>`
+        : !masked
+          ? `<div class="covrow"><b>Water could not be checked</b>
+              <div class="note">The map tiles did not load, so open water is being counted as
+                servable ground. If your area includes the bay, this percentage is flattering.</div>
+            </div>`
+          : ""}
+
     <div class="note" style="margin-top:10px;opacity:.75">Drive times estimated from
       straight-line distance with a ${Math.round((DETOUR-1)*100)}% road allowance at ${ROAD_KMH} km/h.
       Water, bridges and rush hour are not modelled, so treat it as a guide rather than a
       promise.${stale?" "+stale+" of these positions "+(stale===1?"is":"are")+" not live, so that part of the picture is older than the rest.":""}</div>
   </div>`;
+
+  const uv=document.getElementById("covUseView");
+  if(uv) uv.onclick=useCurrentView;
+  const rs=document.getElementById("covReset");
+  if(rs) rs.onclick=()=>saveCovArea(null);
 }
 
 function fillJobKind(){
