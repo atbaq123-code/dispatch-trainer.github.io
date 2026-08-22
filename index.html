@@ -1020,7 +1020,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0822-50";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0822-51";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -4129,14 +4129,22 @@ function hav(a,b,c,d){
    question, names the worst gap in plain English, and suggests who to move.
 ============================================================================ */
 
-const ROAD_KMH     = 45;    // urban average including lights and turns
-const DETOUR       = 1.30;  // roads are not straight lines
+/* 45 km/h was a city-centre crawl and it made every technician's reach far
+   smaller than it is in practice. A locksmith run is mostly arterial roads and
+   interstate, not downtown grid, so half an hour genuinely gets a man across a
+   large part of a metro area. At 70 km/h with a 25% road allowance the reach
+   works out around 28 km, which matches how far these vans actually travel on a
+   callout rather than how far a straight-line city model says they should. */
+const ROAD_KMH     = 70;    // arterial and interstate average, not downtown crawl
+const DETOUR       = 1.25;  // roads are not straight lines
 const TARGET_MIN   = 30;    // what counts as covered
 const JOB_MINUTES  = 35;    // rough time to clear one job — used for context, not coverage
 
+/* One green band, not two. Anything inside the target is covered, and shading it
+   in two different greens invited the question "is 20 minutes worse than 10?"
+   when for dispatch purposes it simply is not — both are a yes. */
 const BANDS=[
-  {max:15,           col:"#1F7A4C", label:"under 15 min"},
-  {max:30,           col:"#7A9A2E", label:"15–30 min"},
+  {max:TARGET_MIN,   col:"#1F7A4C", label:`under ${TARGET_MIN} min — covered`},
   {max:45,           col:"#C08A1E", label:"30–45 min"},
   {max:70,           col:"#C4603A", label:"45–70 min"},
   {max:Infinity,     col:"#A8342A", label:"over 70 min"}
@@ -4222,7 +4230,7 @@ function drawGaps(){
        half of seeing where you are weak. */
     L.rectangle([[s0+dLat*r,w0+dLng*c],[s0+dLat*(r+1),w0+dLng*(c+1)]],
       {stroke:false, fillColor:band.col,
-       fillOpacity: min<=15?.10 : min<=30?.16 : min<=45?.24 : min<=70?.30 : .36,
+       fillOpacity: min<=TARGET_MIN?.13 : min<=45?.24 : min<=70?.30 : .36,
        interactive:false}).addTo(gapLayer);
   }
   if(gapLayer.bringToBack) gapLayer.bringToBack();
