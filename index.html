@@ -253,7 +253,8 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .brandmark img{height:30px;width:auto;border-radius:6px;display:none}
 .brandword{font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:15px;color:#fff;line-height:1.1}
 .brandword small{display:block;font-size:9px;letter-spacing:.16em;color:var(--gold);font-weight:600}
-#techMap{height:min(68vh,640px);border-radius:12px;border:1px solid var(--line2);z-index:0;}
+#techMap{height:min(68vh,640px);border-radius:12px;border:1px solid var(--line2);z-index:0;
+  position:relative;overflow:hidden;}   /* anchors and clips the ctrl-to-zoom hint */
 @media(max-width:700px){#techMap{height:min(60vh,420px)}}
 .stopacts{display:flex;gap:5px;flex-shrink:0;align-self:center;}
 .stopbtn{width:27px;height:27px;border-radius:7px;border:1px solid var(--line);background:#fff;
@@ -509,6 +510,13 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 /* Coverage panel */
 /* The coverage area the dispatcher has set: dashed teal box with grab handles
    at the corners, deliberately distinct from anything that represents a person. */
+/* Shown briefly when someone wheels over the map without Ctrl — a map that
+   silently ignores the wheel reads as broken. */
+.zoomhint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(33,43,59,.55);color:#fff;font-family:Inter,sans-serif;font-size:15px;
+  font-weight:600;letter-spacing:.01em;z-index:700;pointer-events:none;
+  opacity:0;transition:opacity .18s;}
+.zoomhint.on{opacity:1;}
 .covarea{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;
   padding-top:12px;border-top:1px solid var(--line2);}
 .covgrip{width:14px;height:14px;border-radius:3px;background:#fff;
@@ -1027,7 +1035,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0822-54";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0822-55";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -3927,6 +3935,55 @@ function applyStyle(){
   tileLayer=L.tileLayer(st.url,{maxZoom:st.max,subdomains:st.sub,attribution:st.attr}).addTo(techMap);
   if(tileLayer.bringToBack) tileLayer.bringToBack();
 }
+/* Ctrl (or Cmd) plus wheel zooms; a bare wheel scrolls the page past the map.
+   A trackpad pinch on macOS arrives as a wheel event with ctrlKey already set,
+   so pinch-to-zoom works here for free. */
+function wireWheelZoom(){
+  const c=techMap.getContainer();
+  let hintT=null, last=0;
+
+  c.addEventListener("wheel", e=>{
+    if(e.ctrlKey || e.metaKey){
+      e.preventDefault();
+      /* High-resolution trackpads fire dozens of events per flick, which would
+         run the zoom off the end of the scale. One step per 60 ms is enough to
+         feel continuous without overshooting. */
+      const now=Date.now();
+      if(now-last < 60) return;
+      last=now;
+      const step = e.deltaY<0 ? 0.5 : -0.5;
+      /* Zoom about the pointer, not the centre, so the street you are looking at
+         stays under the cursor. */
+      const pt=techMap.mouseEventToContainerPoint(e);
+      techMap.setZoomAround(techMap.containerPointToLatLng(pt), techMap.getZoom()+step);
+      hideHint();
+      return;
+    }
+    /* Not zooming — let the page scroll, and say why once rather than silently
+       doing nothing, which reads as a broken map. */
+    showHint();
+  }, {passive:false});
+
+  function showHint(){
+    let h=document.getElementById("zoomHint");
+    if(!h){
+      h=document.createElement("div");
+      h.id="zoomHint"; h.className="zoomhint";
+      h.textContent=(navigator.platform||"").indexOf("Mac")>=0
+        ? "Hold ⌘ and scroll to zoom" : "Hold Ctrl and scroll to zoom";
+      c.appendChild(h);
+    }
+    h.classList.add("on");
+    clearTimeout(hintT);
+    hintT=setTimeout(()=>h.classList.remove("on"), 1400);
+  }
+  function hideHint(){
+    const h=document.getElementById("zoomHint");
+    if(h) h.classList.remove("on");
+    clearTimeout(hintT);
+  }
+}
+
 function drawMapStyles(){
   const el=document.getElementById("mapStyles"); if(!el) return;
   el.innerHTML=Object.keys(MAP_STYLES).map(k=>
@@ -3941,20 +3998,14 @@ function ensureMap(){
   if(techMap || !window.L) return;
   techMap=L.map("techMap",{
     zoomControl:true,
-    scrollWheelZoom:true,      // was off, which made the map feel broken on a desktop
-    /* Half-steps rather than whole ones. A dispatch map is read at a particular
-       scale — one notch used to jump from "the whole bay" to "one street". */
-    zoomSnap:0.5, zoomDelta:0.5, wheelPxPerZoomLevel:120,
-    /* Two fingers to pan on a phone, so scrolling the page past the map does not
-       drag the map instead. */
-    dragging:!L.Browser.mobile, tap:true
+    /* Leaflet's own wheel zoom is off; it is handled below so that a plain wheel
+       scrolls the PAGE and only Ctrl (or Cmd) zooms the map. Without that, trying
+       to scroll past a full-width map traps you inside it, zoomed out to the
+       Atlantic. Half-steps because a dispatch map is read at a particular scale. */
+    scrollWheelZoom:false,
+    zoomSnap:0.5, zoomDelta:0.5
   }).setView([28.05,-82.45],10);
-  if(L.Browser.mobile){
-    /* On a touch screen the map stays draggable with one finger once the person
-       has actually touched it — it just does not steal the first scroll. */
-    techMap.dragging.enable();
-    techMap.options.tapTolerance=20;
-  }
+  wireWheelZoom();
   applyStyle();
   techLayer=L.layerGroup().addTo(techMap);
   drawMapStyles();
