@@ -510,13 +510,6 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 /* Coverage panel */
 /* The coverage area the dispatcher has set: dashed teal box with grab handles
    at the corners, deliberately distinct from anything that represents a person. */
-/* Shown briefly when someone wheels over the map without Ctrl — a map that
-   silently ignores the wheel reads as broken. */
-.zoomhint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  background:rgba(33,43,59,.55);color:#fff;font-family:Inter,sans-serif;font-size:15px;
-  font-weight:600;letter-spacing:.01em;z-index:700;pointer-events:none;
-  opacity:0;transition:opacity .18s;}
-.zoomhint.on{opacity:1;}
 .covarea{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;
   padding-top:12px;border-top:1px solid var(--line2);}
 .covgrip{width:14px;height:14px;border-radius:3px;background:#fff;
@@ -533,6 +526,9 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .covrow b{font-size:13.5px;color:var(--navy);font-weight:600;}
 .covrow.act{background:#F4FBFC;border-left:3px solid var(--teal);
   padding:10px 12px;border-radius:0 6px 6px 0;}
+.movemark{width:26px;height:26px;border-radius:50%;background:#1F7A4C;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;
+  border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);}
 .gapmark{width:26px;height:26px;border-radius:50%;background:#A8342A;color:#fff;
   display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;
   border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);}
@@ -1035,7 +1031,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0822-55";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0822-59";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -3940,7 +3936,7 @@ function applyStyle(){
    so pinch-to-zoom works here for free. */
 function wireWheelZoom(){
   const c=techMap.getContainer();
-  let hintT=null, last=0;
+  let last=0;
 
   c.addEventListener("wheel", e=>{
     if(e.ctrlKey || e.metaKey){
@@ -3956,32 +3952,11 @@ function wireWheelZoom(){
          stays under the cursor. */
       const pt=techMap.mouseEventToContainerPoint(e);
       techMap.setZoomAround(techMap.containerPointToLatLng(pt), techMap.getZoom()+step);
-      hideHint();
       return;
     }
-    /* Not zooming — let the page scroll, and say why once rather than silently
-       doing nothing, which reads as a broken map. */
-    showHint();
+    /* Not zooming: do nothing at all and let the page scroll past. An overlay
+       here would fire on every scroll of the page, which is most scrolls. */
   }, {passive:false});
-
-  function showHint(){
-    let h=document.getElementById("zoomHint");
-    if(!h){
-      h=document.createElement("div");
-      h.id="zoomHint"; h.className="zoomhint";
-      h.textContent=(navigator.platform||"").indexOf("Mac")>=0
-        ? "Hold ⌘ and scroll to zoom" : "Hold Ctrl and scroll to zoom";
-      c.appendChild(h);
-    }
-    h.classList.add("on");
-    clearTimeout(hintT);
-    hintT=setTimeout(()=>h.classList.remove("on"), 1400);
-  }
-  function hideHint(){
-    const h=document.getElementById("zoomHint");
-    if(h) h.classList.remove("on");
-    clearTimeout(hintT);
-  }
 }
 
 function drawMapStyles(){
@@ -4246,6 +4221,32 @@ const bandFor = m => BANDS.find(b=>m<=b.max);
    is skipped, the old behaviour returns, and the panel says so rather than
    quietly reporting a number built on sea.
 --------------------------------------------------------------------------- */
+/* ---------- the service territory ----------
+   The automatic area used to be a box drawn around whatever jobs were on the
+   board, which meant it shrank on a quiet morning and grew when one job landed
+   out of town. Coverage measured against a shifting box is not comparable from
+   one day to the next.
+
+   These are the edges of the ground OnCall actually works, so the automatic area
+   is now the same every day: Brooksville at the top, Ruskin at the bottom,
+   Zephyrhills to the east and the Gulf coast to the west. A job outside the
+   territory still stretches the box to include it — the boundary is a floor,
+   not a ceiling.
+
+   Edit this list if the territory changes; everything else follows from it. */
+const SERVICE_EDGE=[
+  {n:"Brooksville",      lat:28.5900, lng:-82.3800},   // northern limit — the far side of town
+  {n:"Dade City",        lat:28.3647, lng:-82.1959},
+  {n:"Zephyrhills",      lat:28.2336, lng:-82.1812},   // eastern limit
+  {n:"New Port Richey",  lat:28.2442, lng:-82.7193},
+  {n:"Dunedin",          lat:28.0197, lng:-82.7873},   // western coast
+  {n:"St Petersburg",    lat:27.7676, lng:-82.6403},
+  {n:"Sun City Center",  lat:27.7134, lng:-82.3548},
+  {n:"Ruskin",           lat:27.6900, lng:-82.4400},   // southern limit — the far side of town
+  {n:"Wesley Chapel",    lat:28.2397, lng:-82.3279}
+];
+const TERRITORY_PAD_KM = 6;   // so a border town is not sitting on the very edge
+
 /* ---------- the area coverage is measured over ----------
    By default this is worked out from where the jobs are, which is a reasonable
    guess and nothing more. A dispatcher knows his own patch: which suburbs he
@@ -4484,14 +4485,15 @@ function drawGaps(){
      number then answers a question worth asking — of the ground your jobs
      actually land on, how much can you get to in time. Cluster the team away from
      the work and the score falls, which is the correct behaviour. */
-  const reachKm = ROAD_KMH*(TARGET_MIN/60)/DETOUR;
-  const demand=[];
+  /* The territory is the floor. Jobs and technicians outside it stretch the box,
+     but a quiet day can no longer shrink it down to one suburb. */
+  const demand=SERVICE_EDGE.map(p=>[p.lat,p.lng]);
   techs.forEach(t=>{
     allStops(t).forEach(st=>{ if(st.lat!=null) demand.push([st.lat,st.lng]); });
   });
   src.forEach(p=>demand.push([p.lat,p.lng]));
   const lats=demand.map(p=>p[0]), lngs=demand.map(p=>p[1]);
-  const padLat  = reachKm/111;
+  const padLat  = TERRITORY_PAD_KM/111;
   const padLng  = padLat/Math.max(0.2,Math.cos((lats[0]||28)*Math.PI/180));
   const s0=Math.min(...lats)-padLat, n0=Math.max(...lats)+padLat;
   const w0=Math.min(...lngs)-padLng, e0=Math.max(...lngs)+padLng;
@@ -4548,27 +4550,67 @@ function drawGapsFor(src,s0,w0,n0,e0,rows,cols,dLat,dLng,btn,off){
     min: hot.reduce((a,x)=>a+x.min,0)/hot.length
   } : null;
 
-  /* Who should move, and is it worth it? Try each technician at the gap centre
-     and keep whichever relocation covers the most ground. Men carrying least are
-     the realistic candidates, so the load penalty does that work for us. */
+  /* Who should move, and where to?
+     The first version only ever tried one destination — the centre of the worst
+     cells — and that is nearly always a corner of the box, because corners are
+     by definition furthest from everybody. Sending a man to a corner abandons
+     more ground than it gains, so the gain came out at zero and the advice
+     silently never appeared. Correct arithmetic, useless question.
+
+     So it now searches properly: dozens of candidate positions across the area,
+     every technician tested against each, and the single best pairing wins. The
+     answer is a real place to send someone rather than the middle of the gap. */
   let advice=null;
-  if(centre && src.length){
-    const baseline=covered;
-    let bestGain=0, bestWho=null, bestKm=0;
-    src.forEach(s=>{
-      const moved=src.map(o=>o===s?{...o,lat:centre.la,lng:centre.ln}:o);
-      let c2=0;
-      cells.forEach(x=>{ if(responseAt(x.la,x.ln,moved).min<=TARGET_MIN) c2++; });
-      const gain=c2-baseline;
-      if(gain>bestGain){ bestGain=gain; bestWho=s; bestKm=hav(s.lat,s.lng,centre.la,centre.ln); }
+  if(src.length>1 && cells.length){
+    /* Doing this naively is a million distance calculations. Instead, note that
+       moving ONE man only changes his own contribution: every cell already knows
+       its best and second-best responder, so the new coverage is a comparison
+       rather than a recalculation. */
+    cells.forEach(x=>{
+      let b1=Infinity, b2=Infinity, who=-1;
+      src.forEach((sx,i)=>{
+        const m=responseAt(x.la,x.ln,[sx]).min;
+        if(m<b1){ b2=b1; b1=m; who=i; } else if(m<b2){ b2=m; }
+      });
+      x.b1=b1; x.b2=b2; x.who=who;
     });
-    /* Only advise on a move that actually pays. A one-cell gain is grid noise,
-       and telling a dispatcher to drive a man across the county for it would
-       destroy trust in everything else on this panel. */
+
+    /* Candidates are spread across the area rather than concentrated on the gap,
+       and only on land — there is no point advising a van into the bay. */
+    const step=Math.max(1,Math.round(Math.sqrt(cells.length)/7));
+    const cand=cells.filter((_,i)=>i%step===0);
+
+    let best=null;
+    cand.forEach(p=>{
+      const fromP=cells.map(x=>responseAt(x.la,x.ln,[{lat:p.la,lng:p.ln}]).min);
+      src.forEach((sx,k)=>{
+        let c2=0;
+        for(let i=0;i<cells.length;i++){
+          const others = cells[i].who===k ? cells[i].b2 : cells[i].b1;
+          if(Math.min(others, fromP[i]) <= TARGET_MIN) c2++;
+        }
+        const gain=c2-covered;
+        const km=hav(sx.lat,sx.lng,p.la,p.ln);
+        /* Between two equally good moves, prefer the shorter drive and the man
+           with least on his plate — nobody wants to be told to send their busiest
+           technician across the county. */
+        const score=gain - km*0.02 - sx.load*0.4;
+        if(gain>0 && (!best || score>best.score))
+          best={gain,km,score,who:sx,at:p};
+      });
+    });
+
+    /* A one-cell gain is grid noise, and telling a dispatcher to move a man for
+       it would destroy trust in everything else on this panel. */
     const MIN_WORTH = Math.max(2, Math.round(cells.length*0.03));
-    if(bestWho && bestGain>=MIN_WORTH && bestKm>=2)
-      advice={name:bestWho.t.name, load:bestWho.load, km:Math.round(bestKm),
-              pts:Math.round(bestGain/cells.length*100)};
+    if(best && best.gain>=MIN_WORTH && best.km>=2){
+      advice={name:best.who.t.name, load:best.who.load, km:Math.round(best.km),
+              pts:Math.round(best.gain/cells.length*100), at:best.at};
+      L.marker([best.at.la,best.at.ln],{icon:L.divIcon({className:"",
+        html:'<div class="movemark">&#8599;</div>',iconSize:[26,26],iconAnchor:[13,13]})})
+        .addTo(gapLayer).bindPopup("Suggested position for "+esc(best.who.t.name));
+      nameSpot(best.at);
+    }
   }
 
   if(centre){
@@ -4597,6 +4639,16 @@ function nameGap(centre){
 function applyGapName(label){
   const el=document.getElementById("gapName");
   if(el && label) el.textContent = " — around "+label;
+}
+/* "Move him 19 km north-east" is useless without a place name attached. */
+function nameSpot(p){
+  const key=revKey(p.la,p.ln);
+  const put=l=>{ const el=document.getElementById("moveName"); if(el&&l) el.textContent=" — around "+l; };
+  if(revCache[key]!==undefined){ put(revCache[key]); return; }
+  revCache[key]=null;
+  geoCall({op:"reverse",lat:p.la,lng:p.ln})
+    .then(d=>{ revCache[key]=d.label||null; put(revCache[key]); })
+    .catch(()=>{});
 }
 
 function paintCoverage(o){
@@ -4628,7 +4680,7 @@ function paintCoverage(o){
     <div class="covarea">
       <span class="note" style="flex:1;min-width:150px">${covArea
         ? "Measuring the area you set — it stays this way for everyone until you change it. Drag the teal corners to resize."
-        : "Measuring an area worked out from where your jobs are. Set your own and it will be remembered."}</span>
+        : "Measuring your service territory — Brooksville down to Ruskin, the Gulf coast out to Zephyrhills. Set your own area and it will be remembered."}</span>
       <button class="btn ghost" id="covUseView" style="padding:6px 11px;font-size:11.5px">Use this view</button>
       ${covArea?`<button class="btn ghost" id="covReset"
         style="padding:6px 11px;font-size:11.5px">Back to automatic</button>`:""}
@@ -4641,10 +4693,16 @@ function paintCoverage(o){
       <div class="note">Everywhere around your team is inside ${TARGET_MIN} minutes.</div></div>`}
 
     ${advice?`<div class="covrow act">
-      <b>Move ${esc(advice.name)} about ${advice.km} km toward it</b>
-      <div class="note">That would lift coverage by roughly ${advice.pts} points.${
-        advice.load? " He has "+advice.load+" job"+(advice.load===1?"":"s")+" to clear first.":
-                     " He is free now."}</div>
+      <b>Move ${esc(advice.name)} about ${advice.km} km<span id="moveName"></span></b>
+      <div class="note">Marked with an arrow on the map. That would lift coverage by roughly
+        ${advice.pts} points.${
+        advice.load? " He has "+advice.load+" job"+(advice.load===1?"":"s")+" to clear first."
+                   : " He is free now."}</div>
+    </div>`:centre?`<div class="covrow">
+      <b>Nothing worth moving</b>
+      <div class="note">No single move would meaningfully close that gap — your team is
+        already spread about as well as it can be for the ground you are covering.
+        Closing it properly would take another technician.</div>
     </div>`:""}
 
     ${busy.length?`<div class="covrow">
