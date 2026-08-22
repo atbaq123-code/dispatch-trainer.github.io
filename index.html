@@ -1020,7 +1020,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0822-49";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0822-50";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -4131,9 +4131,8 @@ function hav(a,b,c,d){
 
 const ROAD_KMH     = 45;    // urban average including lights and turns
 const DETOUR       = 1.30;  // roads are not straight lines
-const JOB_MINUTES  = 35;    // typical time to clear one queued job
-const STALE_PENALTY= 10;    // his last known position may already be wrong
 const TARGET_MIN   = 30;    // what counts as covered
+const JOB_MINUTES  = 35;    // rough time to clear one job — used for context, not coverage
 
 const BANDS=[
   {max:15,           col:"#1F7A4C", label:"under 15 min"},
@@ -4144,18 +4143,20 @@ const BANDS=[
 ];
 const bandFor = m => BANDS.find(b=>m<=b.max);
 
-/* Every technician who could actually respond, with the handicap he carries. */
+/* Coverage is about PRESENCE, not availability.
+   An earlier version subtracted a penalty for every job a technician had queued,
+   which made a busy team read as 0% covered. That is the wrong question. A lock
+   job runs half an hour to an hour, so a man with two jobs on his list still
+   serves that ground today — he serves it later, not never. Somewhere with a
+   technician in it is covered; somewhere with nobody in it is not.
+
+   His workload still matters, so it is reported alongside as context. It just
+   does not erase him from the map. */
 function coverageSources(){
   const out=[];
   techs.forEach(t=>{
     const a=anchorOf(t); if(!a) return;
-    const load=stopsOf(t).length;
-    out.push({
-      t, lat:a.lat, lng:a.lng, kind:a.kind, load,
-      /* Queued work is the dominant term — a man 5 km away with three jobs on
-         his list reaches you later than a man 20 km away with none. */
-      delay: load*JOB_MINUTES + (a.kind==="live"?0:STALE_PENALTY)
-    });
+    out.push({ t, lat:a.lat, lng:a.lng, kind:a.kind, load:stopsOf(t).length });
   });
   return out;
 }
@@ -4164,7 +4165,7 @@ const driveMin = km => (km*DETOUR)/ROAD_KMH*60;
 function responseAt(la,ln,src){
   let best=Infinity, who=null;
   src.forEach(s=>{
-    const m=driveMin(hav(la,ln,s.lat,s.lng))+s.delay;
+    const m=driveMin(hav(la,ln,s.lat,s.lng));
     if(m<best){ best=m; who=s; }
   });
   return {min:best, who};
@@ -4268,7 +4269,7 @@ function drawGaps(){
       .addTo(gapLayer).bindPopup("Weakest coverage — about "+Math.round(centre.min)+" min response");
   }
 
-  const busy=src.filter(s=>s.load>=2);
+  const busy=src.filter(s=>s.load>=2);   // one job in hand is normal; two or more is a queue
   paintCoverage({pct, cells, centre, advice, src, busy});
   if(centre) nameGap(centre);
 }
@@ -4290,6 +4291,10 @@ function applyGapName(label){
 
 function paintCoverage(o){
   const {pct, centre, advice, src, busy}=o;
+  /* Stale and finished-job anchors still count as presence — he is very likely
+     still in that area — but the footnote should say how much of the picture
+     rests on them rather than on live positions. */
+  const stale=src.filter(x=>x.kind!=="live").length;
   const verdict = pct>=85 ? "Strong" : pct>=65 ? "Workable" : pct>=45 ? "Thin" : "Poor";
   const vcol    = pct>=85 ? "#1F7A4C" : pct>=65 ? "#7A9A2E" : pct>=45 ? "#C08A1E" : "#A8342A";
 
@@ -4300,9 +4305,9 @@ function paintCoverage(o){
       <div class="covbig" style="color:${vcol}">${pct}<small>%</small></div>
       <div>
         <div style="font-weight:600;color:var(--navy)">${verdict} coverage</div>
-        <div class="note">of the area your jobs actually land in, reachable within
-          ${TARGET_MIN} minutes — counting both the drive and the work each man
-          has to clear first.</div>
+        <div class="note">of the area your jobs actually land in, within
+          ${TARGET_MIN} minutes' drive of a technician. Somebody being busy does not
+          take the ground away — a job gets queued, not refused.</div>
       </div>
     </div>
 
@@ -4323,15 +4328,17 @@ function paintCoverage(o){
     </div>`:""}
 
     ${busy.length?`<div class="covrow">
-      <b>${busy.length} of ${src.length} counting for little</b>
-      <div class="note">${busy.map(s=>esc(s.t.name)+" ("+s.load+")").join(", ")} —
-        each queued job pushes their realistic arrival out by about ${JOB_MINUTES} minutes,
-        so they cover far less ground than the map alone suggests.</div>
+      <b>Covered, but not free for a while</b>
+      <div class="note">${busy.map(s=>esc(s.t.name)+" ("+s.load+" job"+(s.load===1?"":"s")+")").join(", ")}.
+        Their areas are covered — somebody is there — but at roughly ${JOB_MINUTES} minutes
+        a job, anything new goes on the end of the queue. Worth knowing before you
+        promise a caller a time.</div>
     </div>`:""}
 
-    <div class="note" style="margin-top:10px;opacity:.75">Estimated from straight-line distance
-      with a ${Math.round((DETOUR-1)*100)}% road allowance at ${ROAD_KMH} km/h. Water, bridges and
-      rush hour are not modelled, so treat it as a guide rather than a promise.</div>
+    <div class="note" style="margin-top:10px;opacity:.75">Drive times estimated from
+      straight-line distance with a ${Math.round((DETOUR-1)*100)}% road allowance at ${ROAD_KMH} km/h.
+      Water, bridges and rush hour are not modelled, so treat it as a guide rather than a
+      promise.${stale?" "+stale+" of these positions "+(stale===1?"is":"are")+" not live, so that part of the picture is older than the rest.":""}</div>
   </div>`;
 }
 
