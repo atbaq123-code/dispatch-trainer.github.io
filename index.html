@@ -439,10 +439,13 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 .mchip .ld.free{background:#EAF9F1;color:#1F7A4C;}
 
 /* Not reporting: the chip fades back so a live man always wins the eye. */
-.mchip.stale,.mchip.done{background:#F4F6F8;}
-.mchip.stale span,.mchip.done span{opacity:.72;font-weight:500;}
-.mchip.stale i,.mchip.done i{opacity:.5;box-shadow:0 0 0 2px #fff inset;}
-.mchip.stale:after,.mchip.done:after{background:#F4F6F8;}
+/* "atjob" not "job": the class .mchip.job already belongs to the red New job
+   marker, and reusing it turned that pin grey. */
+.mchip.stale,.mchip.done,.mchip.atjob{background:#F4F6F8;}
+.mchip.stale span,.mchip.done span,.mchip.atjob span{opacity:.72;font-weight:500;}
+.mchip.stale i,.mchip.done i,.mchip.atjob i{opacity:.5;box-shadow:0 0 0 2px #fff inset;}
+.mchip.stale:after,.mchip.done:after,.mchip.atjob:after{background:#F4F6F8;}
+.mdot.atjob{opacity:.6;background:#fff!important;border-width:4px;}
 
 .mchip.job{background:var(--red);box-shadow:0 3px 12px rgba(200,60,40,.45);}
 .mchip.job span{color:#fff;font-weight:700;letter-spacing:.02em;}
@@ -1031,7 +1034,7 @@ ul{margin:0;padding-left:18px;} li{margin-bottom:6px;font-size:13.5px;}
 
 <script>
 /* ============================ config ============================ */
-const BUILD = "B-0822-59";   // shown in Settings so you can confirm which file is live
+const BUILD = "B-0822-60";   // shown in Settings so you can confirm which file is live
 /* ---- fill these two in from your Supabase project (Settings > API) ---- */
 const SUPABASE_URL  = "https://debddnvffkbtzufdkfjq.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlYmRkbnZmZmtidHp1ZmRrZmpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTk5MjQsImV4cCI6MjEwMjI5NTkyNH0.mnSQKPemSRHBdsC3nlEJyWiuu9yE0VuZdV-OY9BsElM";
@@ -3825,6 +3828,15 @@ const anchorOf = t => {
   if(sv) return {lat:sv.lat, lng:sv.lng, kind:"stale", at:sv.at};
   const d=lastDoneOf(t);
   if(d) return {lat:d.lat, lng:d.lng, kind:"done", at:d.done_at, label:d.label||d.address, job_type:d.job_type};
+  /* Last resort, and the one that was missing: the job he has been sent to.
+     Somebody with work on his list but no GPS — never clocked in, phone flat,
+     tracking link never opened — was falling through to null, which took him out
+     of the coverage map entirely. The board would then say nobody had a position
+     while showing a full list of technicians with jobs, which is nonsense. He is
+     going to that address, so that address is where to count him. */
+  const st=stopsOf(t).find(x=>x.lat!=null);
+  if(st) return {lat:st.lat, lng:st.lng, kind:"atjob", at:st.assigned_at||st.started_at,
+                 label:st.label||st.address, job_type:st.job_type};
   return null;
 };
 const sentText = st => { const a=st.assigned_at||st.started_at; return a ? ("sent "+sinceText(a)+" ago") : "sent"; };
@@ -4051,13 +4063,16 @@ function paintMap(extra){
           : "background:"+col)+'"></div>';
       const why = kind==="live"  ? esc(liveAddr(t)||"live position")+"<br><i>"+esc(sinceText(a.at))+" ago</i>"
                 : kind==="stale" ? "Last known position<br><i>"+esc(sinceText(a.at))+" ago \u2014 not current</i>"
-                :                  "Finished a job here<br><i>"+esc(sinceText(a.at))+" ago</i>";
+                : kind==="done"  ? "Finished a job here<br><i>"+esc(sinceText(a.at))+" ago</i>"
+                : "No position reported \u2014 shown at the job he is on<br>"+esc(a.label||"")+
+                  (a.at?"<br><i>sent "+esc(sinceText(a.at))+" ago</i>":"");
       L.marker([a.lat,a.lng],{icon:L.divIcon({className:"mtech",html:chip,iconSize:[0,0]}),
         zIndexOffset:500}).addTo(techLayer)
         .bindPopup("<b>"+esc(t.name)+"</b><br>"+why+
           (sts.length?"<br>"+sts.length+" job"+(sts.length===1?"":"s")+" on his list":"<br>No jobs assigned"));
       pts.push([a.lat,a.lng]);
-      if(kind!=="done" && line.length)
+      /* No line when the chip IS his first job — it would be a line to itself. */
+      if(kind!=="done" && kind!=="atjob" && line.length)
         L.polyline([[a.lat,a.lng],line[0]],{color:col,weight:2.5,opacity:.6}).addTo(techLayer);
     }
     if(line.length>1) L.polyline(line,{color:col,weight:2,dashArray:"5,6",opacity:.65}).addTo(techLayer);
@@ -4658,6 +4673,7 @@ function paintCoverage(o){
      still in that area — but the footnote should say how much of the picture
      rests on them rather than on live positions. */
   const stale=src.filter(x=>x.kind!=="live").length;
+  const guessed=src.filter(x=>x.kind==="atjob").length;   // placed at a job, not a real fix
   const verdict = pct>=85 ? "Strong" : pct>=65 ? "Workable" : pct>=45 ? "Thin" : "Poor";
   const vcol    = pct>=85 ? "#1F7A4C" : pct>=65 ? "#7A9A2E" : pct>=45 ? "#C08A1E" : "#A8342A";
 
@@ -4734,7 +4750,9 @@ function paintCoverage(o){
     <div class="note" style="margin-top:10px;opacity:.75">Drive times estimated from
       straight-line distance with a ${Math.round((DETOUR-1)*100)}% road allowance at ${ROAD_KMH} km/h.
       Water, bridges and rush hour are not modelled, so treat it as a guide rather than a
-      promise.${stale?" "+stale+" of these positions "+(stale===1?"is":"are")+" not live, so that part of the picture is older than the rest.":""}</div>
+      promise.${stale?" "+stale+" of these positions "+(stale===1?"is":"are")+" not live, so that part of the picture is older than the rest.":""}${
+        guessed?" "+guessed+(guessed===1?" technician is":" technicians are")+
+          " placed at the job "+(guessed===1?"he was":"they were")+" sent to rather than a reported position.":""}</div>
   </div>`;
 
   const uv=document.getElementById("covUseView");
@@ -5094,7 +5112,9 @@ async function findNearest(){
                   ? "from where he is now, reported "+esc(sinceText(x.from.st.at))+" ago"
                   : x.from.st.kind==="stale"
                     ? "from his last known position, "+esc(sinceText(x.from.st.at))+" ago — his phone has gone quiet, so treat this as rough"
-                    : "from the job he finished "+esc(sinceText(x.from.st.at))+" ago — no phone signal, so this is an estimate")
+                    : x.from.st.kind==="done"
+                      ? "from the job he finished "+esc(sinceText(x.from.st.at))+" ago — no phone signal, so this is an estimate"
+                      : "he is not reporting a position, so measured from the job he was sent to")
               : "no position for him, so measured from job "+(x.from.i+1)+" in his queue"}</span>
           ${x.onWay&&x.nearestQ ? `<div class="note" style="color:#1F7A4C">
               Passes within ${esc(x.nearestQ.e.minutes)} min of ${
